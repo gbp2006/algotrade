@@ -16,13 +16,37 @@ ts,strategy,instrument,period,params,trades,net,pf,avg,dd,in_market,note
 2026-11-18 17:53,Простушка,CNYRUBF,2026-01-05..2026-11-18,,101,2512.43,1.71,24.88,-599.09,79.3,portfolio test
 2026-11-18 17:53,Универсалка,CNYRUBF,2026-01-05..2026-11-18,,86,1366.35,1.49,15.89,-740.9,50.0,portfolio test
 2026-11-18 17:53,портфель (сумма),CNYRUBF,2026-01-05..2026-11-18,,196,3321.19,1.48,16.94,-1077.23,76.7,portfolio test
-2026-11-18 17:56,prostushka,CNYRUBF,train 2023-2024 / test 2025-2026,ma=50;entry=13:40;filter=0;short_friday=0,248,5292,1.56,,-2283,,train PF 2.39
-2026-11-18 17:56,prostushka,CNYRUBF,train 2023-2024 / test 2025-2026,ma=50;entry=13:40;filter=6;short_friday=0,247,5703,1.65,,-2081,,train PF 2.31
-2026-11-18 17:56,prostushka,CNYRUBF,train 2023-2024 / test 2025-2026,ma=50;entry=13:40;filter=3;short_friday=0,246,5213,1.57,,-2219,,train PF 2.2
-2026-11-18 17:56,prostushka,CNYRUBF,train 2023-2024 / test 2025-2026,ma=40;entry=14:10;filter=0;short_friday=0,239,3403,1.35,,-1563,,train PF 2.19
-2026-11-18 17:56,prostushka,CNYRUBF,train 2023-2024 / test 2025-2026,ma=40;entry=13:40;filter=0;short_friday=0,248,4544,1.47,,-1495,,train PF 2.16
-2026-11-18 17:56,prostushka,CNYRUBF,train 2023-2024 / test 2025-2026,ma=50;entry=13:50;filter=3;short_friday=0,251,5626,1.59,,-2089,,train PF 2.15
-2026-11-18 17:56,prostushka,CNYRUBF,train 2023-2024 / test 2025-2026,ma=60;entry=13:40;filter=0;short_friday=0,255,3989,1.4,,-2148,,train PF 2.15
-2026-11-18 17:56,prostushka,CNYRUBF,train 2023-2024 / test 2025-2026,ma=50;entry=13:40;filter=0;short_friday=1,239,7220,1.75,,-2146,,train PF 2.15
-2026-11-18 17:56,prostushka,CNYRUBF,train 2023-2024 / test 2025-2026,ma=55;entry=13:40;filter=0;short_friday=0,258,5046,1.53,,-2148,,train PF 2.12
-2026-11-18 17:56,prostushka,CNYRUBF,train 2023-2024 / test 2025-2026,ma=55;entry=13:40;filter=6;short_friday=0,252,5169,1.57,,-2112,,train PF 2.12
+2026-11-18 17:56,prostushka,CNYRUBF,train 2023-2024 / test 2025-2026,ma=50;entry=13:40;filter=0;short_friday=0,248,5292.0,1.56,,-2283.0,,train PF 2.39
+2026-11-18 17:56,prostushka,CNYRUBF,train 2023-2024 / test 2025-2026,ma=50;entry=13:40;filter=6;short_friday=0,247,5703.0,1.65,,-2081.0,,train PF 2.31
+2026-11-18 17:56,prostushka,CNYRUBF,train 2023-2024 / test 2025-2026,ma=50;entry=13:40;filter=3;short_friday=0,246,5213.0,1.57,,-2219.0,,train PF 2.2
+2026-11-18 17:56,prostushka,CNYRUBF,train 2023-2024 / test 2025-2026,ma=40;entry=14:10;filter=0;short_friday=0,239,3403.0,1.35,,-1563.0,,train PF 2.19
+2026-11-18 17:56,prostushka,CNYRUBF,train 2023-2024 / test 2025-2026,ma=40;entry=13:40;filter=0;short_friday=0,248,4544.0,1.47,,-1495.0,,train PF 2.16
+2026-11-18 17:56,prostushka,CNYRUBF,train 2023-2024 / test 2025-2026,ma=50;entry=13:50;filter=3;short_friday=0,251,5626.0,1.59,,-2089.0,,train PF 2.15
+2026-11-18 17:56,prostushka,CNYRUBF,train 2023-2024 / test 2025-2026,ma=60;entry=13:40;filter=0;short_friday=0,255,3989.0,1.4,,-2148.0,,train PF 2.15
+2026-11-18 17:56,prostushka,CNYRUBF,train 2023-2024 / test 2025-2026,ma=50;entry=13:40;filter=0;short_friday=1,239,7220.0,1.75,,-2146.0,,train PF 2.15
+2026-11-18 17:56,prostushka,CNYRUBF,train 2023-2024 / test 2025-2026,ma=55;entry=13:40;filter=0;short_friday=0,258,5046.0,1.53,,-2148.0,,train PF 2.12
+2026-11-18 17:56,prostushka,CNYRUBF,train 2023-2024 / test 2025-2026,ma=55;entry=13:40;filter=6;short_friday=0,252,5169.0,1.57,,-2112.0,,train PF 2.12
+2026-11-19 12:19,prostushka,Si,2009-01..2026-10,ma_period=40;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,2264,248605.78,1.48,,-27137.7,,"multi-instrument, MA40, валюта"
+2026-11-19 12:19,prostushka,Si,2009-01..2026-10,ma_period=48;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,2284,291495.07,1.57,,-22077.12,,"multi-instrument, MA48, валюта"
+2026-11-19 12:19,prostushka,CNYRUBF,2022-04..2026-11,ma_period=40;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,554,13800.0,1.58,,-1900.0,,"multi-instrument, MA40, валюта"
+2026-11-19 12:19,prostushka,CNYRUBF,2022-04..2026-11,ma_period=48;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,567,16070.0,1.68,,-2010.0,,"multi-instrument, MA48, валюта"
+2026-11-19 12:19,prostushka,Eu,2009-12..2025-12,ma_period=40;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,1967,227345.62,1.43,,-38790.59,,"multi-instrument, MA40, валюта"
+2026-11-19 12:19,prostushka,Eu,2009-12..2025-12,ma_period=48;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,1976,260400.46,1.49,,-26922.09,,"multi-instrument, MA48, валюта"
+2026-11-19 12:19,prostushka,ED,2009-12..2025-12,ma_period=40;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,1981,-82228.1,0.84,,-98673.72,,"multi-instrument, MA40, валюта"
+2026-11-19 12:19,prostushka,ED,2009-12..2025-12,ma_period=48;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,2003,-71538.45,0.86,,-86339.51,,"multi-instrument, MA48, валюта"
+2026-11-19 12:19,prostushka,RTS,2009-12..2025-12,ma_period=40;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,2063,628537.93,1.2,,-103163.97,,"multi-instrument, MA40, индекс"
+2026-11-19 12:19,prostushka,RTS,2009-12..2025-12,ma_period=48;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,2075,576459.98,1.19,,-113979.07,,"multi-instrument, MA48, индекс"
+2026-11-19 12:20,prostushka,MIX,2011-12..2025-12,ma_period=40;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,1776,421925.75,1.19,,-150478.99,,"multi-instrument, MA40, индекс"
+2026-11-19 12:20,prostushka,MIX,2011-12..2025-12,ma_period=48;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,1777,480362.51,1.22,,-147007.16,,"multi-instrument, MA48, индекс"
+2026-11-19 12:20,prostushka,BR,2009-12..2025-12,ma_period=40;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,2032,35785.67,1.04,,-73890.17,,"multi-instrument, MA40, сырьё"
+2026-11-19 12:20,prostushka,BR,2009-12..2025-12,ma_period=48;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,2019,97390.96,1.1,,-78264.71,,"multi-instrument, MA48, сырьё"
+2026-11-19 12:20,prostushka,GOLD,2009-12..2025-12,ma_period=40;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,1995,59131.05,1.05,,-60528.93,,"multi-instrument, MA40, сырьё"
+2026-11-19 12:20,prostushka,GOLD,2009-12..2025-12,ma_period=48;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,2015,44852.96,1.04,,-62205.56,,"multi-instrument, MA48, сырьё"
+2026-11-19 12:20,prostushka,SILV,2009-12..2025-12,ma_period=40;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,2030,-23319.89,0.93,,-50167.36,,"multi-instrument, MA40, сырьё"
+2026-11-19 12:20,prostushka,SILV,2009-12..2025-12,ma_period=48;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,2023,-15286.2,0.95,,-43852.25,,"multi-instrument, MA48, сырьё"
+2026-11-19 12:20,prostushka,NG,2020-02..2025-12,ma_period=40;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,719,-55750.65,0.88,,-98180.35,,"multi-instrument, MA40, сырьё"
+2026-11-19 12:20,prostushka,NG,2020-02..2025-12,ma_period=48;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,731,-45883.28,0.9,,-85763.91,,"multi-instrument, MA48, сырьё"
+2026-11-19 12:20,prostushka,SBRF,2009-12..2025-12,ma_period=40;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,2041,78803.3,1.32,,-9577.7,,"multi-instrument, MA40, акции"
+2026-11-19 12:20,prostushka,SBRF,2009-12..2025-12,ma_period=48;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,2044,77622.74,1.31,,-8722.71,,"multi-instrument, MA48, акции"
+2026-11-19 12:20,prostushka,GAZR,2009-12..2025-12,ma_period=40;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,2022,53512.1,1.2,,-17079.15,,"multi-instrument, MA40, акции"
+2026-11-19 12:20,prostushka,GAZR,2009-12..2025-12,ma_period=48;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,2004,66830.47,1.26,,-13944.59,,"multi-instrument, MA48, акции"
