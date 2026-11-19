@@ -101,7 +101,8 @@ cd ~/algotrading
 
 ```bash
 rsync -az --delete --exclude data --exclude .venv --exclude .cache \
-  --exclude __pycache__ -e "ssh -p 2222 -i ~/.ssh/wsl_algotrading" \
+  --exclude __pycache__ --exclude 'results/daily.log' --exclude 'results/paper.csv' \
+  -e "ssh -p 2222 -i ~/.ssh/wsl_algotrading" \
   /mnt/DiskD/algotrading/ zt@192.168.0.230:~/algotrading/
 ```
 
@@ -110,3 +111,20 @@ rsync -az --delete --exclude data --exclude .venv --exclude .cache \
 Управлять можно только из root: `wsl -u root` на Windows (или через WinRM).
 
 Проверка после перезагрузки Windows: задача «WSL Algo Boot» поднимает WSL и sshd.
+
+## Финам: счёт и торговля
+
+```bash
+./run.sh broker       # проверка доступа: токен, котировка, счёт, сверка с архивом
+./run.sh paper-live   # бумажная торговля по живым котировкам (13:50+)
+```
+
+Секреты — в `.env` (права 600, в git не попадает):
+
+```
+FINAM_SECRET=tapi_sk_...
+FINAM_ACCOUNT=2102993
+FINAM_ALLOW_TRADING=0     # 1 включает реальные заявки
+```
+
+Торговые методы в `algo/broker/finam.py` бросают исключение, пока `FINAM_ALLOW_TRADING!=1`.

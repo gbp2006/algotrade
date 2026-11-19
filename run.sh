@@ -12,6 +12,8 @@ case "${1:-help}" in
   update) "$PY" scripts/10_append_iss.py ;;
   signal) "$PY" scripts/20_mvp_signal.py ;;
   paper)  "$PY" scripts/21_mvp_paper.py ;;
+  broker) "$PY" scripts/30_broker_check.py ;;
+  paper-live) "$PY" scripts/31_paper_live.py ;;
   sweep)  "$PY" scripts/15_sweep_full.py ;;
   all)
     "$PY" scripts/09_si_check.py
@@ -25,7 +27,9 @@ usage: ./run.sh <команда>
   check    качество данных (по умолчанию CNYRUBF.txt)
   update   добрать свежие бары с MOEX ISS
   signal   сигнал Простушки на сегодня
-  paper    записать сигнал в бумажный журнал
+  paper    записать сигнал в бумажный журнал (по архиву)
+  broker   проверка доступа к Финаму
+  paper-live  бумажная торговля по живым котировкам
   sweep    полная сетка параметров Простушки
   all      прогоны Простушки на Si + Универсалки
 EOF

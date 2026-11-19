@@ -24,12 +24,12 @@ def last_position() -> int:
 
 
 def already_recorded(day: str) -> bool:
-    """Идемпотентность: одна запись на торговый день."""
+    """Идемпотентность: одна запись на торговый день для этой стратегии."""
     if not PAPER.exists():
         return False
     with PAPER.open(encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
-    return bool(rows) and rows[-1]["date"] == day
+    return any(r["date"] == day and r["strategy"] == "prostushka" for r in rows)
 
 
 def main() -> int:
