@@ -1,7 +1,7 @@
 """Веб-дашборд бумажной торговли: тёмный интерфейс, 6 конфигураций.
 
 Запуск: uvicorn web.app:app --host 0.0.0.0 --port 8080
-Доступ: basic-auth из .env (DASH_USER / DASH_PASS).
+Доступ: без авторизации — панель открыта только в домашней сети / через VPN.
 """
 
 from __future__ import annotations
@@ -15,9 +15,8 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
@@ -56,21 +55,8 @@ def capital_of(cfg) -> float:
 app = FastAPI(title="Algo dashboard")
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
 app.mount("/static", StaticFiles(directory=str(Path(__file__).resolve().parent / "static")), name="static")
-security = HTTPBasic(auto_error=False)
 
 _cache: dict[str, tuple[float, object]] = {}
-
-
-def auth(cred: HTTPBasicCredentials | None = Depends(security)) -> str:
-    if os.environ.get("DASH_OPEN") == "1":   # локальная отладка без пароля
-        return "guest"
-    user = os.environ.get("DASH_USER", "zt")
-    pwd = os.environ.get("DASH_PASS", "algo")
-    if cred is None or cred.username != user or cred.password != pwd:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail="auth required",
-                            headers={"WWW-Authenticate": "Basic"})
-    return cred.username
 
 
 def _cached(key: str, ttl: int, fn):
@@ -226,7 +212,7 @@ def config_stats(cfg, rows: list[dict], price: float | None = None) -> dict:
 
 
 @app.get("/", response_class=HTMLResponse)
-def index(request: Request, _: str = Depends(auth)):
+def index(request: Request):
     # шаблон меняется при деплое — браузер не должен держать старую копию
     return templates.TemplateResponse(request, "index.html", {},
                                       headers={"Cache-Control": "no-store"})
@@ -238,7 +224,7 @@ def favicon():
 
 
 @app.get("/api/state")
-def state(_: str = Depends(auth)):
+def state():
     rows = read_paper()
     q = None
     try:
@@ -413,7 +399,7 @@ def _expected(cfg, start: str, end: str):
 
 
 @app.get("/api/config/{cfg_id}")
-def api_config(cfg_id: str, _: str = Depends(auth)):
+def api_config(cfg_id: str):
     try:
         return JSONResponse(config_detail(cfg_id))
     except HTTPException:
@@ -423,8 +409,7 @@ def api_config(cfg_id: str, _: str = Depends(auth)):
 
 
 @app.get("/api/candles")
-def api_candles(tf: str = "M5", days: int = 2, config: str | None = None,
-                _: str = Depends(auth)):
+def api_candles(tf: str = "M5", days: int = 2, config: str | None = None):
     try:
         return JSONResponse({"tf": tf, "config": config,
                              "candles": candles(tf, days, config)})
@@ -433,7 +418,7 @@ def api_candles(tf: str = "M5", days: int = 2, config: str | None = None,
 
 
 @app.get("/api/quote")
-def api_quote(config: str | None = None, _: str = Depends(auth)):
+def api_quote(config: str | None = None):
     try:
         key = f"quote_fast:{config or 'default'}"
         return JSONResponse(_cached(key, 2, lambda: {
@@ -443,7 +428,7 @@ def api_quote(config: str | None = None, _: str = Depends(auth)):
 
 
 @app.post("/api/stop")
-def toggle_stop(_: str = Depends(auth)):
+def toggle_stop():
     if STOP.exists():
         STOP.unlink()
         return {"stop": False}
@@ -452,7 +437,7 @@ def toggle_stop(_: str = Depends(auth)):
 
 
 @app.post("/api/alerts/ack")
-def ack_alerts(_: str = Depends(auth)):
+def ack_alerts():
     """Отметить текущий набор алертов прочитанным (общий для всех браузеров)."""
     wd = json.loads(HEALTH.read_text(encoding="utf-8")) if HEALTH.exists() else None
     digest = alerts_digest(wd)

@@ -23,6 +23,28 @@ case "${1:-help}" in
   favicon)
     "$PY" scripts/41_favicon.py
     ;;
+  dash)
+    port="${2:-8809}"
+    # гасим прежние экземпляры панели: старый процесс держит старый код → 404 на новых API
+    for pid in $(pgrep -f -- "-m uvicorn web.app:app" || true); do
+      case "$(readlink "/proc/$pid/exe" 2>/dev/null)" in
+        *python*) kill "$pid" 2>/dev/null || true ;;
+      esac
+    done
+    sleep 1
+    setsid nohup "$PY" -m uvicorn web.app:app \
+      --host 127.0.0.1 --port "$port" > results/web-local.log 2>&1 &
+    sleep 3
+    code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 \
+      -X POST "http://127.0.0.1:$port/api/alerts/ack" || true)
+    echo "dash :$port — ack $code (200 = код свежий, 404 = старый процесс), лог results/web-local.log"
+    ;;
+  author-fit)
+    "$PY" scripts/44_author_fit.py
+    ;;
+  author-oos)
+    "$PY" scripts/45_author_oos.py
+    ;;
   *)
     cat <<'EOF'
 usage: ./run.sh <команда>
@@ -38,6 +60,9 @@ usage: ./run.sh <команда>
   sweep    полная сетка параметров Простушки
   all      прогоны Простушки на Si + Универсалки
   favicon  перегенерировать иконку веб-панели
+  dash     перезапустить локальную веб-панель (по умолчанию :8809)
+  author-fit  подбор правил автора по истории счёта-последователя
+  author-oos  те же правила на 2022–2025 (вне окна подгонки)
 EOF
     ;;
 esac
