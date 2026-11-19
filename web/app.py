@@ -16,6 +16,7 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
 
@@ -40,6 +41,7 @@ from algo.configs import BY_ID, CONFIGS  # noqa: E402
 
 app = FastAPI(title="Algo dashboard")
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
+app.mount("/static", StaticFiles(directory=str(Path(__file__).resolve().parent / "static")), name="static")
 security = HTTPBasic(auto_error=False)
 
 _cache: dict[str, tuple[float, object]] = {}

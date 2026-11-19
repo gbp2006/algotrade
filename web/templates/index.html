@@ -41,12 +41,18 @@
   .power.on{background:#12301f;border-color:#2f6b47;color:var(--green)}
   .main{flex:1;padding:22px 26px 40px;min-width:0}
   .hero{position:relative;border-radius:var(--radius);overflow:hidden;padding:26px 28px;
-        min-height:230px;display:flex;flex-direction:column;justify-content:flex-end;
-        background:radial-gradient(120% 140% at 85% 10%,#2a3a7a 0%,#141a2e 45%,#0f131e 100%)}
-  .hero:after{content:"";position:absolute;inset:0;pointer-events:none;
-     background:linear-gradient(90deg,rgba(10,12,17,.92) 0%,rgba(10,12,17,.55) 45%,rgba(10,12,17,0) 75%)}
-  .hero>*{position:relative;z-index:1}
-  .hero h1{margin:0;font-size:38px;line-height:1.02;letter-spacing:-.02em;text-transform:uppercase;
+        min-height:310px;display:flex;flex-direction:column;justify-content:flex-end;
+        background:#0b0d13;border:1px solid #2a1b22}
+  .hero:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;
+     background:linear-gradient(90deg,rgba(8,9,13,.98) 0%,rgba(8,9,13,.92) 30%,rgba(8,9,13,.62) 52%,
+                rgba(8,9,13,.12) 72%,rgba(8,9,13,0) 100%),
+                linear-gradient(0deg,rgba(8,9,13,.96) 0%,rgba(8,9,13,.30) 32%,rgba(8,9,13,0) 55%),
+                radial-gradient(60% 120% at 92% 45%,rgba(160,20,40,.22) 0%,rgba(160,20,40,0) 70%)}
+  .hero-img{position:absolute;right:0;top:0;height:100%;width:auto;z-index:0;
+            -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 26%);
+            mask-image:linear-gradient(90deg,transparent 0%,#000 26%)}
+  .hero>*:not(.hero-img){position:relative;z-index:2}
+  .hero h1{margin:0;font-size:38px;text-shadow:0 2px 18px rgba(0,0,0,.55);line-height:1.02;letter-spacing:-.02em;text-transform:uppercase;
            max-width:560px;font-weight:800}
   .hero p{margin:10px 0 0;color:#a9b2c8;max-width:460px;font-size:13px}
   .switcher{display:inline-flex;background:#0e121b;border:1px solid #26304a;border-radius:999px;
@@ -140,6 +146,7 @@
 
   <main class="main">
     <section class="hero">
+      <img class="hero-img" src="/static/img/hero.jpg" alt="">
       <div class="hero-tools">
         <div class="tool" id="t-broker" title="Брокер и счёт">🔑</div>
         <div class="tool" id="t-params" title="Параметры конфигурации">⚙︎</div>
