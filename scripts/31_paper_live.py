@@ -1,13 +1,15 @@
-"""Бумажная торговля на живых котировках Финама (денег не касается).
+"""Бумажная торговля по всем конфигурациям на живых котировках Финама.
 
-Сигнал — Простушка: MA-40 по M5, решение на баре 13:50.
-Исполнение — виртуальное по bid/ask из Финама, журнал results/paper.csv.
+Две фазы, каждая со своим запуском:
+  10:25 — закрытие позиций конфигураций с утренним выходом (u-morning);
+  13:55 — решения по всем конфигурациям.
+
+Журнал: results/paper.csv, строка на (дата, конфигурация). Деньги не тратятся.
 """
 
 from __future__ import annotations
 
 import csv
-import os
 import sys
 import time
 from datetime import datetime, timedelta, timezone
@@ -22,96 +24,55 @@ except Exception:
     pass
 
 from algo.broker.finam import FinamBroker  # noqa: E402
+from algo.configs import CONFIGS  # noqa: E402
+from algo.live import decision, morning_exit_price  # noqa: E402
 
 PAPER = Path(__file__).resolve().parent.parent / "results" / "paper.csv"
-FIELDS = ["date", "time", "strategy", "price", "signal", "target", "action",
-          "position_after", "note"]
+FIELDS = ["date", "time", "config", "strategy", "price", "signal", "target",
+          "action", "position_after", "note"]
 SYMBOL = "CNYRUBF@RTSX"
-MA = 40
-ENTRY_MIN = 13 * 60 + 50
 MSK = timezone(timedelta(hours=3))
+ENTRY_MIN = 13 * 60 + 50
+MORNING_MIN = 10 * 60 + 20
 
 
 def now_msk() -> datetime:
     return datetime.now(MSK)
 
 
-def last_position() -> int:
+def ensure_schema() -> None:
+    """Если журнал старого формата (без колонки config) — отложить его."""
     if not PAPER.exists():
-        return 0
+        return
     with PAPER.open(encoding="utf-8") as f:
-        rows = list(csv.DictReader(f))
-    return int(rows[-1]["position_after"]) if rows else 0
+        header = f.readline().strip()
+    if "config" not in header:
+        legacy = PAPER.with_name("paper-legacy.csv")
+        PAPER.rename(legacy)
+        print(f"старый журнал отложен в {legacy.name}")
 
 
-def already_recorded(day: str) -> bool:
-    """Идемпотентность: одна запись на день для этой стратегии."""
+def read_rows() -> list[dict]:
     if not PAPER.exists():
-        return False
+        return []
     with PAPER.open(encoding="utf-8") as f:
-        rows = list(csv.DictReader(f))
-    return any(r["date"] == day and r["strategy"] == "prostushka-live" for r in rows)
+        return list(csv.DictReader(f))
 
 
-def main() -> int:
-    b = FinamBroker()
-    now = now_msk()
-    if now.weekday() >= 5:
-        print(f"{now:%Y-%m-%d}: выходной, решений нет")
-        return 0
-    if now.hour * 60 + now.minute < ENTRY_MIN:
-        print(f"{now:%H:%M}: решение будет в 13:50, сейчас не торгуем")
-        return 0
+def position_of(rows: list[dict], config_id: str) -> int:
+    pos = 0
+    for r in rows:
+        if r["config"] == config_id:
+            pos = int(r["position_after"])
+    return pos
 
-    today = now.date()
-    m5 = None
-    decisions = None
-    # бар 13:50 закрывается в 13:55; ждём его появления до 6 минут
-    for attempt in range(7):
-        start = (now - timedelta(days=5)).strftime("%Y-%m-%dT00:00:00Z")
-        end = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        m5 = b.bars(SYMBOL, "TIME_FRAME_M5", start, end)
-        if len(m5) < MA + 2:
-            print(f"мало данных: {len(m5)} баров")
-            return 2
-        day_bars = m5[m5.index.date == today]
-        decisions = day_bars[day_bars.index.hour * 60 + day_bars.index.minute >= ENTRY_MIN]
-        if not decisions.empty:
-            break
-        if attempt == 6:
-            print(f"{today}: бар решения так и не закрылся")
-            return 0
-        time.sleep(45)
-    decision_ts = decisions.index[0]
-    idx = list(m5.index).index(decision_ts)
-    ma = m5["close"].iloc[idx - MA + 1: idx + 1].mean()
-    close = float(m5.loc[decision_ts, "close"])
-    signal = 1 if close > ma else (-1 if close < ma else 0)
-    if signal == -1 and now.weekday() == 4:
-        signal = 0
-    target = signal
 
-    day = str(today)
-    if already_recorded(day):
-        print(f"{day}: уже записано, пропускаю")
-        return 0
+def recorded(rows: list[dict], day: str, config_id: str, action: str) -> bool:
+    return any(r["date"] == day and r["config"] == config_id and r["action"] == action
+               for r in rows)
 
-    q = b.quote(SYMBOL)
-    fill = q.ask if target > 0 else (q.bid if target < 0 else q.last)
-    prev = last_position()
-    action = "держать" if target == prev else {1: "купить", -1: "продать", 0: "закрыть"}[target]
 
-    row = {
-        "date": day,
-        "time": decision_ts.strftime("%H:%M"),
-        "strategy": "prostushka-live",
-        "price": f"{fill:.3f}",
-        "signal": signal,
-        "target": target,
-        "action": action,
-        "position_after": target,
-        "note": f"MA {ma:.4f}, close {close:.3f}, спред {q.ask - q.bid:.3f}",
-    }
+def append(row: dict) -> None:
     PAPER.parent.mkdir(parents=True, exist_ok=True)
     new = not PAPER.exists()
     with PAPER.open("a", newline="", encoding="utf-8") as f:
@@ -120,8 +81,88 @@ def main() -> int:
             w.writeheader()
         w.writerow(row)
 
-    print(f"{day} {row['time']}: MA {ma:.4f}, close {close:.3f} → сигнал {signal:+d}, "
-          f"было {prev:+d}, {action}, стало {target:+d}, цена {fill:.3f}")
+
+def main() -> int:
+    ensure_schema()
+    b = FinamBroker()
+    now = now_msk()
+    day = now.date()
+
+    if now.weekday() >= 5:
+        print(f"{day}: выходной, решений нет")
+        return 0
+
+    phase = "morning" if now.hour * 60 + now.minute < 12 * 60 else "decision"
+
+    start = (now - timedelta(days=10)).strftime("%Y-%m-%dT00:00:00Z")
+    m5 = None
+    for attempt in range(7):
+        end = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        m5 = b.bars(SYMBOL, "TIME_FRAME_M5", start, end)
+        if not m5.empty:
+            break
+        time.sleep(30)
+    if m5 is None or m5.empty:
+        print("нет данных от брокера")
+        return 2
+
+    rows = read_rows()
+    quote = b.quote(SYMBOL)
+
+    if phase == "morning":
+        price = morning_exit_price(m5, day)
+        if price is None:
+            print(f"{day}: бара 10:20 ещё нет")
+            return 0
+        closed = 0
+        for cfg in CONFIGS:
+            if cfg.params.get("hold") != "morning":
+                continue
+            pos = position_of(rows, cfg.id)
+            if pos == 0 or recorded(rows, str(day), cfg.id, "закрыть"):
+                continue
+            append({"date": str(day), "time": "10:20", "config": cfg.id,
+                    "strategy": cfg.strategy, "price": f"{price:.3f}", "signal": 0,
+                    "target": 0, "action": "закрыть", "position_after": 0,
+                    "note": "утренний выход 10:20"})
+            closed += 1
+        print(f"{day}: утренний выход, закрыто позиций {closed}")
+        return 0
+
+    # фаза решений
+    if now.hour * 60 + now.minute < ENTRY_MIN:
+        print(f"{now:%H:%M}: решения будут с 13:50")
+        return 0
+
+    written = 0
+    for cfg in CONFIGS:
+        if cfg.params.get("hold") == "morning":
+            continue  # у него своя фаза выхода
+        dec = None
+        for attempt in range(4):
+            dec = decision(cfg, m5, day)
+            if dec is not None:
+                break
+            time.sleep(30)
+        if dec is None:
+            print(f"{cfg.id}: решения ещё нет")
+            continue
+        if recorded(rows, str(day), cfg.id, "решение"):
+            continue
+
+        pos = position_of(rows, cfg.id)
+        action = "держать" if dec.target == pos else {
+            1: "купить", -1: "продать", 0: "закрыть"}[dec.target]
+        fill = dec.price
+        append({"date": str(day), "time": dec.ts.strftime("%H:%M"), "config": cfg.id,
+                "strategy": cfg.strategy, "price": f"{fill:.3f}", "signal": dec.target,
+                "target": dec.target, "action": "решение",
+                "position_after": dec.target,
+                "note": f"{dec.detail}; {action}"})
+        written += 1
+        print(f"{cfg.id:9} {dec.ts:%H:%M} {dec.detail} -> {dec.target:+d} ({action})")
+
+    print(f"{day}: записано конфигураций {written}, спред {(quote.ask - quote.bid) * 1000:.0f} тиков")
     return 0
 
 

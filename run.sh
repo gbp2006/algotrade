@@ -14,6 +14,7 @@ case "${1:-help}" in
   paper)  "$PY" scripts/21_mvp_paper.py ;;
   broker) "$PY" scripts/30_broker_check.py ;;
   paper-live) "$PY" scripts/31_paper_live.py ;;
+  report) "$PY" scripts/32_paper_report.py ;;
   sweep)  "$PY" scripts/15_sweep_full.py ;;
   all)
     "$PY" scripts/09_si_check.py
@@ -29,7 +30,8 @@ usage: ./run.sh <команда>
   signal   сигнал Простушки на сегодня
   paper    записать сигнал в бумажный журнал (по архиву)
   broker   проверка доступа к Финаму
-  paper-live  бумажная торговля по живым котировкам
+  paper-live  бумажная торговля по живым котировкам (6 конфигураций)
+  report   отчёт: факт против бэктеста
   sweep    полная сетка параметров Простушки
   all      прогоны Простушки на Si + Универсалки
 EOF

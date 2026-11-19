@@ -1,0 +1,44 @@
+"""Реестр конфигураций для бумажной торговли.
+
+Правило: конфигурации фиксируются ДО начала теста и не меняются, иначе сравнение
+превращается в подгонку. Менять — только создав новый id.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+
+@dataclass(frozen=True)
+class Config:
+    id: str
+    strategy: str          # "prostushka" | "universal"
+    params: dict = field(default_factory=dict)
+    comment: str = ""
+
+
+CONFIGS: list[Config] = [
+    Config("p-base", "prostushka",
+           dict(ma_window=200, entry="13:50", filter_bars=3, short_friday=False),
+           "как в ТЗ: MA40 M5, 13:50, фильтр 15 мин"),
+    Config("p-fast", "prostushka",
+           dict(ma_window=250, entry="13:40", filter_bars=6, short_friday=True),
+           "лучшая по сетке: MA50, 13:40, фильтр 30 мин, шорт в пятницу разрешён"),
+    Config("p-h1", "prostushka",
+           dict(ma_window=400, entry="13:50", filter_bars=1, short_friday=True, timeframe=60),
+           "решение по H1, окно 400 мин"),
+    Config("u-base", "universal",
+           dict(ref="10:05", entry="13:30", long_off=0.004, short_off=0.002,
+                hold="daily", short_friday=False),
+           "как в ТЗ: пороги 0.4/0.2%, суточное удержание"),
+    Config("u-wide", "universal",
+           dict(ref="10:05", entry="13:30", long_off=0.001, short_off=0.001,
+                hold="daily", short_friday=False),
+           "широкие входы: пороги 0.1/0.1%"),
+    Config("u-morning", "universal",
+           dict(ref="10:05", entry="13:30", long_off=0.004, short_off=0.002,
+                hold="morning", exit="10:20", short_friday=False),
+           "выход в 10:20 следующего дня"),
+]
+
+BY_ID = {c.id: c for c in CONFIGS}
