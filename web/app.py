@@ -94,6 +94,27 @@ def price_series() -> list[list]:
     return _cached("price", 30, fetch)
 
 
+TF_MAP = {
+    "M1": "TIME_FRAME_M1", "M5": "TIME_FRAME_M5", "M15": "TIME_FRAME_M15",
+    "M30": "TIME_FRAME_M30", "H1": "TIME_FRAME_H1", "D": "TIME_FRAME_D",
+}
+
+
+def candles(tf: str = "M5", days: int = 2) -> list[list]:
+    """Свечи [метка, open, high, low, close] по таймфрейму."""
+    def fetch():
+        b = FinamBroker()
+        now = datetime.now(timezone.utc)
+        start = (now - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        end = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+        df = b.bars("CNYRUBF@RTSX", TF_MAP.get(tf, "TIME_FRAME_M5"), start, end)
+        fmt = "%d.%m %H:%M" if tf != "D" else "%d.%m"
+        return [[d.strftime(fmt), float(o), float(h), float(l), float(c)]
+                for d, o, h, l, c in zip(df.index, df["open"], df["high"],
+                                         df["low"], df["close"])]
+    return _cached(f"candles:{tf}:{days}", 20, fetch)
+
+
 def timer_state(name: str) -> str:
     try:
         r = subprocess.run(["systemctl", "is-active", name], capture_output=True, text=True, timeout=3)
@@ -180,6 +201,23 @@ def state(_: str = Depends(auth)):
             "log": log,
         },
     })
+
+
+@app.get("/api/candles")
+def api_candles(tf: str = "M5", days: int = 2, _: str = Depends(auth)):
+    try:
+        return JSONResponse({"tf": tf, "candles": candles(tf, days)})
+    except Exception as e:  # noqa: BLE001
+        return JSONResponse({"tf": tf, "candles": [], "error": str(e)[:160]})
+
+
+@app.get("/api/quote")
+def api_quote(_: str = Depends(auth)):
+    try:
+        return JSONResponse(_cached("quote_fast", 2, lambda: {
+            **quote(), "ts_now": datetime.now(MSK).strftime("%H:%M:%S")}))
+    except Exception as e:  # noqa: BLE001
+        return JSONResponse({"error": str(e)[:160]})
 
 
 @app.post("/api/stop")

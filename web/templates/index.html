@@ -6,9 +6,8 @@
 <title>Autopilot — алго-песочница</title>
 <style>
   :root{
-    --bg:#0a0c11; --card:#13161e; --card2:#181c26; --line:#222836;
-    --text:#e8eaf0; --muted:#8b90a0; --accent:#4f7cff;
-    --green:#2fd07b; --red:#ff4d5e; --yellow:#f5b83d; --radius:18px;
+    --bg:#0a0c11; --card:#13161e; --line:#222836; --text:#e8eaf0; --muted:#8b90a0;
+    --accent:#4f7cff; --green:#2fd07b; --red:#ff4d5e; --yellow:#f5b83d; --radius:18px;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--text);
@@ -20,7 +19,7 @@
   .logo .dot{width:26px;height:26px;border-radius:9px;
              background:linear-gradient(135deg,#4f7cff,#8a5cff);display:grid;place-items:center;
              font-weight:700;font-size:13px}
-  .logo b{font-size:15px;letter-spacing:.2px}
+  .logo b{font-size:15px}
   .side h4{margin:6px 8px 10px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
   .item{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;cursor:pointer;
         color:#c8ccd8;border:1px solid transparent}
@@ -42,37 +41,39 @@
   .power.on{background:#12301f;border-color:#2f6b47;color:var(--green)}
   .main{flex:1;padding:22px 26px 40px;min-width:0}
   .hero{position:relative;border-radius:var(--radius);overflow:hidden;padding:26px 28px;
-        min-height:250px;display:flex;flex-direction:column;justify-content:flex-end;
+        min-height:230px;display:flex;flex-direction:column;justify-content:flex-end;
         background:radial-gradient(120% 140% at 85% 10%,#2a3a7a 0%,#141a2e 45%,#0f131e 100%)}
-  .hero:after{content:"";position:absolute;inset:0;
-     background:linear-gradient(90deg,rgba(10,12,17,.92) 0%,rgba(10,12,17,.55) 45%,rgba(10,12,17,0) 75%);
-     pointer-events:none}
+  .hero:after{content:"";position:absolute;inset:0;pointer-events:none;
+     background:linear-gradient(90deg,rgba(10,12,17,.92) 0%,rgba(10,12,17,.55) 45%,rgba(10,12,17,0) 75%)}
   .hero>*{position:relative;z-index:1}
-  .hero h1{margin:0;font-size:40px;line-height:1.02;letter-spacing:-.02em;text-transform:uppercase;
+  .hero h1{margin:0;font-size:38px;line-height:1.02;letter-spacing:-.02em;text-transform:uppercase;
            max-width:560px;font-weight:800}
   .hero p{margin:10px 0 0;color:#a9b2c8;max-width:460px;font-size:13px}
   .switcher{display:inline-flex;background:#0e121b;border:1px solid #26304a;border-radius:999px;
             padding:3px;margin-top:16px;width:max-content}
   .switcher button{border:0;background:transparent;color:#9aa3b8;padding:7px 16px;border-radius:999px;
-            font-size:12px;cursor:pointer;transition:.15s}
-  .switcher button:hover{color:#cfd6e6}
+            font-size:12px;cursor:pointer}
   .switcher button.on{background:#20304f;color:#dbe6ff}
   .switcher button.on.live{background:#123a2a;color:#7ff0b5}
   .hero-tools{position:absolute;top:18px;left:22px;display:flex;gap:8px;z-index:2}
   .tool{width:34px;height:34px;border-radius:50%;background:#151a26;border:1px solid #29303f;
-        display:grid;place-items:center;font-size:14px;color:#aeb6c8;cursor:pointer;transition:.15s}
+        display:grid;place-items:center;font-size:14px;color:#aeb6c8;cursor:pointer}
   .tool:hover{background:#1d2433;color:#fff}
   .row{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;margin-top:18px}
   @media(max-width:1100px){.row{grid-template-columns:1fr}}
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
-  .card h3{margin:0 0 14px;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
-           display:flex;justify-content:space-between;align-items:center}
-  .nums{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
-  .big{font-size:32px;font-weight:650;letter-spacing:-.02em}
+  .card h3{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
+           display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .nums{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .big{font-size:30px;font-weight:650;letter-spacing:-.02em}
   .chip{font-size:12px;padding:3px 8px;border-radius:8px;background:#1b2130;color:#b8c0d4}
   .chip.up{background:#12301f;color:#63e39b}
   .chip.down{background:#33161c;color:#ff8792}
-  .chart{width:100%;height:220px;margin-top:6px;cursor:crosshair}
+  .ctrls{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .seg{display:inline-flex;background:#0f1320;border:1px solid #232b3c;border-radius:9px;overflow:hidden}
+  .seg button{border:0;background:transparent;color:#8d95a8;padding:5px 10px;font-size:11px;cursor:pointer}
+  .seg button.on{background:#1d2740;color:#dbe6ff}
+  .chart{width:100%;height:250px;margin-top:6px;cursor:crosshair;display:block}
   .trade .dir{display:inline-block;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;
         letter-spacing:.08em;text-transform:uppercase}
   .dir.long{background:#12301f;color:#63e39b}
@@ -90,14 +91,13 @@
   tbody tr:hover{background:#161b25}
   tr:last-child td{border:0}
   .pos{color:var(--green)} .neg{color:var(--red)}
-  pre{max-height:240px;overflow:auto;margin:0;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
+  pre{max-height:220px;overflow:auto;margin:0;font:12px/1.5 ui-monospace,Menlo,monospace;
       color:#9aa4b8;white-space:pre-wrap}
   .health{display:flex;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:12px}
   .health b{color:var(--text);font-weight:600}
-  .dot-live{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:var(--green);
-            animation:pulse 2s infinite}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-  /* modal */
+  .dot-live{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;
+            background:var(--green);animation:pulse 1.6s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
   .overlay{position:fixed;inset:0;background:rgba(6,8,12,.72);display:none;place-items:center;z-index:50;
            backdrop-filter:blur(4px)}
   .overlay.show{display:grid}
@@ -108,8 +108,6 @@
   .btn{border:1px solid #2b3448;background:#1a2130;color:#cfd6e6;padding:9px 16px;border-radius:10px;
        cursor:pointer;font-size:13px}
   .btn:hover{background:#212a3c}
-  .btn.danger{background:#2a141a;border-color:#4a2029;color:#ff8792}
-  .btn.primary{background:#1b2f57;border-color:#2c4a86;color:#dbe6ff}
   .tip{position:absolute;background:#0d1119;border:1px solid #2a3244;border-radius:8px;padding:6px 9px;
        font-size:11px;color:#c9d1e2;pointer-events:none;white-space:nowrap;display:none;z-index:5}
 </style>
@@ -124,7 +122,7 @@
     <div class="user">
       <div class="av"></div>
       <div><div style="font-size:13px">Юань · песочница</div><small id="upd">—</small></div>
-      <button class="power" id="power" title="Стоп-флаг: остановить/разрешить торговлю">⏻</button>
+      <button class="power" id="power" title="Стоп-флаг">⏻</button>
     </div>
   </aside>
 
@@ -138,21 +136,40 @@
       <h1 id="h-title">—</h1>
       <p id="h-desc"></p>
       <div class="switcher">
-        <button id="sw-off" title="Остановить торговлю (стоп-флаг)">○ Offline</button>
+        <button id="sw-off" title="Остановить торговлю">○ Offline</button>
         <button id="sw-on" title="Разрешить торговлю">● Live</button>
       </div>
     </section>
 
     <div class="row">
       <section class="card">
-        <h3><span>Текущая позиция</span><span id="chart-src" class="chip">цена</span></h3>
+        <h3>
+          <span>Рынок и позиция</span>
+          <span class="ctrls">
+            <span class="seg" id="seg-src">
+              <button data-src="price" class="on">Цена</button>
+              <button data-src="pnl">P&amp;L</button>
+            </span>
+            <span class="seg" id="seg-view">
+              <button data-view="candles" class="on">Свечи</button>
+              <button data-view="line">Линия</button>
+            </span>
+            <span class="seg" id="seg-tf">
+              <button data-tf="M5" class="on">M5</button>
+              <button data-tf="M15">M15</button>
+              <button data-tf="M30">M30</button>
+              <button data-tf="H1">H1</button>
+              <button data-tf="D">D</button>
+            </span>
+          </span>
+        </h3>
         <div class="nums">
           <div class="big" id="pnl">0 ₽</div>
           <div class="chip" id="pnl-unreal">0 ₽</div>
           <div class="chip" id="pnl-pct">0%</div>
-          <div style="margin-left:auto;color:var(--muted);font-size:12px" id="date"></div>
+          <div style="margin-left:auto;color:var(--muted);font-size:12px" id="live-line">—</div>
         </div>
-        <svg class="chart" id="chart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
+        <svg class="chart" id="chart" viewBox="0 0 800 250" preserveAspectRatio="none"></svg>
         <div class="tip" id="tip"></div>
       </section>
 
@@ -164,6 +181,7 @@
         <div class="kv"><span>Цена входа</span><b id="t-entry">—</b></div>
         <div class="kv"><span>Время входа</span><b id="t-time">—</b></div>
         <div class="kv"><span>Последняя сделка</span><b id="t-last">—</b></div>
+        <div class="kv"><span>Котировка</span><b id="t-quote">—</b></div>
       </section>
     </div>
 
@@ -192,91 +210,155 @@
     <div id="m-body"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px">
       <button class="btn" id="m-cancel">Закрыть</button>
-      <button class="btn primary" id="m-ok" style="display:none">Понятно</button>
     </div>
   </div>
 </div>
 
 <script>
-let DATA = null, CUR = null, POINTS = null, TICK = 0, INTERVAL = 10;
+let DATA = null, CUR = null, CANDLES = [], PTS = null;
+let SRC = "price", VIEW = "candles", TF = "M5";
+let QUOTE = null;
 
 const fmt = n => (n >= 0 ? "+" : "") + Math.round(n).toLocaleString("ru-RU") + " ₽";
-const dirText = p => p > 0 ? "LONG" : p < 0 ? "SHORT" : "ВНЕ РЫНКА";
+const px = v => Number(v).toFixed(3);
 
-function openModal(title, html, ok){
+function openModal(title, html){
   document.getElementById("m-title").textContent = title;
   document.getElementById("m-body").innerHTML = html;
-  document.getElementById("m-ok").style.display = ok ? "inline-block" : "none";
   document.getElementById("overlay").classList.add("show");
 }
-function closeModal(){ document.getElementById("overlay").classList.remove("show"); }
+const closeModal = () => document.getElementById("overlay").classList.remove("show");
 document.getElementById("m-close").onclick = closeModal;
 document.getElementById("m-cancel").onclick = closeModal;
-document.getElementById("m-ok").onclick = closeModal;
-document.getElementById("overlay").onclick = e => { if (e.target.id === "overlay") closeModal(); };
+document.getElementById("overlay").onclick = e => { if(e.target.id === "overlay") closeModal(); };
 
-async function load(force){
-  const r = await fetch("/api/state" + (force ? "?t=" + Date.now() : ""), {cache:"no-store"});
+async function loadState(){
+  const r = await fetch("/api/state", {cache:"no-store"});
   if(!r.ok){ document.getElementById("upd").textContent = "нет доступа к API"; return; }
   DATA = await r.json();
   if(!CUR) CUR = DATA.strategies[0]?.id;
+  QUOTE = DATA.quote;
   render();
-  TICK = INTERVAL;
 }
 
+async function loadCandles(){
+  try{
+    const r = await fetch(`/api/candles?tf=${TF}&days=${TF === "D" ? 90 : (TF === "H1" ? 10 : 3)}`, {cache:"no-store"});
+    const j = await r.json();
+    CANDLES = (j.candles || []).slice(-170);
+    draw();
+  }catch(e){}
+}
+
+async function tickQuote(){
+  try{
+    const j = await (await fetch("/api/quote", {cache:"no-store"})).json();
+    if(j.error) return;
+    QUOTE = j;
+    document.getElementById("live-line").innerHTML =
+      `<span class="dot-live"></span>${j.bid} / ${j.ask} · ${j.ts_now}`;
+    document.getElementById("q-line").textContent = `${j.bid} / ${j.ask}`;
+    document.getElementById("t-quote").textContent = `${j.bid} / ${j.ask}`;
+    // подтягиваем последнюю свечу к живой цене
+    if(CANDLES.length){
+      const c = CANDLES[CANDLES.length-1];
+      c[2] = Math.max(c[2], j.last); c[3] = Math.min(c[3], j.last); c[4] = j.last;
+      if(SRC === "price") draw();
+    }
+  }catch(e){}
+}
+
+function select(id){ CUR = id; render(); }
+
 function renderSidebar(){
-  const el = document.getElementById("list");
-  el.innerHTML = DATA.strategies.map(s => `
+  document.getElementById("list").innerHTML = DATA.strategies.map(s => `
     <div class="item ${s.id===CUR?"active":""}" data-id="${s.id}" onclick="select('${s.id}')">
       <div class="ico">${s.strategy === "prostushka" ? "П" : "У"}</div>
       <div class="nm">${s.title}</div>
-      <div class="st ${s.status}" title="${s.status}"></div>
+      <div class="st ${s.status}"></div>
     </div>`).join("");
 }
-function select(id){ CUR = id; render(); }
 
-function chart(series, isPrice){
+function draw(){
   const svg = document.getElementById("chart");
-  const W = 800, H = 220, P = 12;
-  if(!series || series.length < 2){
-    POINTS = null;
-    svg.innerHTML = `<text x="400" y="110" fill="#4a5163" font-size="13" text-anchor="middle">данных пока нет</text>`;
+  const W = 800, H = 250, P = 14;
+  const s = DATA ? (DATA.strategies.find(x => x.id === CUR) || DATA.strategies[0]) : null;
+
+  if(SRC === "pnl"){
+    const eq = s && s.equity ? s.equity : [];
+    if(eq.length < 2){
+      PTS = null;
+      svg.innerHTML = `<text x="${W/2}" y="${H/2}" fill="#4a5163" font-size="13" text-anchor="middle">сделок пока нет</text>`;
+      return;
+    }
+    const ys = eq.map(p => p[1]), min = Math.min(...ys), max = Math.max(...ys), span = (max-min)||1;
+    const pts = eq.map((p,i) => [P + i*(W-2*P)/(eq.length-1), H-P-(p[1]-min)*(H-2*P)/span]);
+    PTS = pts.map((p,i) => ({x:p[0], y:p[1], label:eq[i][0], v:fmt(eq[i][1])}));
+    const d = pts.map((p,i)=> (i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");
+    const up = ys[ys.length-1] >= ys[0], col = up ? "#2fd07b" : "#ff4d5e";
+    const last = pts[pts.length-1];
+    svg.innerHTML = `<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${col}" stop-opacity=".32"/>
+        <stop offset="100%" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+      <path d="${d} L ${W-P} ${H-P} L ${P} ${H-P} Z" fill="url(#g)"/>
+      <path d="${d}" fill="none" stroke="${col}" stroke-width="2"/>
+      <circle cx="${last[0]}" cy="${last[1]}" r="4" fill="${col}"/>
+      <line id="cursor" x1="0" y1="0" x2="0" y2="${H-P}" stroke="#4a5163" stroke-dasharray="3 3" opacity="0"/>`;
     return;
   }
-  const ys = series.map(p => p[1]);
-  const min = Math.min(...ys), max = Math.max(...ys), span = (max-min)||1;
-  const pts = series.map((p,i) => [P + i*(W-2*P)/(series.length-1), H-P - (p[1]-min)*(H-2*P)/span]);
-  POINTS = pts.map((p,i) => ({x:p[0], y:p[1], label:series[i][0], v:series[i][1]}));
-  const d = pts.map((p,i)=> (i?"L":"M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
-  const last = pts[pts.length-1];
-  const up = ys[ys.length-1] >= ys[0];
-  const color = up ? "#2fd07b" : "#ff4d5e";
-  svg.innerHTML = `
-    <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="${color}" stop-opacity=".32"/>
-      <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
-    </linearGradient></defs>
-    <path d="${d} L ${W-P} ${H-P} L ${P} ${H-P} Z" fill="url(#g)"/>
-    <path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>
-    <circle cx="${last[0]}" cy="${last[1]}" r="4" fill="${color}"/>
-    <line id="cursor" x1="0" y1="0" x2="0" y2="${H-P}" stroke="#4a5163" stroke-dasharray="3 3" opacity="0"/>
-    <text x="${W-P}" y="16" fill="#8b90a0" font-size="11" text-anchor="end">${isPrice ? "цена, M5" : "P&L, ₽"}</text>`;
+
+  if(!CANDLES.length){
+    PTS = null;
+    svg.innerHTML = `<text x="${W/2}" y="${H/2}" fill="#4a5163" font-size="13" text-anchor="middle">загружаю свечи…</text>`;
+    return;
+  }
+
+  const hi = Math.max(...CANDLES.map(c => c[2])), lo = Math.min(...CANDLES.map(c => c[3]));
+  const span = (hi - lo) || 1;
+  const y = v => H - P - (v - lo) * (H - 2*P) / span;
+  const n = CANDLES.length, step = (W - 2*P) / n, bw = Math.max(1.5, step*0.66);
+
+  let out = "";
+  PTS = [];
+  CANDLES.forEach((c, i) => {
+    const [lbl,o,h,l,cl] = c;
+    const x = P + step*i + step/2;
+    PTS.push({x, y:y(cl), label:`${lbl} O${px(o)} H${px(h)} L${px(l)} C${px(cl)}`, v:px(cl)});
+    if(VIEW === "line"){
+      return;
+    }
+    const up = cl >= o, col = up ? "#2fd07b" : "#ff4d5e";
+    out += `<line x1="${x.toFixed(1)}" y1="${y(h).toFixed(1)}" x2="${x.toFixed(1)}" y2="${y(l).toFixed(1)}" stroke="${col}" stroke-width="1" opacity=".8"/>`;
+    const top = Math.min(y(o), y(cl)), bh = Math.max(1, Math.abs(y(o)-y(cl)));
+    out += `<rect x="${(x-bw/2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" fill="${col}"/>`;
+  });
+
+  if(VIEW === "line"){
+    const d = PTS.map((p,i)=> (i?"L":"M")+p.x.toFixed(1)+" "+p.y.toFixed(1)).join(" ");
+    const col = CANDLES[n-1][4] >= CANDLES[0][4] ? "#2fd07b" : "#ff4d5e";
+    out = `<path d="${d}" fill="none" stroke="${col}" stroke-width="2"/>` + out;
+  }
+
+  out += `<text x="${P}" y="14" fill="#6f7789" font-size="10">${hi.toFixed(3)}</text>
+          <text x="${P}" y="${H-4}" fill="#6f7789" font-size="10">${lo.toFixed(3)}</text>
+          <line id="cursor" x1="0" y1="0" x2="0" y2="${H-P}" stroke="#4a5163" stroke-dasharray="3 3" opacity="0"/>`;
+  svg.innerHTML = out;
 }
 
 document.getElementById("chart").addEventListener("mousemove", ev => {
-  if(!POINTS) return;
+  if(!PTS || !PTS.length) return;
   const svg = document.getElementById("chart");
   const box = svg.getBoundingClientRect();
   const x = (ev.clientX - box.left) / box.width * 800;
-  let best = POINTS[0];
-  for(const p of POINTS) if(Math.abs(p.x - x) < Math.abs(best.x - x)) best = p;
+  let best = PTS[0];
+  for(const p of PTS) if(Math.abs(p.x - x) < Math.abs(best.x - x)) best = p;
   const cur = document.getElementById("cursor");
-  cur.setAttribute("x1", best.x); cur.setAttribute("x2", best.x);
-  cur.setAttribute("opacity", "1");
+  if(cur){ cur.setAttribute("x1", best.x); cur.setAttribute("x2", best.x);
+           cur.setAttribute("y1", 0); cur.setAttribute("y2", 236); cur.setAttribute("opacity","1"); }
   const tip = document.getElementById("tip");
   tip.style.display = "block";
   tip.style.left = (ev.clientX - box.left + 12) + "px";
-  tip.style.top = (ev.clientY - box.top - 28) + "px";
+  tip.style.top = (ev.clientY - box.top - 26) + "px";
   tip.textContent = best.label + " · " + best.v;
 });
 document.getElementById("chart").addEventListener("mouseleave", () => {
@@ -284,14 +366,29 @@ document.getElementById("chart").addEventListener("mouseleave", () => {
   const cur = document.getElementById("cursor"); if(cur) cur.setAttribute("opacity","0");
 });
 
+function seg(id, attr, val){
+  document.querySelectorAll(`#${id} button`).forEach(b => b.classList.toggle("on", b.dataset[attr] === val));
+}
+document.getElementById("seg-src").onclick = e => {
+  const b = e.target.closest("button"); if(!b) return;
+  SRC = b.dataset.src; seg("seg-src","src",SRC); draw();
+};
+document.getElementById("seg-view").onclick = e => {
+  const b = e.target.closest("button"); if(!b) return;
+  VIEW = b.dataset.view; seg("seg-view","view",VIEW); draw();
+};
+document.getElementById("seg-tf").onclick = e => {
+  const b = e.target.closest("button"); if(!b) return;
+  TF = b.dataset.tf; seg("seg-tf","tf",TF); loadCandles();
+};
+
 function render(){
   renderSidebar();
   const s = DATA.strategies.find(x => x.id === CUR) || DATA.strategies[0];
   document.getElementById("h-title").textContent = s.title.toUpperCase();
   document.getElementById("h-desc").textContent = s.desc;
 
-  const h = DATA.health;
-  const live = !h.stop;
+  const h = DATA.health, live = !h.stop;
   document.getElementById("sw-off").className = live ? "" : "on";
   document.getElementById("sw-on").className = live ? "on live" : "";
 
@@ -303,18 +400,13 @@ function render(){
   const pct = (s.entry_price && s.position) ? (s.unrealized/1000*100/(s.entry_price*Math.abs(s.position))) : 0;
   document.getElementById("pnl-pct").textContent = (pct>=0?"+":"") + pct.toFixed(2) + "%";
   document.getElementById("pnl-pct").className = "chip " + (pct >= 0 ? "up" : "down");
-  document.getElementById("date").textContent = DATA.generated;
-
-  const hasEquity = s.equity && s.equity.length > 1;
-  chart(hasEquity ? s.equity : (DATA.prices || []), !hasEquity);
-  document.getElementById("chart-src").textContent = hasEquity ? "P&L" : "цена";
 
   const d = document.getElementById("dir");
   d.className = "dir " + (s.position > 0 ? "long" : s.position < 0 ? "short" : "flat");
-  d.textContent = dirText(s.position);
+  d.textContent = s.position > 0 ? "LONG" : s.position < 0 ? "SHORT" : "ВНЕ РЫНКА";
   document.getElementById("trade-note").textContent = s.last ? (s.last.note || "") : "решений ещё не было";
   document.getElementById("t-qty").textContent = Math.abs(s.position) + " контракт" + (Math.abs(s.position)===1?"":"ов");
-  document.getElementById("t-entry").textContent = s.entry_price ? s.entry_price.toFixed(3) + " ₽" : "—";
+  document.getElementById("t-entry").textContent = s.entry_price ? px(s.entry_price) + " ₽" : "—";
   document.getElementById("t-time").textContent = s.entry_time || "—";
   document.getElementById("t-last").textContent = s.last ? `${s.last.date} ${s.last.action}` : "—";
 
@@ -327,30 +419,30 @@ function render(){
         <td><span class="chip">${x.last ? x.last.date + " " + x.last.time : "—"}</span></td></tr>`).join("");
 
   const q = DATA.quote || {};
-  document.getElementById("q-line").textContent = q.bid ? `${q.bid} / ${q.ask}` : "нет котировки";
+  document.getElementById("q-line").textContent = q.bid ? `${q.bid} / ${q.ask}` : "—";
+  document.getElementById("t-quote").textContent = q.bid ? `${q.bid} / ${q.ask}` : "—";
   document.getElementById("health").innerHTML = `
     <div><span class="dot-live"></span>таймеры: <b>${h.timers.morning}</b> / <b>${h.timers.daily}</b></div>
     <div>спред: <b>${q.spread_ticks ?? "—"}</b> тик.</div>
-    <div>стоп-флаг: <b class="${h.stop?"neg":"pos"}">${h.stop ? "ВКЛ" : "выкл"}</b></div>
-    <div>обновление через <b id="cnt">${TICK}</b> с</div>`;
+    <div>стоп-флаг: <b class="${h.stop?"neg":"pos"}">${h.stop ? "ВКЛ" : "выкл"}</b></div>`;
   document.getElementById("log").textContent = (h.log || []).join("\n") || "пусто";
   document.getElementById("power").classList.toggle("on", !h.stop);
   document.getElementById("upd").textContent = "обновлено " + DATA.generated.slice(11);
+
+  if(SRC === "pnl") draw();
 }
 
 document.getElementById("power").onclick = () => toggleStop();
 document.getElementById("sw-off").onclick = () => toggleStop(true);
 document.getElementById("sw-on").onclick = () => toggleStop(false);
-
 async function toggleStop(setStop){
   const isStop = DATA.health.stop;
   const target = (setStop === undefined) ? !isStop : setStop;
   if(target === isStop) return;
   await fetch("/api/stop", {method:"POST"});
-  await load(true);
+  await loadState();
 }
-
-document.getElementById("t-refresh").onclick = () => load(true);
+document.getElementById("t-refresh").onclick = () => { loadState(); loadCandles(); };
 document.getElementById("t-broker").onclick = () => {
   const q = DATA.quote || {};
   openModal("Брокер и счёт", `
@@ -364,20 +456,17 @@ document.getElementById("t-broker").onclick = () => {
 };
 document.getElementById("t-params").onclick = () => {
   const s = DATA.strategies.find(x => x.id === CUR) || DATA.strategies[0];
-  const p = s.params || {};
-  const rows = Object.entries(p).map(([k,v]) => `<div class="kv"><span>${k}</span><b>${v}</b></div>`).join("");
+  const rows = Object.entries(s.params || {})
+    .map(([k,v]) => `<div class="kv"><span>${k}</span><b>${v}</b></div>`).join("");
   openModal("Параметры · " + s.title, rows + `
     <p style="color:var(--muted);font-size:12px;margin:14px 0 0">
-      Параметры зафиксированы до конца теста. Изменение — только новой конфигурацией.</p>`);
+      Параметры зафиксированы до конца теста.</p>`);
 };
 
-load();
-setInterval(() => {
-  TICK -= 1;
-  const c = document.getElementById("cnt");
-  if(c) c.textContent = Math.max(TICK, 0);
-  if(TICK <= 0) load();
-}, 1000);
+loadState().then(loadCandles);
+setInterval(loadState, 30000);
+setInterval(tickQuote, 3000);
+setInterval(loadCandles, 60000);
 </script>
 </body>
 </html>
