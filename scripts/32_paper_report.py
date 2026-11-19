@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from algo.configs import CONFIGS  # noqa: E402
 from algo.data import load_cached  # noqa: E402
 from algo.live import decision  # noqa: E402
+from algo.portfolio import CAPITAL, size_contracts  # noqa: E402
 
 PAPER = Path(__file__).resolve().parent.parent / "results" / "paper.csv"
 MULT = 1000.0
@@ -56,14 +57,16 @@ def expected(cfg, m5: pd.DataFrame, start: str, end: str) -> tuple[int, float]:
         dec = decision(cfg, m5[m5.index.date <= day], day)
         if dec is None:
             continue
-        if dec.target == pos:
+        contracts = size_contracts(CAPITAL + pnl, dec.price) if dec.target != 0 else 0
+        target = dec.target * contracts
+        if target == pos:
             continue
         if pos != 0:
             pnl += (dec.price - entry) * MULT * pos
             trades += 1
-        if dec.target != 0:
+        if target != 0:
             entry = dec.price
-        pos = dec.target
+        pos = target
     return trades, pnl
 
 

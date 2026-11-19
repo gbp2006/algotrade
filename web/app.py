@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import csv
+import json
 import os
 import subprocess
 import time
@@ -24,6 +25,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PAPER = ROOT / "results" / "paper.csv"
 LOG = ROOT / "results" / "daily.log"
 STOP = ROOT / "results" / "STOP"
+HEALTH = ROOT / "results" / "health.json"
 MSK = timezone(timedelta(hours=3))
 MULT = 1000.0
 
@@ -38,6 +40,7 @@ import sys  # noqa: E402
 sys.path.insert(0, str(ROOT))
 from algo.broker.finam import FinamBroker  # noqa: E402
 from algo.configs import BY_ID, CONFIGS  # noqa: E402
+from algo.portfolio import CAPITAL, account_card, ledger  # noqa: E402
 
 app = FastAPI(title="Algo dashboard")
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
@@ -125,38 +128,36 @@ def timer_state(name: str) -> str:
         return "n/a"
 
 
-def config_stats(cfg, rows: list[dict]) -> dict:
+def config_stats(cfg, rows: list[dict], price: float | None = None) -> dict:
+    state = ledger(rows, cfg.id)
+    card = account_card(state, price) if price else {
+        "capital": CAPITAL, "equity": round(state["equity"]), "realized": 0,
+        "unrealized": 0, "contracts": state["position"], "notional": 0, "margin": 0,
+        "free": round(state["equity"]), "exposure_pct": 0.0,
+        "pnl_pct": 0.0, "trades": state["trades"]}
     mine = [r for r in rows if r["config"] == cfg.id]
-    pos, entry, entry_time = 0, 0.0, ""
-    realized = 0.0
-    trades = 0
-    equity: list[list] = []
-    for r in mine:
-        target = int(r["target"])
-        price = float(r["price"])
-        if target != pos:
-            if pos != 0:
-                realized += (price - entry) * MULT * pos
-                trades += 1
-                equity.append([r["date"][5:] + " " + r["time"], round(realized)])
-            if target != 0:
-                entry, entry_time = price, r["date"][5:] + " " + r["time"]
-            pos = target
     last = mine[-1] if mine else None
+    equity_pts, acc = [], CAPITAL
+    for r in mine:
+        if r.get("action") == "решение":
+            acc = CAPITAL + ledger([x for x in mine if (x["date"], x["time"]) <= (r["date"], r["time"])], cfg.id)["realized"]
+            equity_pts.append([r["date"][5:] + " " + r["time"], round(acc)])
     return {
         "id": cfg.id,
         "name": cfg.display or cfg.id,
         "title": cfg.display or cfg.id,
         "desc": cfg.comment,
         "params": dict(cfg.params),
-        "position": pos,
-        "entry_price": round(entry, 3),
-        "entry_time": entry_time,
-        "pnl": round(realized, 0),
-        "trades": trades,
-        "equity": equity,
+        "position": card["contracts"],
+        "entry_price": round(state["entry"], 3),
+        "entry_time": last["date"][5:] + " " + last["time"] if last else "",
+        "pnl": card["realized"],
+        "unrealized": card["unrealized"],
+        "trades": card["trades"],
+        "equity": equity_pts,
+        "card": card,
         "last": last,
-        "status": "live" if pos != 0 else ("waiting" if mine else "offline"),
+        "status": "live" if card["contracts"] != 0 else ("waiting" if mine else "offline"),
     }
 
 
@@ -181,25 +182,34 @@ def state(_: str = Depends(auth)):
     if LOG.exists():
         log = LOG.read_text(encoding="utf-8", errors="replace").splitlines()[-20:]
 
-    strategies = []
-    for cfg in CONFIGS:
-        s = config_stats(cfg, rows)
-        if q and "last" in q and s["position"] != 0 and s["entry_price"]:
-            s["unrealized"] = round((q["last"] - s["entry_price"]) * MULT * s["position"], 0)
-        else:
-            s["unrealized"] = 0
-        strategies.append(s)
+    price = q.get("last") if q and "last" in q else None
+    strategies = [config_stats(cfg, rows, price) for cfg in CONFIGS]
+    portfolio = {
+        "capital": sum(x["card"]["capital"] for x in strategies),
+        "equity": sum(x["card"]["equity"] for x in strategies),
+        "pnl": sum(x["card"]["realized"] + x["card"]["unrealized"] for x in strategies),
+        "notional": sum(x["card"]["notional"] for x in strategies),
+        "margin": sum(x["card"]["margin"] for x in strategies),
+        "contracts": sum(abs(x["card"]["contracts"]) for x in strategies),
+        "accounts": len(strategies),
+    }
+    portfolio["pnl_pct"] = (round(100 * portfolio["pnl"] / portfolio["capital"], 2)
+                            if portfolio["capital"] else 0.0)
+    portfolio["exposure_pct"] = (round(100 * portfolio["notional"] / portfolio["equity"], 1)
+                                 if portfolio["equity"] else 0.0)
 
     return JSONResponse({
         "generated": datetime.now(MSK).strftime("%Y-%m-%d %H:%M:%S"),
         "quote": q,
         "prices": prices,
         "strategies": strategies,
+        "portfolio": portfolio,
         "health": {
             "timers": {"morning": timer_state("algotrading-morning.timer"),
                        "daily": timer_state("algotrading-daily.timer"),
                        "web": timer_state("algotrading-web.service")},
             "stop": STOP.exists(),
+            "watchdog": json.loads(HEALTH.read_text(encoding="utf-8")) if HEALTH.exists() else None,
             "log": log,
         },
     })
@@ -283,17 +293,22 @@ def _expected(cfg, start: str, end: str):
         m5 = load_cached("2026-11/CNYRUBF.txt", 5)
         days = sorted({d for d in m5.index.date
                        if str(d) >= start and str(d) <= end and d.weekday() < 5})
+        from algo.portfolio import size_contracts
         pos, entry, pnl, trades = 0, 0.0, 0.0, 0
         for day in days:
             dec = decision(cfg, m5[m5.index.date <= day], day)
-            if dec is None or dec.target == pos:
+            if dec is None:
+                continue
+            contracts = size_contracts(CAPITAL + pnl, dec.price) if dec.target != 0 else 0
+            target = dec.target * contracts
+            if target == pos:
                 continue
             if pos != 0:
                 pnl += (dec.price - entry) * MULT * pos
                 trades += 1
-            if dec.target != 0:
+            if target != 0:
                 entry = dec.price
-            pos = dec.target
+            pos = target
         return {"net": round(pnl, 0), "trades": trades, "days": len(days)}
     return _cached(f"expected:{cfg.id}:{start}:{end}", 3600, calc)
 

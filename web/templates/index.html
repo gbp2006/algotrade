@@ -65,6 +65,17 @@
   .tool{width:38px;height:38px;border-radius:50%;background:#151a26;border:1px solid #29303f;
         display:grid;place-items:center;font-size:14px;color:#aeb6c8;cursor:pointer}
   .tool:hover{background:#1d2433;color:#fff}
+  .pf{display:flex;gap:26px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);
+      border-radius:16px;padding:16px 22px;margin-bottom:18px}
+  .pf .it{min-width:130px}
+  .pf .it span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;
+               letter-spacing:.07em;margin-bottom:4px}
+  .pf .it b{font-size:20px;font-weight:650}
+  .banner{display:none;margin-bottom:18px;padding:14px 18px;border-radius:14px;
+          background:#2a1218;border:1px solid #5a2430;color:#ffb3bc;font-size:13px}
+  .banner.show{display:block}
+  .banner b{color:#ff7d8a}
+  .banner .w{margin-top:6px;color:#e0b7a0;font-size:12px}
   .row{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;margin-top:18px}
   @media(max-width:1100px){.row{grid-template-columns:1fr}}
   .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px 24px}
@@ -145,6 +156,8 @@
   </aside>
 
   <main class="main">
+    <div class="banner" id="banner"></div>
+    <div class="pf" id="pf"></div>
     <section class="hero">
       <img class="hero-img" src="/static/img/hero.jpg" alt="">
       <div class="hero-tools">
@@ -197,6 +210,9 @@
         <div id="dir" class="dir flat">ВНЕ РЫНКА</div>
         <p style="color:var(--muted);font-size:12px;margin:10px 0 6px" id="trade-note"></p>
         <div class="kv"><span>Объём позиции</span><b id="t-qty">0 контрактов</b></div>
+        <div class="kv"><span>Счёт (equity)</span><b id="t-equity">—</b></div>
+        <div class="kv"><span>Свободно / маржа</span><b id="t-free">—</b></div>
+        <div class="kv"><span>Экспозиция</span><b id="t-expo">—</b></div>
         <div class="kv"><span>Цена входа</span><b id="t-entry">—</b></div>
         <div class="kv"><span>Время входа</span><b id="t-time">—</b></div>
         <div class="kv"><span>Последняя сделка</span><b id="t-last">—</b></div>
@@ -430,6 +446,7 @@ function render(){
   document.getElementById("sw-off").className = live ? "" : "on";
   document.getElementById("sw-on").className = live ? "on live" : "";
 
+  const card = s.card || {};
   const total = s.pnl + (s.unrealized || 0);
   document.getElementById("pnl").textContent = fmt(total);
   document.getElementById("pnl").className = "big " + (total >= 0 ? "pos" : "neg");
@@ -444,6 +461,14 @@ function render(){
   d.textContent = s.position > 0 ? "LONG" : s.position < 0 ? "SHORT" : "ВНЕ РЫНКА";
   document.getElementById("trade-note").textContent = s.last ? (s.last.note || "") : "решений ещё не было";
   document.getElementById("t-qty").textContent = Math.abs(s.position) + " контракт" + (Math.abs(s.position)===1?"":"ов");
+  document.getElementById("t-equity").textContent =
+    (card.equity !== undefined ? Math.round(card.equity).toLocaleString("ru-RU") + " ₽" : "—") +
+    (card.pnl_pct !== undefined ? ` (${card.pnl_pct >= 0 ? "+" : ""}${card.pnl_pct}%)` : "");
+  document.getElementById("t-free").textContent =
+    (card.free !== undefined ? Math.round(card.free).toLocaleString("ru-RU") : "—") + " / " +
+    (card.margin !== undefined ? Math.round(card.margin).toLocaleString("ru-RU") : "—");
+  document.getElementById("t-expo").textContent =
+    card.exposure_pct !== undefined ? card.exposure_pct + "% номинала" : "—";
   document.getElementById("t-entry").textContent = s.entry_price ? px(s.entry_price) + " ₽" : "—";
   document.getElementById("t-time").textContent = s.entry_time || "—";
   document.getElementById("t-last").textContent = s.last ? `${s.last.date} ${s.last.action}` : "—";
@@ -458,6 +483,16 @@ function render(){
         <td style="text-align:right"><button class="btn" style="padding:4px 10px;font-size:11px"
             onclick="event.stopPropagation(); openDetail('${x.id}')">детали →</button></td></tr>`).join("");
 
+  const pf = DATA.portfolio || {};
+  document.getElementById("pf").innerHTML = [
+    ["портфель", (Math.round(pf.capital||0)).toLocaleString("ru-RU") + " ₽", ""],
+    ["equity", (Math.round(pf.equity||0)).toLocaleString("ru-RU") + " ₽", ""],
+    ["P&L", fmt(pf.pnl||0) + ` (${pf.pnl_pct>=0?"+":""}${pf.pnl_pct||0}%)`, (pf.pnl||0)>=0?"pos":"neg"],
+    ["номинал", (Math.round(pf.notional||0)).toLocaleString("ru-RU") + " ₽", ""],
+    ["экспозиция", (pf.exposure_pct||0) + "%", ""],
+    ["контрактов", pf.contracts||0, ""],
+  ].map(([k,v,cls]) => `<div class="it"><span>${k}</span><b class="${cls}">${v}</b></div>`).join("");
+
   const q = DATA.quote || {};
   document.getElementById("q-line").textContent = q.bid ? `${q.bid} / ${q.ask}` : "—";
   document.getElementById("t-quote").textContent = q.bid ? `${q.bid} / ${q.ask}` : "—";
@@ -466,6 +501,20 @@ function render(){
     <div>спред: <b>${q.spread_ticks ?? "—"}</b> тик.</div>
     <div>стоп-флаг: <b class="${h.stop?"neg":"pos"}">${h.stop ? "ВКЛ" : "выкл"}</b></div>`;
   document.getElementById("log").textContent = (h.log || []).join("\n") || "пусто";
+
+  const wd = h.watchdog, ban = document.getElementById("banner");
+  if(wd && (!wd.ok || (wd.warnings && wd.warnings.length))){
+    const probs = (wd.problems || []).map(p => "• " + p).join("<br>");
+    const wrn = (wd.warnings || []).map(p => "• " + p).join("<br>");
+    ban.innerHTML = (wd.problems && wd.problems.length
+        ? `<b>Сторож: проблемы</b><div style="margin-top:6px">${probs}</div>`
+        : `<b>Сторож: замечания</b>`) +
+      (wrn ? `<div class="w">${wrn}</div>` : "") +
+      `<div class="w">проверено ${wd.checked}</div>`;
+    ban.className = "banner show";
+  } else {
+    ban.className = "banner";
+  }
   document.getElementById("power").classList.toggle("on", !h.stop);
   document.getElementById("upd").textContent = "обновлено " + DATA.generated.slice(11);
 

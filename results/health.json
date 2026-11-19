@@ -1,0 +1,14 @@
+{
+ "checked": "2026-11-19 11:24:27",
+ "ok": false,
+ "problems": [
+  "algotrading-daily.timer: не активен",
+  "algotrading-morning.timer: не активен",
+  "algotrading-web.service: не активен"
+ ],
+ "warnings": [
+  "журнал пуст — тест ещё не начался"
+ ],
+ "data_date": "2026-11-18",
+ "rows": 0
+}

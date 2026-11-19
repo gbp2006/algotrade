@@ -27,10 +27,11 @@ except Exception:
 from algo.broker.finam import FinamBroker  # noqa: E402
 from algo.configs import CONFIGS  # noqa: E402
 from algo.live import decision, morning_exit_price  # noqa: E402
+from algo.portfolio import ledger, size_contracts  # noqa: E402
 
 PAPER = Path(__file__).resolve().parent.parent / "results" / "paper.csv"
 FIELDS = ["date", "time", "config", "strategy", "price", "signal", "target",
-          "action", "position_after", "note"]
+          "contracts", "equity_before", "action", "position_after", "note"]
 SYMBOL = "CNYRUBF@RTSX"
 MSK = timezone(timedelta(hours=3))
 ENTRY_MIN = 13 * 60 + 50
@@ -47,7 +48,7 @@ def ensure_schema() -> None:
         return
     with PAPER.open(encoding="utf-8") as f:
         header = f.readline().strip()
-    if "config" not in header:
+    if "config" not in header or "contracts" not in header:
         legacy = PAPER.with_name("paper-legacy.csv")
         PAPER.rename(legacy)
         print(f"старый журнал отложен в {legacy.name}")
@@ -66,6 +67,10 @@ def position_of(rows: list[dict], config_id: str) -> int:
         if r["config"] == config_id:
             pos = int(r["position_after"])
     return pos
+
+
+def equity_of(rows: list[dict], config_id: str) -> float:
+    return ledger(rows, config_id)["equity"]
 
 
 def recorded(rows: list[dict], day: str, config_id: str, action: str) -> bool:
@@ -142,7 +147,8 @@ def main() -> int:
                 continue
             append({"date": str(day), "time": "10:20", "config": cfg.id,
                     "strategy": cfg.strategy, "price": f"{price:.3f}", "signal": 0,
-                    "target": 0, "action": "закрыть", "position_after": 0,
+                    "target": 0, "contracts": 0, "equity_before": f"{pos}",
+                    "action": "закрыть", "position_after": 0,
                     "note": "утренний выход 10:20"})
             closed += 1
         print(f"{day}: утренний выход, закрыто позиций {closed}")
@@ -170,19 +176,24 @@ def main() -> int:
             continue
 
         pos = position_of(rows, cfg.id)
-        action = "держать" if dec.target == pos else {
-            1: "купить", -1: "продать", 0: "закрыть"}[dec.target]
-        fill = dec.price
+        equity = equity_of(rows, cfg.id)
+        contracts = size_contracts(equity, dec.price) if dec.target != 0 else 0
+        target = dec.target * contracts
+        action = "держать" if target == pos else (
+            "закрыть" if target == 0 else ("купить" if target > 0 else "продать"))
+        msg = (f"{cfg.id:9} {dec.ts:%H:%M} сигнал {dec.target:+d} -> {target:+d} контр. "
+               f"(лот {contracts}, equity {equity:.0f}) {action}")
         if args.dry_run:
-            print(f"{cfg.id:9} {dec.ts:%H:%M} {dec.detail} -> {dec.target:+d} (dry-run)")
+            print(msg + "  [dry-run]")
             continue
         append({"date": str(day), "time": dec.ts.strftime("%H:%M"), "config": cfg.id,
-                "strategy": cfg.strategy, "price": f"{fill:.3f}", "signal": dec.target,
-                "target": dec.target, "action": "решение",
-                "position_after": dec.target,
-                "note": f"{dec.detail}; {action}"})
+                "strategy": cfg.strategy, "price": f"{dec.price:.3f}", "signal": dec.target,
+                "target": target, "contracts": contracts,
+                "equity_before": f"{equity:.0f}", "action": "решение",
+                "position_after": target,
+                "note": f"{dec.detail}; лот {contracts}, equity {equity:.0f}"})
         written += 1
-        print(f"{cfg.id:9} {dec.ts:%H:%M} {dec.detail} -> {dec.target:+d} ({action})")
+        print(msg)
 
     print(f"{day}: записано конфигураций {written}, спред {(quote.ask - quote.bid) * 1000:.0f} тиков")
     return 0
