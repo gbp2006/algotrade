@@ -36,7 +36,7 @@ import sys  # noqa: E402
 
 sys.path.insert(0, str(ROOT))
 from algo.broker.finam import FinamBroker  # noqa: E402
-from algo.configs import CONFIGS  # noqa: E402
+from algo.configs import BY_ID, CONFIGS  # noqa: E402
 
 app = FastAPI(title="Algo dashboard")
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
@@ -201,6 +201,109 @@ def state(_: str = Depends(auth)):
             "log": log,
         },
     })
+
+
+def config_detail(cfg_id: str) -> dict:
+    """Сделки, эквити и сравнение с бэктестом по одной конфигурации."""
+    cfg = BY_ID.get(cfg_id)
+    if cfg is None:
+        raise HTTPException(status_code=404, detail="нет такой конфигурации")
+    rows = [r for r in read_paper() if r["config"] == cfg_id]
+
+    trades = []
+    pos = 0
+    entry = 0.0
+    opened = None
+    realized = 0.0
+    equity = []
+    peak = 0.0
+    max_dd = 0.0
+
+    for r in rows:
+        target = int(r["target"])
+        price = float(r["price"])
+        if target == pos:
+            continue
+        if pos != 0 and opened is not None:
+            pnl = (price - entry) * MULT * pos
+            realized += pnl
+            peak = max(peak, realized)
+            max_dd = min(max_dd, realized - peak)
+            trades.append({
+                "open_date": opened[0], "open_time": opened[1],
+                "close_date": r["date"], "close_time": r["time"],
+                "dir": "LONG" if pos > 0 else "SHORT",
+                "entry": round(entry, 3), "exit": round(price, 3),
+                "pnl": round(pnl, 0),
+            })
+            equity.append([r["date"][5:] + " " + r["time"], round(realized, 0)])
+        if target != 0:
+            entry = price
+            opened = (r["date"], r["time"])
+        pos = target
+
+    unrealized = 0.0
+    if pos != 0 and opened is not None:
+        try:
+            q = quote()
+            unrealized = (q["last"] - entry) * MULT * pos
+        except Exception:
+            pass
+
+    wins = [t for t in trades if t["pnl"] > 0]
+    stats = {
+        "trades": len(trades),
+        "net": round(realized, 0),
+        "unrealized": round(unrealized, 0),
+        "winrate": round(100 * len(wins) / len(trades), 1) if trades else 0.0,
+        "avg": round(realized / len(trades), 0) if trades else 0.0,
+        "dd": round(max_dd, 0),
+        "position": pos,
+    }
+
+    expected = None
+    if rows:
+        try:
+            expected = _expected(cfg, rows[0]["date"], rows[-1]["date"])
+        except Exception as e:  # noqa: BLE001
+            expected = {"error": str(e)[:120]}
+
+    return {"id": cfg.id, "title": cfg.display or cfg.id, "desc": cfg.comment,
+            "params": dict(cfg.params), "stats": stats, "trades": trades,
+            "equity": equity, "expected": expected}
+
+
+def _expected(cfg, start: str, end: str):
+    """Что конфигурация дала бы на архиве за тот же период (кэш 1 час)."""
+    def calc():
+        from algo.data import load_cached
+        from algo.live import decision
+        m5 = load_cached("2026-11/CNYRUBF.txt", 5)
+        days = sorted({d for d in m5.index.date
+                       if str(d) >= start and str(d) <= end and d.weekday() < 5})
+        pos, entry, pnl, trades = 0, 0.0, 0.0, 0
+        for day in days:
+            dec = decision(cfg, m5[m5.index.date <= day], day)
+            if dec is None or dec.target == pos:
+                continue
+            if pos != 0:
+                pnl += (dec.price - entry) * MULT * pos
+                trades += 1
+            if dec.target != 0:
+                entry = dec.price
+            pos = dec.target
+        return {"net": round(pnl, 0), "trades": trades, "days": len(days)}
+    return _cached(f"expected:{cfg.id}:{start}:{end}", 3600, calc)
+
+
+@app.get("/api/config/{cfg_id}")
+def api_config(cfg_id: str, _: str = Depends(auth)):
+    try:
+        return JSONResponse(config_detail(cfg_id))
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        return JSONResponse({"error": str(e)[:200]})
 
 
 @app.get("/api/candles")

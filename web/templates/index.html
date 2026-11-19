@@ -108,6 +108,18 @@
   .btn{border:1px solid #2b3448;background:#1a2130;color:#cfd6e6;padding:9px 16px;border-radius:10px;
        cursor:pointer;font-size:13px}
   .btn:hover{background:#212a3c}
+  .detail-overlay{position:fixed;inset:0;background:rgba(6,8,12,.86);display:none;z-index:60;overflow:auto;
+                  backdrop-filter:blur(6px);padding:28px 4vw}
+  .detail-overlay.show{display:block}
+  .detail{max-width:1180px;margin:0 auto}
+  .detail header{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px}
+  .detail header h2{margin:0;font-size:26px;letter-spacing:-.01em}
+  .detail header p{margin:4px 0 0;color:var(--muted);font-size:13px}
+  .detail header .btn{margin-left:auto}
+  .dstats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+  .dstat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;min-width:120px}
+  .dstat span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+  .dstat b{font-size:18px;font-weight:650}
   .tip{position:absolute;background:#0d1119;border:1px solid #2a3244;border-radius:8px;padding:6px 9px;
        font-size:11px;color:#c9d1e2;pointer-events:none;white-space:nowrap;display:none;z-index:5}
 </style>
@@ -189,7 +201,7 @@
       <section class="card">
         <h3>Все конфигурации</h3>
         <table>
-          <thead><tr><th>конфигурация</th><th>позиция</th><th>P&L</th><th>сделок</th><th>последний сигнал</th></tr></thead>
+          <thead><tr><th>конфигурация</th><th>позиция</th><th>P&L</th><th>сделок</th><th>последний сигнал</th><th></th></tr></thead>
           <tbody id="tbody"></tbody>
         </table>
       </section>
@@ -201,6 +213,25 @@
       </section>
     </div>
   </main>
+</div>
+
+<div class="detail-overlay" id="detail">
+  <div class="detail">
+    <header>
+      <div><h2 id="d-title">—</h2><p id="d-desc"></p></div>
+      <button class="btn" onclick="closeDetail()">Закрыть ✕</button>
+    </header>
+    <div class="dstats" id="d-stats"></div>
+    <div class="row" style="margin-top:0">
+      <section class="card"><h3>Эквити по сделкам</h3>
+        <svg class="chart" id="d-chart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg></section>
+      <section class="card"><h3>Факт против ожидания</h3><div id="d-exp"></div></section>
+    </div>
+    <section class="card" style="margin-top:18px"><h3>Сделки</h3>
+      <table><thead><tr><th>вход</th><th>выход</th><th>напр.</th><th>цена входа</th>
+      <th>цена выхода</th><th>P&L</th></tr></thead><tbody id="d-trades"></tbody></table>
+    </section>
+  </div>
 </div>
 
 <div class="overlay" id="overlay">
@@ -416,7 +447,9 @@ function render(){
         <td class="${x.position>0?"pos":x.position<0?"neg":""}">${x.position>0?"+1":x.position<0?"−1":"0"}</td>
         <td class="${x.pnl>=0?"pos":"neg"}">${fmt(x.pnl)}</td>
         <td>${x.trades}</td>
-        <td><span class="chip">${x.last ? x.last.date + " " + x.last.time : "—"}</span></td></tr>`).join("");
+        <td><span class="chip">${x.last ? x.last.date + " " + x.last.time : "—"}</span></td>
+        <td style="text-align:right"><button class="btn" style="padding:4px 10px;font-size:11px"
+            onclick="event.stopPropagation(); openDetail('${x.id}')">детали →</button></td></tr>`).join("");
 
   const q = DATA.quote || {};
   document.getElementById("q-line").textContent = q.bid ? `${q.bid} / ${q.ask}` : "—";
@@ -462,6 +495,65 @@ document.getElementById("t-params").onclick = () => {
     <p style="color:var(--muted);font-size:12px;margin:14px 0 0">
       Параметры зафиксированы до конца теста.</p>`);
 };
+
+async function openDetail(id){
+  const r = await fetch(`/api/config/${id}`, {cache:"no-store"});
+  const d = await r.json();
+  if(d.error){ openModal("Ошибка", d.error); return; }
+  document.getElementById("d-title").textContent = d.title;
+  document.getElementById("d-desc").textContent = d.desc;
+  const st = d.stats;
+  const exp = d.expected || {};
+  const err = (exp.net !== undefined) ? st.net - exp.net : null;
+  document.getElementById("d-stats").innerHTML = [
+    ["P&L", fmt(st.net), st.net >= 0 ? "pos" : "neg"],
+    ["нереализ.", fmt(st.unrealized || 0), (st.unrealized||0) >= 0 ? "pos" : "neg"],
+    ["сделок", st.trades, ""],
+    ["винрейт", st.winrate + "%", ""],
+    ["средняя", fmt(st.avg), st.avg >= 0 ? "pos" : "neg"],
+    ["макс. DD", fmt(st.dd), "neg"],
+    ["позиция", st.position > 0 ? "LONG" : st.position < 0 ? "SHORT" : "вне рынка", ""],
+  ].map(([k,v,cls]) => `<div class="dstat"><span>${k}</span><b class="${cls}">${v}</b></div>`).join("");
+
+  document.getElementById("d-exp").innerHTML = exp.net === undefined
+    ? `<p style="color:var(--muted);font-size:12px">${exp.error || "ожидание ещё не посчитано"}</p>`
+    : `<div class="kv"><span>факт</span><b class="${st.net>=0?"pos":"neg"}">${fmt(st.net)}</b></div>
+       <div class="kv"><span>ожидание (бэктест)</span><b>${fmt(exp.net)}</b></div>
+       <div class="kv"><span>ошибка</span><b class="${(err||0)>=0?"pos":"neg"}">${fmt(err||0)}</b></div>
+       <div class="kv"><span>дней / сделок в ожидании</span><b>${exp.days} / ${exp.trades}</b></div>
+       <p style="color:var(--muted);font-size:11px;margin:12px 0 0">
+         Ошибка — главная метрика: она показывает качество исполнения, а не удачу периода.</p>`;
+
+  document.getElementById("d-trades").innerHTML = (d.trades || []).length
+    ? d.trades.map(t => `<tr><td>${t.open_date} ${t.open_time}</td><td>${t.close_date} ${t.close_time}</td>
+        <td class="${t.dir==="LONG"?"pos":"neg"}">${t.dir}</td><td>${px(t.entry)}</td><td>${px(t.exit)}</td>
+        <td class="${t.pnl>=0?"pos":"neg"}">${fmt(t.pnl)}</td></tr>`).join("")
+    : `<tr><td colspan="6" style="color:var(--muted)">сделок ещё нет</td></tr>`;
+
+  drawDetail(d.equity || []);
+  document.getElementById("detail").classList.add("show");
+}
+function closeDetail(){ document.getElementById("detail").classList.remove("show"); }
+
+function drawDetail(eq){
+  const svg = document.getElementById("d-chart");
+  const W = 800, H = 220, P = 12;
+  if(eq.length < 2){
+    svg.innerHTML = `<text x="${W/2}" y="${H/2}" fill="#4a5163" font-size="13" text-anchor="middle">сделок пока нет</text>`;
+    return;
+  }
+  const ys = eq.map(p => p[1]), min = Math.min(...ys), max = Math.max(...ys), span = (max-min)||1;
+  const pts = eq.map((p,i) => [P + i*(W-2*P)/(eq.length-1), H-P-(p[1]-min)*(H-2*P)/span]);
+  const d = pts.map((p,i)=> (i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");
+  const col = ys[ys.length-1] >= 0 ? "#2fd07b" : "#ff4d5e";
+  const last = pts[pts.length-1];
+  svg.innerHTML = `<defs><linearGradient id="gd" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${col}" stop-opacity=".3"/>
+      <stop offset="100%" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${d} L ${W-P} ${H-P} L ${P} ${H-P} Z" fill="url(#gd)"/>
+    <path d="${d}" fill="none" stroke="${col}" stroke-width="2"/>
+    <circle cx="${last[0]}" cy="${last[1]}" r="4" fill="${col}"/>`;
+}
 
 loadState().then(loadCandles);
 setInterval(loadState, 30000);
