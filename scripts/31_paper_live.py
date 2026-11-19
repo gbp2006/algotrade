@@ -4,6 +4,8 @@
   10:25 — закрытие позиций конфигураций с утренним выходом (u-morning);
   13:55 — решения по всем конфигурациям.
 
+Инструмент задаётся конфигурацией (`algo/configs.py`): CNY — вечный том,
+RTS/GOLD — ближайший квартальный контракт (резолв через MOEX ISS).
 Журнал: results/paper.csv, строка на (дата, конфигурация). Деньги не тратятся.
 """
 
@@ -26,24 +28,32 @@ except Exception:
 
 from algo.broker.finam import FinamBroker  # noqa: E402
 from algo.configs import CONFIGS  # noqa: E402
+from algo.instruments import DEFAULT, INSTRUMENTS, margin, symbol  # noqa: E402
 from algo.live import decision, morning_exit_price  # noqa: E402
-from algo.portfolio import ledger, size_contracts  # noqa: E402
+from algo.portfolio import CAPITAL, ledger, size_contracts  # noqa: E402
 
 PAPER = Path(__file__).resolve().parent.parent / "results" / "paper.csv"
-FIELDS = ["date", "time", "config", "strategy", "price", "signal", "target",
-          "contracts", "equity_before", "action", "position_after", "note"]
-SYMBOL = "CNYRUBF@RTSX"
+FIELDS = ["date", "time", "config", "instrument", "symbol", "strategy", "price",
+          "signal", "target", "contracts", "equity_before", "action",
+          "position_after", "note"]
 MSK = timezone(timedelta(hours=3))
 ENTRY_MIN = 13 * 60 + 50
-MORNING_MIN = 10 * 60 + 20
 
 
 def now_msk() -> datetime:
     return datetime.now(MSK)
 
 
+def instrument_of(cfg):
+    return INSTRUMENTS.get(cfg.instrument, DEFAULT)
+
+
+def capital_of(cfg) -> float:
+    return float(cfg.capital or CAPITAL)
+
+
 def ensure_schema() -> None:
-    """Если журнал старого формата (без колонки config) — отложить его."""
+    """Старый формат журнала — отложить или дописать недостающие колонки."""
     if not PAPER.exists():
         return
     with PAPER.open(encoding="utf-8") as f:
@@ -52,13 +62,40 @@ def ensure_schema() -> None:
         legacy = PAPER.with_name("paper-legacy.csv")
         PAPER.rename(legacy)
         print(f"старый журнал отложен в {legacy.name}")
+        return
+    if "instrument" in header and "symbol" in header:
+        return
+    # миграция: до 19.11.2026 всё торговалось на CNYRUBF
+    with PAPER.open(encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    for r in rows:
+        r.setdefault("instrument", "CNY")
+        r.setdefault("symbol", f"CNYRUBF@RTSX")
+    with PAPER.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=FIELDS)
+        w.writeheader()
+        for r in rows:
+            w.writerow({k: r.get(k, "") for k in FIELDS})
+    print("журнал дополнен колонками instrument/symbol")
 
 
 def read_rows() -> list[dict]:
     if not PAPER.exists():
         return []
     with PAPER.open(encoding="utf-8") as f:
-        return list(csv.DictReader(f))
+        return [r for r in csv.DictReader(f) if "config" in r]
+
+
+def append(row: dict, rows: list[dict] | None = None) -> None:
+    PAPER.parent.mkdir(parents=True, exist_ok=True)
+    new = not PAPER.exists()
+    with PAPER.open("a", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=FIELDS)
+        if new:
+            w.writeheader()
+        w.writerow({k: row.get(k, "") for k in FIELDS})
+    if rows is not None:
+        rows.append({k: str(row.get(k, "")) for k in FIELDS})
 
 
 def position_of(rows: list[dict], config_id: str) -> int:
@@ -69,8 +106,14 @@ def position_of(rows: list[dict], config_id: str) -> int:
     return pos
 
 
-def equity_of(rows: list[dict], config_id: str) -> float:
-    return ledger(rows, config_id)["equity"]
+def last_row(rows: list[dict], config_id: str) -> dict | None:
+    mine = [r for r in rows if r["config"] == config_id]
+    return mine[-1] if mine else None
+
+
+def equity_of(rows: list[dict], cfg) -> float:
+    inst = instrument_of(cfg)
+    return ledger(rows, cfg.id, inst.mult, capital_of(cfg))["equity"]
 
 
 def recorded(rows: list[dict], day: str, config_id: str, action: str) -> bool:
@@ -78,14 +121,15 @@ def recorded(rows: list[dict], day: str, config_id: str, action: str) -> bool:
                for r in rows)
 
 
-def append(row: dict) -> None:
-    PAPER.parent.mkdir(parents=True, exist_ok=True)
-    new = not PAPER.exists()
-    with PAPER.open("a", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=FIELDS)
-        if new:
-            w.writeheader()
-        w.writerow(row)
+def bars_for(b: FinamBroker, sym: str, start: str, day, attempts: int = 7):
+    end = (datetime.combine(day, datetime.min.time(), MSK) + timedelta(days=1)
+           ).astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    for _ in range(attempts):
+        m5 = b.bars(sym, "TIME_FRAME_M5", start, end)
+        if not m5.empty:
+            return m5
+        time.sleep(30)
+    return None
 
 
 def main() -> int:
@@ -122,57 +166,64 @@ def main() -> int:
     else:
         phase = "decision"
 
+    # символы и бары — по одному разу на инструмент
+    symbols = {cfg.id: symbol(instrument_of(cfg), day) for cfg in CONFIGS}
     start = (datetime.combine(day, datetime.min.time(), MSK) - timedelta(days=10)
              ).strftime("%Y-%m-%dT00:00:00Z")
-    m5 = None
-    for attempt in range(7):
-        end = (datetime.combine(day, datetime.min.time(), MSK) + timedelta(days=1)
-               ).astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        m5 = b.bars(SYMBOL, "TIME_FRAME_M5", start, end)
-        if not m5.empty:
-            break
-        time.sleep(30)
-    if m5 is None or m5.empty:
+    m5_by: dict[str, object] = {}
+    for sym in dict.fromkeys(symbols.values()):
+        m5 = bars_for(b, sym, start, day)
+        if m5 is None or m5.empty:
+            print(f"нет данных от брокера по {sym}")
+            continue
+        m5_by[sym] = m5
+    if not m5_by:
         print("нет данных от брокера")
         return 2
 
     rows = read_rows()
-    quote = b.quote(SYMBOL)
+
+    def quote_last(sym: str) -> float:
+        return b.quote(sym).last
 
     if phase == "friday":
         closed = 0
-        price = quote.last
         for cfg in CONFIGS:
             if not cfg.params.get("close_friday"):
                 continue
+            inst = instrument_of(cfg)
             pos = position_of(rows, cfg.id)
             if pos == 0 or recorded(rows, str(day), cfg.id, "пятница"):
                 continue
-            exit_price = price - (0.001 * pos / abs(pos))
+            price = quote_last(symbols[cfg.id])
+            exit_price = price - (inst.tick * pos / abs(pos))
             append({"date": str(day), "time": now.strftime("%H:%M"), "config": cfg.id,
-                    "strategy": cfg.strategy, "price": f"{exit_price:.3f}", "signal": 0,
-                    "target": 0, "contracts": 0, "equity_before": "0",
+                    "instrument": inst.code, "symbol": symbols[cfg.id],
+                    "strategy": cfg.strategy, "price": f"{exit_price:.{inst.digits}f}",
+                    "signal": 0, "target": 0, "contracts": 0, "equity_before": "0",
                     "action": "пятница", "position_after": 0,
-                    "note": f"закрытие перед выходными по {exit_price:.3f}"})
+                    "note": f"закрытие перед выходными по {exit_price:.{inst.digits}f}"})
             closed += 1
         print(f"{day}: пятничное закрытие, позиций закрыто {closed}")
         return 0
 
     if phase == "morning":
-        price = morning_exit_price(m5, day)
-        if price is None:
-            print(f"{day}: бара 10:20 ещё нет")
-            return 0
         closed = 0
         for cfg in CONFIGS:
             if cfg.params.get("hold") != "morning":
+                continue
+            inst = instrument_of(cfg)
+            m5 = m5_by.get(symbols[cfg.id])
+            price = morning_exit_price(m5, day) if m5 is not None else None
+            if price is None:
                 continue
             pos = position_of(rows, cfg.id)
             if pos == 0 or recorded(rows, str(day), cfg.id, "закрыть"):
                 continue
             append({"date": str(day), "time": "10:20", "config": cfg.id,
-                    "strategy": cfg.strategy, "price": f"{price:.3f}", "signal": 0,
-                    "target": 0, "contracts": 0, "equity_before": f"{pos}",
+                    "instrument": inst.code, "symbol": symbols[cfg.id],
+                    "strategy": cfg.strategy, "price": f"{price:.{inst.digits}f}",
+                    "signal": 0, "target": 0, "contracts": 0, "equity_before": f"{pos}",
                     "action": "закрыть", "position_after": 0,
                     "note": "утренний выход 10:20"})
             closed += 1
@@ -188,6 +239,13 @@ def main() -> int:
     for cfg in CONFIGS:
         if cfg.params.get("hold") == "morning":
             continue  # у него своя фаза выхода
+        inst = instrument_of(cfg)
+        sym = symbols[cfg.id]
+        m5 = m5_by.get(sym)
+        if m5 is None:
+            print(f"{cfg.id}: нет баров по {sym}")
+            continue
+
         dec = None
         for attempt in range(4):
             dec = decision(cfg, m5, day)
@@ -200,27 +258,51 @@ def main() -> int:
         if recorded(rows, str(day), cfg.id, "решение"):
             continue
 
+        # ролл квартального контракта: закрыть старую ногу по последней цене
+        last = last_row(rows, cfg.id)
+        if (last and last.get("symbol") and last["symbol"] != sym
+                and position_of(rows, cfg.id) != 0 and not args.dry_run):
+            append({"date": str(day), "time": dec.ts.strftime("%H:%M"),
+                    "config": cfg.id, "instrument": inst.code,
+                    "symbol": last["symbol"], "strategy": cfg.strategy,
+                    "price": last["price"], "signal": 0, "target": 0,
+                    "contracts": 0, "equity_before": "",
+                    "action": "ролл", "position_after": 0,
+                    "note": f"экспирация {last['symbol']}, переходим на {sym}"},
+                   rows)
+
         pos = position_of(rows, cfg.id)
-        equity = equity_of(rows, cfg.id)
-        contracts = size_contracts(equity, dec.price) if dec.target != 0 else 0
+        equity = equity_of(rows, cfg)
+        contracts = size_contracts(equity, dec.price, inst.mult) if dec.target != 0 else 0
         target = dec.target * contracts
         action = "держать" if target == pos else (
             "закрыть" if target == 0 else ("купить" if target > 0 else "продать"))
-        msg = (f"{cfg.id:9} {dec.ts:%H:%M} сигнал {dec.target:+d} -> {target:+d} контр. "
-               f"(лот {contracts}, equity {equity:.0f}) {action}")
+        msg = (f"{cfg.id:9} {sym:13} {dec.ts:%H:%M} сигнал {dec.target:+d} -> "
+               f"{target:+d} контр. (лот {contracts}, equity {equity:.0f}) {action}")
         if args.dry_run:
             print(msg + "  [dry-run]")
             continue
         append({"date": str(day), "time": dec.ts.strftime("%H:%M"), "config": cfg.id,
-                "strategy": cfg.strategy, "price": f"{dec.price:.3f}", "signal": dec.target,
-                "target": target, "contracts": contracts,
+                "instrument": inst.code, "symbol": sym,
+                "strategy": cfg.strategy, "price": f"{dec.price:.{inst.digits}f}",
+                "signal": dec.target, "target": target, "contracts": contracts,
                 "equity_before": f"{equity:.0f}", "action": "решение",
                 "position_after": target,
-                "note": f"{dec.detail}; лот {contracts}, equity {equity:.0f}"})
+                "note": f"{dec.detail}; лот {contracts}, equity {equity:.0f}"}, rows)
         written += 1
         print(msg)
 
-    print(f"{day}: записано конфигураций {written}, спред {(quote.ask - quote.bid) * 1000:.0f} тиков")
+    spreads = []
+    sym_inst: dict[str, object] = {}
+    for cfg in CONFIGS:
+        sym_inst[symbols[cfg.id]] = instrument_of(cfg)
+    for sym, inst in sym_inst.items():
+        try:
+            q = b.quote(sym)
+            spreads.append(f"{sym} {(q.ask - q.bid) / inst.tick:.0f} тик")
+        except Exception:  # noqa: BLE001
+            pass
+    print(f"{day}: записано конфигураций {written}; спреды: {', '.join(spreads)}")
     return 0
 
 

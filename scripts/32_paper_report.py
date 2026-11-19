@@ -16,14 +16,22 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from algo.configs import CONFIGS  # noqa: E402
 from algo.data import load_cached  # noqa: E402
+from algo.instruments import DEFAULT, INSTRUMENTS  # noqa: E402
 from algo.live import decision  # noqa: E402
 from algo.portfolio import CAPITAL, drawdown_stats, size_contracts  # noqa: E402
 
 PAPER = Path(__file__).resolve().parent.parent / "results" / "paper.csv"
-MULT = 1000.0
 
 
-def ledger(rows: list[dict]) -> tuple[int, float, int]:
+def instrument_of(cfg):
+    return INSTRUMENTS.get(cfg.instrument, DEFAULT)
+
+
+def capital_of(cfg) -> float:
+    return float(cfg.capital or CAPITAL)
+
+
+def ledger(rows: list[dict], mult: float) -> tuple[int, float, int]:
     """P&L по записям журнала: (сделок, руб., дней)."""
     pnl = 0.0
     trades = 0
@@ -37,7 +45,7 @@ def ledger(rows: list[dict]) -> tuple[int, float, int]:
         if target == pos:
             continue
         if pos != 0:
-            pnl += (price - entry) * MULT * pos
+            pnl += (price - entry) * mult * pos
             trades += 1
         if target != 0:
             entry = price
@@ -45,7 +53,8 @@ def ledger(rows: list[dict]) -> tuple[int, float, int]:
     return trades, pnl, len(days)
 
 
-def expected(cfg, m5: pd.DataFrame, start: str, end: str) -> tuple[int, float]:
+def expected(cfg, m5: pd.DataFrame, start: str, end: str,
+             mult: float, capital: float) -> tuple[int, float]:
     """Что та же конфигурация дала бы на архиве за тот же период."""
     days = sorted({d for d in m5.index.date
                    if str(d) >= start and str(d) <= end and d.weekday() < 5})
@@ -57,12 +66,12 @@ def expected(cfg, m5: pd.DataFrame, start: str, end: str) -> tuple[int, float]:
         dec = decision(cfg, m5[m5.index.date <= day], day)
         if dec is None:
             continue
-        contracts = size_contracts(CAPITAL + pnl, dec.price) if dec.target != 0 else 0
+        contracts = size_contracts(capital + pnl, dec.price, mult) if dec.target != 0 else 0
         target = dec.target * contracts
         if target == pos:
             continue
         if pos != 0:
-            pnl += (dec.price - entry) * MULT * pos
+            pnl += (dec.price - entry) * mult * pos
             trades += 1
         if target != 0:
             entry = dec.price
@@ -70,14 +79,14 @@ def expected(cfg, m5: pd.DataFrame, start: str, end: str) -> tuple[int, float]:
     return trades, pnl
 
 
-def _dd_stats(rows: list[dict]) -> dict:
-    pos, entry, acc = 0, 0.0, CAPITAL
+def _dd_stats(rows: list[dict], mult: float, capital: float) -> dict:
+    pos, entry, acc = 0, 0.0, capital
     pts = []
     for r in rows:
         target, price = int(r["target"]), float(r["price"])
         if target != pos:
             if pos != 0:
-                acc += (price - entry) * MULT * pos
+                acc += (price - entry) * mult * pos
                 pts.append((r["date"], acc))
             if target != 0:
                 entry = price
@@ -95,19 +104,24 @@ def main() -> int:
         print("журнал пуст")
         return 0
 
-    m5 = load_cached("2026-11/CNYRUBF.txt", 5)
     start, end = rows[0]["date"], rows[-1]["date"]
     print(f"бумажная торговля {start} .. {end}")
-    print(f"{'config':11} {'дней':>5} {'сдел':>5} {'факт':>9} {'ожид':>9} {'ошибка':>8} {'DD':>8} {'DDдн':>5}")
+    print(f"{'config':11} {'инстр':6} {'дней':>5} {'сдел':>5} {'факт':>9} "
+          f"{'ожид':>9} {'ошибка':>8} {'DD':>8} {'DDдн':>5}")
+    cache: dict[str, pd.DataFrame] = {}
     for cfg in CONFIGS:
         mine = [r for r in rows if r["config"] == cfg.id]
         if not mine:
             continue
-        trades, pnl, days = ledger(mine)
-        e_trades, e_pnl = expected(cfg, m5, start, end)
-        dd = _dd_stats(mine)
-        print(f"{cfg.id:11} {days:>5} {trades:>5} {pnl:>9.0f} {e_pnl:>9.0f} "
-              f"{pnl - e_pnl:>8.0f} {dd['max_dd']:>8.0f} {dd['max_dd_days']:>5}")
+        inst = instrument_of(cfg)
+        mult, capital = inst.mult, capital_of(cfg)
+        trades, pnl, days = ledger(mine, mult)
+        if inst.file not in cache:
+            cache[inst.file] = load_cached(inst.file, 5)
+        e_trades, e_pnl = expected(cfg, cache[inst.file], start, end, mult, capital)
+        dd = _dd_stats(mine, mult, capital)
+        print(f"{cfg.id:11} {inst.code:6} {days:>5} {trades:>5} {pnl:>9.0f} "
+              f"{e_pnl:>9.0f} {pnl - e_pnl:>8.0f} {dd['max_dd']:>8.0f} {dd['max_dd_days']:>5}")
     return 0
 
 

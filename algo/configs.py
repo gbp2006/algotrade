@@ -16,6 +16,8 @@ class Config:
     params: dict = field(default_factory=dict)
     comment: str = ""
     display: str = ""
+    instrument: str = "CNY"    # ключ из algo.instruments.INSTRUMENTS
+    capital: float | None = None   # свой счёт; None — ALGO_CAPITAL
 
 
 CONFIGS: list[Config] = [
@@ -51,6 +53,15 @@ CONFIGS: list[Config] = [
                 hold="morning", exit="10:20", short_friday=False),
            "выход в 10:20 следующего дня",
            "Универсалка · утро"),
+    # --- пул инструментов (19.11.2026): те же правила, другой класс актива ---
+    Config("p-rts", "prostushka",
+           dict(ma_window=200, entry="13:50", filter_bars=3, short_friday=False),
+           "как база, на индексе РТС (RI); диверсификация к CNY",
+           "Простушка · РТС", instrument="RTS"),
+    Config("p-gold", "prostushka",
+           dict(ma_window=200, entry="13:50", filter_bars=3, short_friday=False),
+           "как база, на золоте (GD); ноль корреляции к валюте и рынку РФ",
+           "Простушка · золото", instrument="GOLD"),
 ]
 
 BY_ID = {c.id: c for c in CONFIGS}

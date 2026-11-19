@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import os
 import subprocess
@@ -15,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, status
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -26,6 +27,7 @@ PAPER = ROOT / "results" / "paper.csv"
 LOG = ROOT / "results" / "daily.log"
 STOP = ROOT / "results" / "STOP"
 HEALTH = ROOT / "results" / "health.json"
+ALERTS = ROOT / "results" / "alerts_seen.json"
 MSK = timezone(timedelta(hours=3))
 MULT = 1000.0
 
@@ -40,7 +42,16 @@ import sys  # noqa: E402
 sys.path.insert(0, str(ROOT))
 from algo.broker.finam import FinamBroker  # noqa: E402
 from algo.configs import BY_ID, CONFIGS  # noqa: E402
+from algo.instruments import DEFAULT, INSTRUMENTS, margin, symbol as inst_symbol  # noqa: E402
 from algo.portfolio import CAPITAL, account_card, drawdown_stats, ledger  # noqa: E402
+
+
+def instrument_of(cfg):
+    return INSTRUMENTS.get(cfg.instrument, DEFAULT)
+
+
+def capital_of(cfg) -> float:
+    return float(cfg.capital or CAPITAL)
 
 app = FastAPI(title="Algo dashboard")
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
@@ -78,25 +89,60 @@ def read_paper() -> list[dict]:
         return [r for r in csv.DictReader(f) if "config" in r]
 
 
-def quote():
-    def fetch():
-        b = FinamBroker()
-        q = b.quote("CNYRUBF@RTSX")
-        return {"bid": q.bid, "ask": q.ask, "last": q.last,
-                "spread_ticks": round((q.ask - q.bid) * 1000), "ts": q.timestamp}
-    return _cached("quote", 10, fetch)
+def alerts_digest(wd: dict | None) -> str:
+    """Отпечаток набора алертов сторожа.
+
+    Меняется только когда меняется сам текст проблем/замечаний, а не время
+    проверки — иначе «прочитано» не дожило бы до следующего прогона.
+    """
+    if not wd:
+        return ""
+    items = list(wd.get("problems") or []) + list(wd.get("warnings") or [])
+    if not items:
+        return ""
+    return hashlib.sha1("\n".join(items).encode("utf-8")).hexdigest()[:16]
 
 
-def price_series() -> list[list]:
+def alerts_seen() -> str:
+    """Отпечаток, который пользователь отметил прочитанным."""
+    if not ALERTS.exists():
+        return ""
+    try:
+        return str(json.loads(ALERTS.read_text(encoding="utf-8")).get("digest", ""))
+    except Exception:  # noqa: BLE001 — битый файл не должен ронять панель
+        return ""
+
+
+def quote_for(inst, day=None) -> dict:
+    """Котировка инструмента (символ резолвится на дату) — кэш 10 с."""
+    sym = inst_symbol(inst, day)
+
     def fetch():
         b = FinamBroker()
+        q = b.quote(sym)
+        return {"symbol": sym, "bid": q.bid, "ask": q.ask, "last": q.last,
+                "spread_ticks": round((q.ask - q.bid) / inst.tick), "ts": q.timestamp}
+    return _cached(f"quote:{sym}", 10, fetch)
+
+
+def quote(config_id: str | None = None) -> dict:
+    cfg = BY_ID.get(config_id) if config_id else CONFIGS[0]
+    return quote_for(instrument_of(cfg or CONFIGS[0]))
+
+
+def price_series(inst=None) -> list[list]:
+    inst = inst or instrument_of(CONFIGS[0])
+
+    def fetch():
+        b = FinamBroker()
+        sym = inst_symbol(inst)
         now = datetime.now(timezone.utc)
         start = (now - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
         end = now.strftime("%Y-%m-%dT%H:%M:%SZ")
-        df = b.bars("CNYRUBF@RTSX", "TIME_FRAME_M5", start, end)
-        return [[d.strftime("%H:%M"), round(float(v), 3)] for d, v in
+        df = b.bars(sym, "TIME_FRAME_M5", start, end)
+        return [[d.strftime("%H:%M"), round(float(v), inst.digits)] for d, v in
                 zip(df.index, df["close"])]
-    return _cached("price", 30, fetch)
+    return _cached(f"price:{inst.code}", 30, fetch)
 
 
 TF_MAP = {
@@ -105,19 +151,23 @@ TF_MAP = {
 }
 
 
-def candles(tf: str = "M5", days: int = 2) -> list[list]:
+def candles(tf: str = "M5", days: int = 2, config_id: str | None = None) -> list[list]:
     """Свечи [метка, open, high, low, close] по таймфрейму."""
+    cfg = BY_ID.get(config_id) if config_id else CONFIGS[0]
+    inst = instrument_of(cfg or CONFIGS[0])
+
     def fetch():
         b = FinamBroker()
+        sym = inst_symbol(inst)
         now = datetime.now(timezone.utc)
         start = (now - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ")
         end = now.strftime("%Y-%m-%dT%H:%M:%SZ")
-        df = b.bars("CNYRUBF@RTSX", TF_MAP.get(tf, "TIME_FRAME_M5"), start, end)
+        df = b.bars(sym, TF_MAP.get(tf, "TIME_FRAME_M5"), start, end)
         fmt = "%d.%m %H:%M" if tf != "D" else "%d.%m"
         return [[d.strftime(fmt), float(o), float(h), float(l), float(c)]
                 for d, o, h, l, c in zip(df.index, df["open"], df["high"],
                                          df["low"], df["close"])]
-    return _cached(f"candles:{tf}:{days}", 20, fetch)
+    return _cached(f"candles:{inst.code}:{tf}:{days}", 20, fetch)
 
 
 def timer_state(name: str) -> str:
@@ -129,26 +179,28 @@ def timer_state(name: str) -> str:
 
 
 def config_stats(cfg, rows: list[dict], price: float | None = None) -> dict:
-    state = ledger(rows, cfg.id)
-    card = account_card(state, price) if price else {
-        "capital": CAPITAL, "equity": round(state["equity"]), "realized": 0,
+    inst = instrument_of(cfg)
+    mult, capital, go = inst.mult, capital_of(cfg), margin(inst)
+    state = ledger(rows, cfg.id, mult, capital)
+    card = account_card(state, price, mult, go, capital) if price else {
+        "capital": capital, "equity": round(state["equity"]), "realized": 0,
         "unrealized": 0, "contracts": state["position"], "notional": 0, "margin": 0,
         "free": round(state["equity"]), "exposure_pct": 0.0,
         "pnl_pct": 0.0, "trades": state["trades"]}
     mine = [r for r in rows if r["config"] == cfg.id]
     last = mine[-1] if mine else None
     equity_pts, dd_points = [], []
-    acc, pos, entry = CAPITAL, 0, 0.0
+    acc, pos, entry = capital, 0, 0.0
     for r in mine:
         target = int(r["target"])
-        price = float(r["price"])
+        px_ = float(r["price"])
         if target != pos:
             if pos != 0:
-                acc += (price - entry) * MULT * pos
+                acc += (px_ - entry) * mult * pos
                 dd_points.append((r["date"], acc))
                 equity_pts.append([r["date"][5:] + " " + r["time"], round(acc)])
             if target != 0:
-                entry = price
+                entry = px_
             pos = target
     dd = drawdown_stats(dd_points)
     return {
@@ -157,8 +209,11 @@ def config_stats(cfg, rows: list[dict], price: float | None = None) -> dict:
         "title": cfg.display or cfg.id,
         "desc": cfg.comment,
         "params": dict(cfg.params),
+        "instrument": inst.code,
+        "instrument_label": inst.label,
+        "digits": inst.digits,
         "position": card["contracts"],
-        "entry_price": round(state["entry"], 3),
+        "entry_price": round(state["entry"], inst.digits),
         "entry_time": last["date"][5:] + " " + last["time"] if last else "",
         "pnl": card["realized"],
         "unrealized": card["unrealized"],
@@ -172,7 +227,14 @@ def config_stats(cfg, rows: list[dict], price: float | None = None) -> dict:
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request, _: str = Depends(auth)):
-    return templates.TemplateResponse(request, "index.html", {})
+    # шаблон меняется при деплое — браузер не должен держать старую копию
+    return templates.TemplateResponse(request, "index.html", {},
+                                      headers={"Cache-Control": "no-store"})
+
+
+@app.get("/favicon.ico")
+def favicon():
+    return RedirectResponse("/static/img/favicon.ico")
 
 
 @app.get("/api/state")
@@ -192,7 +254,17 @@ def state(_: str = Depends(auth)):
         log = LOG.read_text(encoding="utf-8", errors="replace").splitlines()[-20:]
 
     price = q.get("last") if q and "last" in q else None
-    strategies = [config_stats(cfg, rows, price) for cfg in CONFIGS]
+    strategies = []
+    for cfg in CONFIGS:
+        try:
+            qc = quote_for(instrument_of(cfg))
+            px_c = qc.get("last")
+        except Exception:  # noqa: BLE001 — один инструмент не должен ронять панель
+            qc, px_c = None, None
+        item = config_stats(cfg, rows, px_c)
+        item["quote"] = qc
+        strategies.append(item)
+    del price
     portfolio = {
         "capital": sum(x["card"]["capital"] for x in strategies),
         "equity": sum(x["card"]["equity"] for x in strategies),
@@ -207,6 +279,12 @@ def state(_: str = Depends(auth)):
     portfolio["exposure_pct"] = (round(100 * portfolio["notional"] / portfolio["equity"], 1)
                                  if portfolio["equity"] else 0.0)
 
+    wd = json.loads(HEALTH.read_text(encoding="utf-8")) if HEALTH.exists() else None
+    digest = alerts_digest(wd)
+    if not digest and ALERTS.exists():
+        ALERTS.unlink()          # алертов нет — снимаем отметку, чтобы повтор показать
+    seen = alerts_seen()
+
     return JSONResponse({
         "generated": datetime.now(MSK).strftime("%Y-%m-%d %H:%M:%S"),
         "quote": q,
@@ -218,7 +296,9 @@ def state(_: str = Depends(auth)):
                        "daily": timer_state("algotrading-daily.timer"),
                        "web": timer_state("algotrading-web.service")},
             "stop": STOP.exists(),
-            "watchdog": json.loads(HEALTH.read_text(encoding="utf-8")) if HEALTH.exists() else None,
+            "watchdog": wd,
+            "alerts": {"digest": digest, "seen": seen,
+                       "dismissed": bool(digest) and digest == seen},
             "log": log,
         },
     })
@@ -230,6 +310,8 @@ def config_detail(cfg_id: str) -> dict:
     if cfg is None:
         raise HTTPException(status_code=404, detail="нет такой конфигурации")
     rows = [r for r in read_paper() if r["config"] == cfg_id]
+    inst = instrument_of(cfg)
+    mult, capital = inst.mult, capital_of(cfg)
 
     trades = []
     pos = 0
@@ -247,7 +329,7 @@ def config_detail(cfg_id: str) -> dict:
         if target == pos:
             continue
         if pos != 0 and opened is not None:
-            pnl = (price - entry) * MULT * pos
+            pnl = (price - entry) * mult * pos
             realized += pnl
             peak = max(peak, realized)
             max_dd = min(max_dd, realized - peak)
@@ -255,11 +337,11 @@ def config_detail(cfg_id: str) -> dict:
                 "open_date": opened[0], "open_time": opened[1],
                 "close_date": r["date"], "close_time": r["time"],
                 "dir": "LONG" if pos > 0 else "SHORT",
-                "entry": round(entry, 3), "exit": round(price, 3),
+                "entry": round(entry, inst.digits), "exit": round(price, inst.digits),
                 "pnl": round(pnl, 0),
             })
             equity.append([r["date"][5:] + " " + r["time"], round(realized, 0)])
-            dd_points.append((r["date"], CAPITAL + realized))
+            dd_points.append((r["date"], capital + realized))
         if target != 0:
             entry = price
             opened = (r["date"], r["time"])
@@ -268,8 +350,8 @@ def config_detail(cfg_id: str) -> dict:
     unrealized = 0.0
     if pos != 0 and opened is not None:
         try:
-            q = quote()
-            unrealized = (q["last"] - entry) * MULT * pos
+            q = quote_for(inst)
+            unrealized = (q["last"] - entry) * mult * pos
         except Exception:
             pass
 
@@ -293,16 +375,21 @@ def config_detail(cfg_id: str) -> dict:
             expected = {"error": str(e)[:120]}
 
     return {"id": cfg.id, "title": cfg.display or cfg.id, "desc": cfg.comment,
-            "params": dict(cfg.params), "stats": stats, "trades": trades,
+            "params": dict(cfg.params), "instrument": inst.code,
+            "instrument_label": inst.label, "digits": inst.digits,
+            "stats": stats, "trades": trades,
             "equity": equity, "expected": expected}
 
 
 def _expected(cfg, start: str, end: str):
     """Что конфигурация дала бы на архиве за тот же период (кэш 1 час)."""
+    inst = instrument_of(cfg)
+    mult, capital = inst.mult, capital_of(cfg)
+
     def calc():
         from algo.data import load_cached
         from algo.live import decision
-        m5 = load_cached("2026-11/CNYRUBF.txt", 5)
+        m5 = load_cached(inst.file, 5)
         days = sorted({d for d in m5.index.date
                        if str(d) >= start and str(d) <= end and d.weekday() < 5})
         from algo.portfolio import size_contracts
@@ -311,12 +398,12 @@ def _expected(cfg, start: str, end: str):
             dec = decision(cfg, m5[m5.index.date <= day], day)
             if dec is None:
                 continue
-            contracts = size_contracts(CAPITAL + pnl, dec.price) if dec.target != 0 else 0
+            contracts = size_contracts(capital + pnl, dec.price, mult) if dec.target != 0 else 0
             target = dec.target * contracts
             if target == pos:
                 continue
             if pos != 0:
-                pnl += (dec.price - entry) * MULT * pos
+                pnl += (dec.price - entry) * mult * pos
                 trades += 1
             if target != 0:
                 entry = dec.price
@@ -336,18 +423,21 @@ def api_config(cfg_id: str, _: str = Depends(auth)):
 
 
 @app.get("/api/candles")
-def api_candles(tf: str = "M5", days: int = 2, _: str = Depends(auth)):
+def api_candles(tf: str = "M5", days: int = 2, config: str | None = None,
+                _: str = Depends(auth)):
     try:
-        return JSONResponse({"tf": tf, "candles": candles(tf, days)})
+        return JSONResponse({"tf": tf, "config": config,
+                             "candles": candles(tf, days, config)})
     except Exception as e:  # noqa: BLE001
         return JSONResponse({"tf": tf, "candles": [], "error": str(e)[:160]})
 
 
 @app.get("/api/quote")
-def api_quote(_: str = Depends(auth)):
+def api_quote(config: str | None = None, _: str = Depends(auth)):
     try:
-        return JSONResponse(_cached("quote_fast", 2, lambda: {
-            **quote(), "ts_now": datetime.now(MSK).strftime("%H:%M:%S")}))
+        key = f"quote_fast:{config or 'default'}"
+        return JSONResponse(_cached(key, 2, lambda: {
+            **quote(config), "ts_now": datetime.now(MSK).strftime("%H:%M:%S")}))
     except Exception as e:  # noqa: BLE001
         return JSONResponse({"error": str(e)[:160]})
 
@@ -359,3 +449,17 @@ def toggle_stop(_: str = Depends(auth)):
         return {"stop": False}
     STOP.write_text(datetime.now(MSK).isoformat(), encoding="utf-8")
     return {"stop": True}
+
+
+@app.post("/api/alerts/ack")
+def ack_alerts(_: str = Depends(auth)):
+    """Отметить текущий набор алертов прочитанным (общий для всех браузеров)."""
+    wd = json.loads(HEALTH.read_text(encoding="utf-8")) if HEALTH.exists() else None
+    digest = alerts_digest(wd)
+    if not digest:
+        ALERTS.unlink(missing_ok=True)
+        return {"digest": "", "dismissed": False}
+    ALERTS.write_text(json.dumps({"digest": digest,
+                                  "at": datetime.now(MSK).isoformat()},
+                                 ensure_ascii=False), encoding="utf-8")
+    return {"digest": digest, "dismissed": True}

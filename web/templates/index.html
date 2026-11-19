@@ -3,6 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/static/img/favicon.ico" sizes="any">
+<link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/static/img/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png">
+<meta name="theme-color" content="#0a0c11">
 <title>Autopilot — алго-песочница</title>
 <style>
   :root{
@@ -71,11 +76,16 @@
   .pf .it span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;
                letter-spacing:.07em;margin-bottom:4px}
   .pf .it b{font-size:20px;font-weight:650}
-  .banner{display:none;margin-bottom:18px;padding:14px 18px;border-radius:14px;
-          background:#2a1218;border:1px solid #5a2430;color:#ffb3bc;font-size:13px}
+  .banner{display:none;margin-bottom:18px;padding:14px 140px 14px 18px;border-radius:14px;
+          background:#2a1218;border:1px solid #5a2430;color:#ffb3bc;font-size:13px;
+          position:relative}
   .banner.show{display:block}
   .banner b{color:#ff7d8a}
   .banner .w{margin-top:6px;color:#e0b7a0;font-size:12px}
+  .banner .ack{position:absolute;top:12px;right:14px;padding:7px 12px;border-radius:9px;
+               border:1px solid #6b2f3c;background:#3a1a22;color:#ffc9d0;font-size:12px;
+               cursor:pointer;white-space:nowrap}
+  .banner .ack:hover{background:#4a2029;border-color:#8a3a4a}
   .row{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;margin-top:18px}
   @media(max-width:1100px){.row{grid-template-columns:1fr}}
   .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px 24px}
@@ -270,11 +280,13 @@
 
 <script>
 let DATA = null, CUR = null, CANDLES = [], PTS = null;
+const SEEN_KEY = "algo.alerts.seen";   // локальная копия отметки «прочитано»
 let SRC = "price", VIEW = "candles", TF = "M5";
 let QUOTE = null;
 
 const fmt = n => (n >= 0 ? "+" : "") + Math.round(n).toLocaleString("ru-RU") + " ₽";
-const px = v => Number(v).toFixed(3);
+const digits = () => { const s = DATA && DATA.strategies.find(x => x.id === CUR); return s && s.digits != null ? s.digits : 3; };
+const px = v => Number(v).toFixed(digits());
 
 function openModal(title, html){
   document.getElementById("m-title").textContent = title;
@@ -297,7 +309,7 @@ async function loadState(){
 
 async function loadCandles(){
   try{
-    const r = await fetch(`/api/candles?tf=${TF}&days=${TF === "D" ? 90 : (TF === "H1" ? 10 : 3)}`, {cache:"no-store"});
+    const r = await fetch(`/api/candles?tf=${TF}&days=${TF === "D" ? 90 : (TF === "H1" ? 10 : 3)}${CUR ? "&config=" + CUR : ""}`, {cache:"no-store"});
     const j = await r.json();
     CANDLES = (j.candles || []).slice(-170);
     draw();
@@ -306,7 +318,7 @@ async function loadCandles(){
 
 async function tickQuote(){
   try{
-    const j = await (await fetch("/api/quote", {cache:"no-store"})).json();
+    const j = await (await fetch(`/api/quote${CUR ? "?config=" + CUR : ""}`, {cache:"no-store"})).json();
     if(j.error) return;
     QUOTE = j;
     document.getElementById("live-line").innerHTML =
@@ -322,7 +334,7 @@ async function tickQuote(){
   }catch(e){}
 }
 
-function select(id){ CUR = id; render(); }
+function select(id){ CUR = id; render(); loadCandles(); tickQuote(); }
 
 function renderSidebar(){
   document.getElementById("list").innerHTML = DATA.strategies.map(s => `
@@ -452,7 +464,7 @@ function render(){
   document.getElementById("pnl").className = "big " + (total >= 0 ? "pos" : "neg");
   document.getElementById("pnl-unreal").textContent = "нереал. " + fmt(s.unrealized || 0);
   document.getElementById("pnl-unreal").className = "chip " + ((s.unrealized||0) >= 0 ? "up" : "down");
-  const pct = (s.entry_price && s.position) ? (s.unrealized/1000*100/(s.entry_price*Math.abs(s.position))) : 0;
+  const pct = (card.notional && s.unrealized) ? (s.unrealized / card.notional * 100) : 0;
   document.getElementById("pnl-pct").textContent = (pct>=0?"+":"") + pct.toFixed(2) + "%";
   document.getElementById("pnl-pct").className = "chip " + (pct >= 0 ? "up" : "down");
 
@@ -469,14 +481,14 @@ function render(){
     (card.margin !== undefined ? Math.round(card.margin).toLocaleString("ru-RU") : "—");
   document.getElementById("t-expo").textContent =
     card.exposure_pct !== undefined ? card.exposure_pct + "% номинала" : "—";
-  document.getElementById("t-entry").textContent = s.entry_price ? px(s.entry_price) + " ₽" : "—";
+  document.getElementById("t-entry").textContent = s.entry_price ? px(s.entry_price) : "—";
   document.getElementById("t-time").textContent = s.entry_time || "—";
   document.getElementById("t-last").textContent = s.last ? `${s.last.date} ${s.last.action}` : "—";
 
   document.getElementById("tbody").innerHTML = DATA.strategies.map(x => `
     <tr onclick="select('${x.id}')">
         <td>${x.title}</td>
-        <td class="${x.position>0?"pos":x.position<0?"neg":""}">${x.position>0?"+1":x.position<0?"−1":"0"}</td>
+        <td class="${x.position>0?"pos":x.position<0?"neg":""}">${x.position>0?"+"+x.position:x.position<0?"−"+Math.abs(x.position):"0"}</td>
         <td class="${x.pnl>=0?"pos":"neg"}">${fmt(x.pnl)}</td>
         <td>${x.trades}</td>
         <td><span class="chip">${x.last ? x.last.date + " " + x.last.time : "—"}</span></td>
@@ -493,24 +505,37 @@ function render(){
     ["контрактов", pf.contracts||0, ""],
   ].map(([k,v,cls]) => `<div class="it"><span>${k}</span><b class="${cls}">${v}</b></div>`).join("");
 
-  const q = DATA.quote || {};
+  const q = s.quote || DATA.quote || {};
   document.getElementById("q-line").textContent = q.bid ? `${q.bid} / ${q.ask}` : "—";
   document.getElementById("t-quote").textContent = q.bid ? `${q.bid} / ${q.ask}` : "—";
+
+  const al = h.alerts || {};
+  const seenLocal = localStorage.getItem(SEEN_KEY) || "";
+  if(!al.digest) localStorage.removeItem(SEEN_KEY);   // алертов нет — отметка не нужна
+  const dismissed = !!al.digest && (al.dismissed || seenLocal === al.digest);
+  const wdNow = h.watchdog;
+  const wdText = !wdNow ? "нет данных"
+    : (wdNow.problems||[]).length ? "проблемы"
+    : (wdNow.warnings||[]).length ? "замечания" : "ок";
+  const wdClass = wdText === "проблемы" ? "neg" : wdText === "ок" ? "pos" : "";
   document.getElementById("health").innerHTML = `
     <div><span class="dot-live"></span>таймеры: <b>${h.timers.morning}</b> / <b>${h.timers.daily}</b></div>
     <div>спред: <b>${q.spread_ticks ?? "—"}</b> тик.</div>
+    <div>сторож: <b class="${wdClass}">${wdText}</b>${dismissed ? ' <span style="opacity:.6">· прочитано</span>' : ''}</div>
     <div>стоп-флаг: <b class="${h.stop?"neg":"pos"}">${h.stop ? "ВКЛ" : "выкл"}</b></div>`;
   document.getElementById("log").textContent = (h.log || []).join("\n") || "пусто";
 
   const wd = h.watchdog, ban = document.getElementById("banner");
-  if(wd && (!wd.ok || (wd.warnings && wd.warnings.length))){
+  const hasAlerts = !!(wd && ((wd.problems||[]).length || (wd.warnings||[]).length));
+  if(hasAlerts && !dismissed){
     const probs = (wd.problems || []).map(p => "• " + p).join("<br>");
     const wrn = (wd.warnings || []).map(p => "• " + p).join("<br>");
     ban.innerHTML = (wd.problems && wd.problems.length
         ? `<b>Сторож: проблемы</b><div style="margin-top:6px">${probs}</div>`
         : `<b>Сторож: замечания</b>`) +
       (wrn ? `<div class="w">${wrn}</div>` : "") +
-      `<div class="w">проверено ${wd.checked}</div>`;
+      `<div class="w">проверено ${wd.checked}</div>` +
+      `<button class="ack" onclick="ackAlerts()" title="Скрыть до новых алертов">✓ прочитано</button>`;
     ban.className = "banner show";
   } else {
     ban.className = "banner";
@@ -521,8 +546,19 @@ function render(){
   if(SRC === "pnl") draw();
 }
 
-document.getElementById("power").onclick = () => toggleStop();
-document.getElementById("sw-off").onclick = () => toggleStop(true);
+async function ackAlerts(){
+  const al = (DATA.health && DATA.health.alerts) || {};
+  if(al.digest) localStorage.setItem(SEEN_KEY, al.digest);   // запоминаем локально сразу
+  document.getElementById("banner").className = "banner";    // скрываем сразу
+  if(DATA.health) DATA.health.alerts = {...al, dismissed:true};
+  try{
+    const r = await fetch("/api/alerts/ack", {method:"POST", cache:"no-store"});
+    if(!r.ok) console.warn("ack алертов не сохранился на сервере:", r.status);
+  }catch(e){ console.warn("ack алертов не дошёл:", e); }
+  await loadState();      // сервер мог ответить иначе — но локальная отметка не даст баннеру вернуться
+}
+
+document.getElementById("power").onclick = () => toggleStop();document.getElementById("sw-off").onclick = () => toggleStop(true);
 document.getElementById("sw-on").onclick = () => toggleStop(false);
 async function toggleStop(setStop){
   const isStop = DATA.health.stop;
@@ -533,10 +569,11 @@ async function toggleStop(setStop){
 }
 document.getElementById("t-refresh").onclick = () => { loadState(); loadCandles(); };
 document.getElementById("t-broker").onclick = () => {
-  const q = DATA.quote || {};
+  const s = DATA.strategies.find(x => x.id === CUR) || DATA.strategies[0];
+  const q = s.quote || DATA.quote || {};
   openModal("Брокер и счёт", `
     <div class="kv"><span>Брокер</span><b>Финам · Trade API</b></div>
-    <div class="kv"><span>Инструмент</span><b>CNYRUBF@RTSX</b></div>
+    <div class="kv"><span>Инструмент</span><b>${s.instrument_label || "—"} · ${q.symbol || "—"}</b></div>
     <div class="kv"><span>Котировка</span><b>${q.bid ?? "—"} / ${q.ask ?? "—"}</b></div>
     <div class="kv"><span>Спред</span><b>${q.spread_ticks ?? "—"} тик.</b></div>
     <div class="kv"><span>Режим</span><b>${DATA.health.stop ? "остановлен" : "бумажная торговля"}</b></div>
@@ -559,6 +596,8 @@ async function openDetail(id){
   document.getElementById("d-title").textContent = d.title;
   document.getElementById("d-desc").textContent = d.desc;
   const st = d.stats;
+  const dig = d.digits != null ? d.digits : 3;
+  const pxf = v => Number(v).toFixed(dig);
   const exp = d.expected || {};
   const err = (exp.net !== undefined) ? st.net - exp.net : null;
   document.getElementById("d-stats").innerHTML = [
@@ -583,7 +622,7 @@ async function openDetail(id){
 
   document.getElementById("d-trades").innerHTML = (d.trades || []).length
     ? d.trades.map(t => `<tr><td>${t.open_date} ${t.open_time}</td><td>${t.close_date} ${t.close_time}</td>
-        <td class="${t.dir==="LONG"?"pos":"neg"}">${t.dir}</td><td>${px(t.entry)}</td><td>${px(t.exit)}</td>
+        <td class="${t.dir==="LONG"?"pos":"neg"}">${t.dir}</td><td>${pxf(t.entry)}</td><td>${pxf(t.exit)}</td>
         <td class="${t.pnl>=0?"pos":"neg"}">${fmt(t.pnl)}</td></tr>`).join("")
     : `<tr><td colspan="6" style="color:var(--muted)">сделок ещё нет</td></tr>`;
 

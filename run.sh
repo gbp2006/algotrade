@@ -20,6 +20,9 @@ case "${1:-help}" in
     "$PY" scripts/09_si_check.py
     "$PY" scripts/11_universal.py
     ;;
+  favicon)
+    "$PY" scripts/41_favicon.py
+    ;;
   *)
     cat <<'EOF'
 usage: ./run.sh <команда>
@@ -34,6 +37,7 @@ usage: ./run.sh <команда>
   report   отчёт: факт против бэктеста
   sweep    полная сетка параметров Простушки
   all      прогоны Простушки на Si + Универсалки
+  favicon  перегенерировать иконку веб-панели
 EOF
     ;;
 esac
