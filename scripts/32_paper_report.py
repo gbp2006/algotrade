@@ -117,11 +117,17 @@ def main() -> int:
         mult, capital = inst.mult, capital_of(cfg)
         trades, pnl, days = ledger(mine, mult)
         if inst.file not in cache:
-            cache[inst.file] = load_cached(inst.file, 5)
-        e_trades, e_pnl = expected(cfg, cache[inst.file], start, end, mult, capital)
+            try:
+                cache[inst.file] = load_cached(inst.file, 5)
+            except FileNotFoundError:
+                cache[inst.file] = None          # архива нет на этой машине
+        e_pnl = None
+        if cache[inst.file] is not None:
+            e_trades, e_pnl = expected(cfg, cache[inst.file], start, end, mult, capital)
         dd = _dd_stats(mine, mult, capital)
+        exp_s = f"{e_pnl:>9.0f} {pnl - e_pnl:>8.0f}" if e_pnl is not None else f"{'—':>9} {'—':>8}"
         print(f"{cfg.id:11} {inst.code:6} {days:>5} {trades:>5} {pnl:>9.0f} "
-              f"{e_pnl:>9.0f} {pnl - e_pnl:>8.0f} {dd['max_dd']:>8.0f} {dd['max_dd_days']:>5}")
+              f"{exp_s} {dd['max_dd']:>8.0f} {dd['max_dd_days']:>5}")
     return 0
 
 

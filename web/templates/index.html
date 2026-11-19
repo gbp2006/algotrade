@@ -281,6 +281,14 @@
 <script>
 let DATA = null, CUR = null, CANDLES = [], PTS = null;
 const SEEN_KEY = "algo.alerts.seen";   // локальная копия отметки «прочитано»
+let ACKED = null;                      // отметка в памяти: работает, даже если storage запрещён
+
+// localStorage может быть недоступен (приватный режим, настройки) — не роняем панель
+const seenStore = {
+  get(){ try{ return localStorage.getItem(SEEN_KEY) || ""; }catch(e){ return ""; } },
+  set(v){ try{ localStorage.setItem(SEEN_KEY, v); }catch(e){} },
+  del(){ try{ localStorage.removeItem(SEEN_KEY); }catch(e){} },
+};
 let SRC = "price", VIEW = "candles", TF = "M5";
 let QUOTE = null;
 
@@ -510,9 +518,9 @@ function render(){
   document.getElementById("t-quote").textContent = q.bid ? `${q.bid} / ${q.ask}` : "—";
 
   const al = h.alerts || {};
-  const seenLocal = localStorage.getItem(SEEN_KEY) || "";
-  if(!al.digest) localStorage.removeItem(SEEN_KEY);   // алертов нет — отметка не нужна
-  const dismissed = !!al.digest && (al.dismissed || seenLocal === al.digest);
+  const seenLocal = seenStore.get();
+  if(!al.digest) seenStore.del();                     // алертов нет — отметка не нужна
+  const dismissed = !!al.digest && (al.dismissed || ACKED === al.digest || seenLocal === al.digest);
   const wdNow = h.watchdog;
   const wdText = !wdNow ? "нет данных"
     : (wdNow.problems||[]).length ? "проблемы"
@@ -548,14 +556,15 @@ function render(){
 
 async function ackAlerts(){
   const al = (DATA.health && DATA.health.alerts) || {};
-  if(al.digest) localStorage.setItem(SEEN_KEY, al.digest);   // запоминаем локально сразу
-  document.getElementById("banner").className = "banner";    // скрываем сразу
+  ACKED = al.digest || null;                                 // сначала память — работает всегда
+  document.getElementById("banner").className = "banner";    // и сразу скрываем
+  if(al.digest) seenStore.set(al.digest);
   if(DATA.health) DATA.health.alerts = {...al, dismissed:true};
   try{
     const r = await fetch("/api/alerts/ack", {method:"POST", cache:"no-store"});
     if(!r.ok) console.warn("ack алертов не сохранился на сервере:", r.status);
   }catch(e){ console.warn("ack алертов не дошёл:", e); }
-  await loadState();      // сервер мог ответить иначе — но локальная отметка не даст баннеру вернуться
+  await loadState();   // сервер мог ответить иначе — локальная отметка не даст баннеру вернуться
 }
 
 document.getElementById("power").onclick = () => toggleStop();document.getElementById("sw-off").onclick = () => toggleStop(true);

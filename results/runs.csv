@@ -50,3 +50,5 @@ ts,strategy,instrument,period,params,trades,net,pf,avg,dd,in_market,note
 2026-11-19 12:20,prostushka,SBRF,2009-12..2025-12,ma_period=48;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,2044,77622.74,1.31,,-8722.71,,"multi-instrument, MA48, акции"
 2026-11-19 12:20,prostushka,GAZR,2009-12..2025-12,ma_period=40;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,2022,53512.1,1.2,,-17079.15,,"multi-instrument, MA40, акции"
 2026-11-19 12:20,prostushka,GAZR,2009-12..2025-12,ma_period=48;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,2004,66830.47,1.26,,-13944.59,,"multi-instrument, MA48, акции"
+2026-11-19 12:37,author-fit,Si,2026-03-25..2026-11-18,tf=15;n=48;adds=5;trend=100,103,,,,,,sign_agree=0.71; ev_open=0.89
+2026-11-19 12:37,author-fit,CR,2026-03-25..2026-11-18,tf=5;n=48;adds=1;trend=100,108,,,,,,sign_agree=0.65; ev_open=0.94
