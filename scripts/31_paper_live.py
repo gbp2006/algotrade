@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import argparse
 import csv
 import sys
 import time
@@ -83,21 +84,35 @@ def append(row: dict) -> None:
 
 
 def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--date", help="реплей дня, формат YYYY-MM-DD")
+    ap.add_argument("--dry-run", action="store_true", help="ничего не записывать")
+    args = ap.parse_args()
+
     ensure_schema()
     b = FinamBroker()
     now = now_msk()
-    day = now.date()
+    replay = args.date is not None
+    if replay:
+        from datetime import date as _d
+        y, m, d = (int(x) for x in args.date.split("-"))
+        day = _d(y, m, d)
+        now = datetime.combine(day, datetime.min.time(), MSK).replace(hour=14)
+    else:
+        day = now.date()
 
-    if now.weekday() >= 5:
+    if day.weekday() >= 5:
         print(f"{day}: выходной, решений нет")
         return 0
 
     phase = "morning" if now.hour * 60 + now.minute < 12 * 60 else "decision"
 
-    start = (now - timedelta(days=10)).strftime("%Y-%m-%dT00:00:00Z")
+    start = (datetime.combine(day, datetime.min.time(), MSK) - timedelta(days=10)
+             ).strftime("%Y-%m-%dT00:00:00Z")
     m5 = None
     for attempt in range(7):
-        end = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        end = (datetime.combine(day, datetime.min.time(), MSK) + timedelta(days=1)
+               ).astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         m5 = b.bars(SYMBOL, "TIME_FRAME_M5", start, end)
         if not m5.empty:
             break
@@ -154,6 +169,9 @@ def main() -> int:
         action = "держать" if dec.target == pos else {
             1: "купить", -1: "продать", 0: "закрыть"}[dec.target]
         fill = dec.price
+        if args.dry_run:
+            print(f"{cfg.id:9} {dec.ts:%H:%M} {dec.detail} -> {dec.target:+d} (dry-run)")
+            continue
         append({"date": str(day), "time": dec.ts.strftime("%H:%M"), "config": cfg.id,
                 "strategy": cfg.strategy, "price": f"{fill:.3f}", "signal": dec.target,
                 "target": dec.target, "action": "решение",

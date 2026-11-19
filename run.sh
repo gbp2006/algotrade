@@ -13,7 +13,7 @@ case "${1:-help}" in
   signal) "$PY" scripts/20_mvp_signal.py ;;
   paper)  "$PY" scripts/21_mvp_paper.py ;;
   broker) "$PY" scripts/30_broker_check.py ;;
-  paper-live) "$PY" scripts/31_paper_live.py ;;
+  paper-live) shift; "$PY" scripts/31_paper_live.py "$@" ;;
   report) "$PY" scripts/32_paper_report.py ;;
   sweep)  "$PY" scripts/15_sweep_full.py ;;
   all)
