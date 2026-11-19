@@ -90,6 +90,10 @@ def main() -> int:
     args = ap.parse_args()
 
     ensure_schema()
+    stop = Path(__file__).resolve().parent.parent / "results" / "STOP"
+    if stop.exists():
+        print("стоп-флаг установлен: торговля остановлена (снять — кнопка на дашборде)")
+        return 0
     b = FinamBroker()
     now = now_msk()
     replay = args.date is not None
