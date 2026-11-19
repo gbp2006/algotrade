@@ -40,7 +40,7 @@ import sys  # noqa: E402
 sys.path.insert(0, str(ROOT))
 from algo.broker.finam import FinamBroker  # noqa: E402
 from algo.configs import BY_ID, CONFIGS  # noqa: E402
-from algo.portfolio import CAPITAL, account_card, ledger  # noqa: E402
+from algo.portfolio import CAPITAL, account_card, drawdown_stats, ledger  # noqa: E402
 
 app = FastAPI(title="Algo dashboard")
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
@@ -137,11 +137,20 @@ def config_stats(cfg, rows: list[dict], price: float | None = None) -> dict:
         "pnl_pct": 0.0, "trades": state["trades"]}
     mine = [r for r in rows if r["config"] == cfg.id]
     last = mine[-1] if mine else None
-    equity_pts, acc = [], CAPITAL
+    equity_pts, dd_points = [], []
+    acc, pos, entry = CAPITAL, 0, 0.0
     for r in mine:
-        if r.get("action") == "решение":
-            acc = CAPITAL + ledger([x for x in mine if (x["date"], x["time"]) <= (r["date"], r["time"])], cfg.id)["realized"]
-            equity_pts.append([r["date"][5:] + " " + r["time"], round(acc)])
+        target = int(r["target"])
+        price = float(r["price"])
+        if target != pos:
+            if pos != 0:
+                acc += (price - entry) * MULT * pos
+                dd_points.append((r["date"], acc))
+                equity_pts.append([r["date"][5:] + " " + r["time"], round(acc)])
+            if target != 0:
+                entry = price
+            pos = target
+    dd = drawdown_stats(dd_points)
     return {
         "id": cfg.id,
         "name": cfg.display or cfg.id,
@@ -155,7 +164,7 @@ def config_stats(cfg, rows: list[dict], price: float | None = None) -> dict:
         "unrealized": card["unrealized"],
         "trades": card["trades"],
         "equity": equity_pts,
-        "card": card,
+        "card": {**card, **dd},
         "last": last,
         "status": "live" if card["contracts"] != 0 else ("waiting" if mine else "offline"),
     }
@@ -228,6 +237,7 @@ def config_detail(cfg_id: str) -> dict:
     opened = None
     realized = 0.0
     equity = []
+    dd_points = []
     peak = 0.0
     max_dd = 0.0
 
@@ -249,6 +259,7 @@ def config_detail(cfg_id: str) -> dict:
                 "pnl": round(pnl, 0),
             })
             equity.append([r["date"][5:] + " " + r["time"], round(realized, 0)])
+            dd_points.append((r["date"], CAPITAL + realized))
         if target != 0:
             entry = price
             opened = (r["date"], r["time"])
@@ -270,6 +281,7 @@ def config_detail(cfg_id: str) -> dict:
         "winrate": round(100 * len(wins) / len(trades), 1) if trades else 0.0,
         "avg": round(realized / len(trades), 0) if trades else 0.0,
         "dd": round(max_dd, 0),
+        "dd_days": drawdown_stats(dd_points)["max_dd_days"],
         "position": pos,
     }
 

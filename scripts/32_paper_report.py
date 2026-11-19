@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from algo.configs import CONFIGS  # noqa: E402
 from algo.data import load_cached  # noqa: E402
 from algo.live import decision  # noqa: E402
-from algo.portfolio import CAPITAL, size_contracts  # noqa: E402
+from algo.portfolio import CAPITAL, drawdown_stats, size_contracts  # noqa: E402
 
 PAPER = Path(__file__).resolve().parent.parent / "results" / "paper.csv"
 MULT = 1000.0
@@ -70,6 +70,21 @@ def expected(cfg, m5: pd.DataFrame, start: str, end: str) -> tuple[int, float]:
     return trades, pnl
 
 
+def _dd_stats(rows: list[dict]) -> dict:
+    pos, entry, acc = 0, 0.0, CAPITAL
+    pts = []
+    for r in rows:
+        target, price = int(r["target"]), float(r["price"])
+        if target != pos:
+            if pos != 0:
+                acc += (price - entry) * MULT * pos
+                pts.append((r["date"], acc))
+            if target != 0:
+                entry = price
+            pos = target
+    return drawdown_stats(pts)
+
+
 def main() -> int:
     if not PAPER.exists():
         print("журнала нет")
@@ -83,14 +98,16 @@ def main() -> int:
     m5 = load_cached("2026-11/CNYRUBF.txt", 5)
     start, end = rows[0]["date"], rows[-1]["date"]
     print(f"бумажная торговля {start} .. {end}")
-    print(f"{'config':10} {'дней':>5} {'сдел':>5} {'факт':>9} {'ожид':>9} {'ошибка':>8}")
+    print(f"{'config':11} {'дней':>5} {'сдел':>5} {'факт':>9} {'ожид':>9} {'ошибка':>8} {'DD':>8} {'DDдн':>5}")
     for cfg in CONFIGS:
         mine = [r for r in rows if r["config"] == cfg.id]
         if not mine:
             continue
         trades, pnl, days = ledger(mine)
         e_trades, e_pnl = expected(cfg, m5, start, end)
-        print(f"{cfg.id:10} {days:>5} {trades:>5} {pnl:>9.0f} {e_pnl:>9.0f} {pnl - e_pnl:>8.0f}")
+        dd = _dd_stats(mine)
+        print(f"{cfg.id:11} {days:>5} {trades:>5} {pnl:>9.0f} {e_pnl:>9.0f} "
+              f"{pnl - e_pnl:>8.0f} {dd['max_dd']:>8.0f} {dd['max_dd_days']:>5}")
     return 0
 
 

@@ -40,7 +40,7 @@
          background:#241a1e;color:var(--red);cursor:pointer;font-size:13px}
   .power.on{background:#12301f;border-color:#2f6b47;color:var(--green)}
   .main{flex:1;padding:26px 32px 48px;min-width:0}
-  .hero{position:relative;border-radius:20px;overflow:hidden;padding:36px 38px;
+  .hero{position:relative;border-radius:20px;overflow:hidden;padding:86px 38px 36px;
         min-height:400px;display:flex;flex-direction:column;justify-content:flex-end;
         background:#0b0d13;border:1px solid #2a1b22}
   .hero:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;
@@ -51,7 +51,7 @@
   .hero-img{position:absolute;right:0;top:0;height:100%;width:auto;z-index:0;
             -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 26%);
             mask-image:linear-gradient(90deg,transparent 0%,#000 26%)}
-  .hero>*:not(.hero-img){position:relative;z-index:2}
+  .hero>*:not(.hero-img):not(.hero-tools){position:relative;z-index:2}
   .hero h1{margin:0;font-size:52px;text-shadow:0 2px 18px rgba(0,0,0,.55);line-height:1.02;letter-spacing:-.02em;text-transform:uppercase;
            max-width:560px;font-weight:800}
   .hero p{margin:12px 0 0;color:#b3bcd2;max-width:480px;font-size:15px}
@@ -61,7 +61,7 @@
             font-size:13px;cursor:pointer}
   .switcher button.on{background:#20304f;color:#dbe6ff}
   .switcher button.on.live{background:#123a2a;color:#7ff0b5}
-  .hero-tools{position:absolute;top:22px;left:26px;display:flex;gap:8px;z-index:2}
+  .hero-tools{position:absolute;top:22px;left:26px;display:flex;gap:8px;z-index:5}
   .tool{width:38px;height:38px;border-radius:50%;background:#151a26;border:1px solid #29303f;
         display:grid;place-items:center;font-size:14px;color:#aeb6c8;cursor:pointer}
   .tool:hover{background:#1d2433;color:#fff}
@@ -568,6 +568,7 @@ async function openDetail(id){
     ["винрейт", st.winrate + "%", ""],
     ["средняя", fmt(st.avg), st.avg >= 0 ? "pos" : "neg"],
     ["макс. DD", fmt(st.dd), "neg"],
+    ["DD, дней", st.dd_days ?? 0, ""],
     ["позиция", st.position > 0 ? "LONG" : st.position < 0 ? "SHORT" : "вне рынка", ""],
   ].map(([k,v,cls]) => `<div class="dstat"><span>${k}</span><b class="${cls}">${v}</b></div>`).join("");
 

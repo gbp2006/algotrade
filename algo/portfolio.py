@@ -71,3 +71,26 @@ def account_card(state: dict, price: float) -> dict:
         "pnl_pct": round(100 * (state["realized"] + unrealized) / CAPITAL, 2),
         "trades": state["trades"],
     }
+
+
+def drawdown_stats(points: list[tuple[str, float]]) -> dict:
+    """Глубина и длительность просадки по точкам (iso_date, equity)."""
+    from datetime import date as _date
+
+    if not points:
+        return {"max_dd": 0, "max_dd_days": 0}
+    peak = points[0][1]
+    peak_date = _date.fromisoformat(points[0][0])
+    maxdd = 0.0
+    maxdur = 0
+    start = None
+    for ds, v in points:
+        cur = _date.fromisoformat(ds)
+        if v >= peak:
+            peak, peak_date, start = v, cur, None
+        else:
+            if start is None:
+                start = peak_date
+            maxdd = min(maxdd, v - peak)
+            maxdur = max(maxdur, (cur - start).days)
+    return {"max_dd": round(maxdd, 0), "max_dd_days": maxdur}

@@ -114,7 +114,13 @@ def main() -> int:
         print(f"{day}: выходной, решений нет")
         return 0
 
-    phase = "morning" if now.hour * 60 + now.minute < 12 * 60 else "decision"
+    minutes = now.hour * 60 + now.minute
+    if now.weekday() == 4 and minutes >= 18 * 60 + 40:
+        phase = "friday"
+    elif minutes < 12 * 60:
+        phase = "morning"
+    else:
+        phase = "decision"
 
     start = (datetime.combine(day, datetime.min.time(), MSK) - timedelta(days=10)
              ).strftime("%Y-%m-%dT00:00:00Z")
@@ -132,6 +138,25 @@ def main() -> int:
 
     rows = read_rows()
     quote = b.quote(SYMBOL)
+
+    if phase == "friday":
+        closed = 0
+        price = quote.last
+        for cfg in CONFIGS:
+            if not cfg.params.get("close_friday"):
+                continue
+            pos = position_of(rows, cfg.id)
+            if pos == 0 or recorded(rows, str(day), cfg.id, "пятница"):
+                continue
+            exit_price = price - (0.001 * pos / abs(pos))
+            append({"date": str(day), "time": now.strftime("%H:%M"), "config": cfg.id,
+                    "strategy": cfg.strategy, "price": f"{exit_price:.3f}", "signal": 0,
+                    "target": 0, "contracts": 0, "equity_before": "0",
+                    "action": "пятница", "position_after": 0,
+                    "note": f"закрытие перед выходными по {exit_price:.3f}"})
+            closed += 1
+        print(f"{day}: пятничное закрытие, позиций закрыто {closed}")
+        return 0
 
     if phase == "morning":
         price = morning_exit_price(m5, day)
