@@ -91,7 +91,7 @@ def price_series() -> list[list]:
         df = b.bars("CNYRUBF@RTSX", "TIME_FRAME_M5", start, end)
         return [[d.strftime("%H:%M"), round(float(v), 3)] for d, v in
                 zip(df.index, df["close"])]
-    return _cached("price", 120, fetch)
+    return _cached("price", 30, fetch)
 
 
 def timer_state(name: str) -> str:
@@ -125,6 +125,7 @@ def config_stats(cfg, rows: list[dict]) -> dict:
         "name": cfg.display or cfg.id,
         "title": cfg.display or cfg.id,
         "desc": cfg.comment,
+        "params": dict(cfg.params),
         "position": pos,
         "entry_price": round(entry, 3),
         "entry_time": entry_time,

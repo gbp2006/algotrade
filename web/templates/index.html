@@ -8,14 +8,12 @@
   :root{
     --bg:#0a0c11; --card:#13161e; --card2:#181c26; --line:#222836;
     --text:#e8eaf0; --muted:#8b90a0; --accent:#4f7cff;
-    --green:#2fd07b; --red:#ff4d5e; --yellow:#f5b83d;
-    --radius:18px;
+    --green:#2fd07b; --red:#ff4d5e; --yellow:#f5b83d; --radius:18px;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--text);
        font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif}
   .layout{display:flex;min-height:100vh}
-  /* ---------- sidebar ---------- */
   .side{width:264px;flex:0 0 264px;padding:18px 14px;display:flex;flex-direction:column;
         border-right:1px solid var(--line);background:#0c0f15}
   .logo{display:flex;align-items:center;gap:10px;padding:6px 8px 18px}
@@ -39,41 +37,42 @@
   .user{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:#12161f}
   .user .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#3d5afe,#8a5cff)}
   .user small{display:block;color:var(--muted);font-size:11px}
-  .power{margin-left:auto;width:28px;height:28px;border-radius:50%;border:1px solid #3a2a2f;
+  .power{margin-left:auto;width:30px;height:30px;border-radius:50%;border:1px solid #3a2a2f;
          background:#241a1e;color:var(--red);cursor:pointer;font-size:13px}
-  .power.on{background:#2b1620;border-color:#5a2430}
-  /* ---------- main ---------- */
+  .power.on{background:#12301f;border-color:#2f6b47;color:var(--green)}
   .main{flex:1;padding:22px 26px 40px;min-width:0}
   .hero{position:relative;border-radius:var(--radius);overflow:hidden;padding:26px 28px;
-        min-height:260px;display:flex;flex-direction:column;justify-content:flex-end;
+        min-height:250px;display:flex;flex-direction:column;justify-content:flex-end;
         background:radial-gradient(120% 140% at 85% 10%,#2a3a7a 0%,#141a2e 45%,#0f131e 100%)}
   .hero:after{content:"";position:absolute;inset:0;
      background:linear-gradient(90deg,rgba(10,12,17,.92) 0%,rgba(10,12,17,.55) 45%,rgba(10,12,17,0) 75%);
      pointer-events:none}
   .hero>*{position:relative;z-index:1}
-  .hero h1{margin:0;font-size:44px;line-height:.98;letter-spacing:-.02em;text-transform:uppercase;
-           max-width:520px;font-weight:800}
-  .hero p{margin:10px 0 0;color:#a9b2c8;max-width:430px;font-size:13px}
+  .hero h1{margin:0;font-size:40px;line-height:1.02;letter-spacing:-.02em;text-transform:uppercase;
+           max-width:560px;font-weight:800}
+  .hero p{margin:10px 0 0;color:#a9b2c8;max-width:460px;font-size:13px}
   .switcher{display:inline-flex;background:#0e121b;border:1px solid #26304a;border-radius:999px;
             padding:3px;margin-top:16px;width:max-content}
   .switcher button{border:0;background:transparent;color:#9aa3b8;padding:7px 16px;border-radius:999px;
-            font-size:12px;cursor:default}
+            font-size:12px;cursor:pointer;transition:.15s}
+  .switcher button:hover{color:#cfd6e6}
   .switcher button.on{background:#20304f;color:#dbe6ff}
   .switcher button.on.live{background:#123a2a;color:#7ff0b5}
   .hero-tools{position:absolute;top:18px;left:22px;display:flex;gap:8px;z-index:2}
-  .tool{width:32px;height:32px;border-radius:50%;background:#151a26;border:1px solid #29303f;
-        display:grid;place-items:center;font-size:13px;color:#aeb6c8;cursor:pointer}
-  /* ---------- grids ---------- */
+  .tool{width:34px;height:34px;border-radius:50%;background:#151a26;border:1px solid #29303f;
+        display:grid;place-items:center;font-size:14px;color:#aeb6c8;cursor:pointer;transition:.15s}
+  .tool:hover{background:#1d2433;color:#fff}
   .row{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;margin-top:18px}
   @media(max-width:1100px){.row{grid-template-columns:1fr}}
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
-  .card h3{margin:0 0 14px;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+  .card h3{margin:0 0 14px;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
+           display:flex;justify-content:space-between;align-items:center}
   .nums{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
   .big{font-size:32px;font-weight:650;letter-spacing:-.02em}
   .chip{font-size:12px;padding:3px 8px;border-radius:8px;background:#1b2130;color:#b8c0d4}
   .chip.up{background:#12301f;color:#63e39b}
   .chip.down{background:#33161c;color:#ff8792}
-  .chart{width:100%;height:210px;margin-top:8px}
+  .chart{width:100%;height:220px;margin-top:6px;cursor:crosshair}
   .trade .dir{display:inline-block;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;
         letter-spacing:.08em;text-transform:uppercase}
   .dir.long{background:#12301f;color:#63e39b}
@@ -87,13 +86,32 @@
   th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;
      padding:8px 6px;border-bottom:1px solid var(--line);font-weight:500}
   td{padding:9px 6px;border-bottom:1px solid #181d28}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:#161b25}
   tr:last-child td{border:0}
   .pos{color:var(--green)} .neg{color:var(--red)}
-  pre{max-height:260px;overflow:auto;margin:0;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
+  pre{max-height:240px;overflow:auto;margin:0;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
       color:#9aa4b8;white-space:pre-wrap}
-  .health{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;color:var(--muted);font-size:12px}
+  .health{display:flex;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:12px}
   .health b{color:var(--text);font-weight:600}
-  .badge{font-size:11px;padding:2px 7px;border-radius:6px;background:#1b2130;color:#aab3c8}
+  .dot-live{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:var(--green);
+            animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  /* modal */
+  .overlay{position:fixed;inset:0;background:rgba(6,8,12,.72);display:none;place-items:center;z-index:50;
+           backdrop-filter:blur(4px)}
+  .overlay.show{display:grid}
+  .modal{width:520px;max-width:92vw;background:#151922;border:1px solid #252c3b;border-radius:16px;padding:22px}
+  .modal h2{margin:0 0 14px;font-size:17px}
+  .modal .close{float:right;cursor:pointer;color:var(--muted);font-size:18px;line-height:1}
+  .modal .kv{border-color:#1e2534}
+  .btn{border:1px solid #2b3448;background:#1a2130;color:#cfd6e6;padding:9px 16px;border-radius:10px;
+       cursor:pointer;font-size:13px}
+  .btn:hover{background:#212a3c}
+  .btn.danger{background:#2a141a;border-color:#4a2029;color:#ff8792}
+  .btn.primary{background:#1b2f57;border-color:#2c4a86;color:#dbe6ff}
+  .tip{position:absolute;background:#0d1119;border:1px solid #2a3244;border-radius:8px;padding:6px 9px;
+       font-size:11px;color:#c9d1e2;pointer-events:none;white-space:nowrap;display:none;z-index:5}
 </style>
 </head>
 <body>
@@ -105,36 +123,37 @@
     <div class="grow"></div>
     <div class="user">
       <div class="av"></div>
-      <div><div style="font-size:13px">Юань · песочница</div><small>бумажная торговля</small></div>
-      <button class="power" id="power" title="Стоп-флаг">⏻</button>
+      <div><div style="font-size:13px">Юань · песочница</div><small id="upd">—</small></div>
+      <button class="power" id="power" title="Стоп-флаг: остановить/разрешить торговлю">⏻</button>
     </div>
   </aside>
 
   <main class="main">
-    <section class="hero" id="hero">
+    <section class="hero">
       <div class="hero-tools">
-        <div class="tool" title="Токен Финама">🔑</div>
-        <div class="tool" title="Параметры">⚙︎</div>
-        <div class="tool" title="Редактировать">✎</div>
+        <div class="tool" id="t-broker" title="Брокер и счёт">🔑</div>
+        <div class="tool" id="t-params" title="Параметры конфигурации">⚙︎</div>
+        <div class="tool" id="t-refresh" title="Обновить сейчас">⟳</div>
       </div>
       <h1 id="h-title">—</h1>
       <p id="h-desc"></p>
       <div class="switcher">
-        <button id="sw-off">○ Offline</button>
-        <button id="sw-on">● Live</button>
+        <button id="sw-off" title="Остановить торговлю (стоп-флаг)">○ Offline</button>
+        <button id="sw-on" title="Разрешить торговлю">● Live</button>
       </div>
     </section>
 
     <div class="row">
       <section class="card">
-        <h3>Текущая позиция</h3>
+        <h3><span>Текущая позиция</span><span id="chart-src" class="chip">цена</span></h3>
         <div class="nums">
           <div class="big" id="pnl">0 ₽</div>
           <div class="chip" id="pnl-unreal">0 ₽</div>
           <div class="chip" id="pnl-pct">0%</div>
           <div style="margin-left:auto;color:var(--muted);font-size:12px" id="date"></div>
         </div>
-        <svg class="chart" id="chart" viewBox="0 0 800 210" preserveAspectRatio="none"></svg>
+        <svg class="chart" id="chart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
+        <div class="tip" id="tip"></div>
       </section>
 
       <section class="card trade">
@@ -152,98 +171,147 @@
       <section class="card">
         <h3>Все конфигурации</h3>
         <table>
-          <thead><tr><th>config</th><th>позиция</th><th>P&L</th><th>сделок</th><th>последний сигнал</th></tr></thead>
+          <thead><tr><th>конфигурация</th><th>позиция</th><th>P&L</th><th>сделок</th><th>последний сигнал</th></tr></thead>
           <tbody id="tbody"></tbody>
         </table>
       </section>
       <section class="card">
-        <h3>Здоровье</h3>
+        <h3><span>Здоровье</span><span id="q-line" class="chip">—</span></h3>
         <div class="health" id="health"></div>
-        <h3 style="margin-top:18px">Журнал · 20 строк</h3>
+        <h3 style="margin-top:16px">Журнал · 20 строк</h3>
         <pre id="log"></pre>
       </section>
     </div>
   </main>
 </div>
 
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <span class="close" id="m-close">✕</span>
+    <h2 id="m-title"></h2>
+    <div id="m-body"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px">
+      <button class="btn" id="m-cancel">Закрыть</button>
+      <button class="btn primary" id="m-ok" style="display:none">Понятно</button>
+    </div>
+  </div>
+</div>
+
 <script>
-let DATA = null, CUR = null;
+let DATA = null, CUR = null, POINTS = null, TICK = 0, INTERVAL = 10;
 
 const fmt = n => (n >= 0 ? "+" : "") + Math.round(n).toLocaleString("ru-RU") + " ₽";
+const dirText = p => p > 0 ? "LONG" : p < 0 ? "SHORT" : "ВНЕ РЫНКА";
 
-function statusText(s){ return s === "live" ? "в позиции" : s === "waiting" ? "ждём решения" : "нет данных"; }
+function openModal(title, html, ok){
+  document.getElementById("m-title").textContent = title;
+  document.getElementById("m-body").innerHTML = html;
+  document.getElementById("m-ok").style.display = ok ? "inline-block" : "none";
+  document.getElementById("overlay").classList.add("show");
+}
+function closeModal(){ document.getElementById("overlay").classList.remove("show"); }
+document.getElementById("m-close").onclick = closeModal;
+document.getElementById("m-cancel").onclick = closeModal;
+document.getElementById("m-ok").onclick = closeModal;
+document.getElementById("overlay").onclick = e => { if (e.target.id === "overlay") closeModal(); };
 
-async function load(){
-  const r = await fetch("/api/state", {cache:"no-store"});
-  if(!r.ok) return;
+async function load(force){
+  const r = await fetch("/api/state" + (force ? "?t=" + Date.now() : ""), {cache:"no-store"});
+  if(!r.ok){ document.getElementById("upd").textContent = "нет доступа к API"; return; }
   DATA = await r.json();
   if(!CUR) CUR = DATA.strategies[0]?.id;
   render();
+  TICK = INTERVAL;
 }
 
 function renderSidebar(){
   const el = document.getElementById("list");
   el.innerHTML = DATA.strategies.map(s => `
-    <div class="item ${s.id===CUR?"active":""}" data-id="${s.id}">
-      <div class="ico">${s.name[0]}</div>
+    <div class="item ${s.id===CUR?"active":""}" data-id="${s.id}" onclick="select('${s.id}')">
+      <div class="ico">${s.strategy === "prostushka" ? "П" : "У"}</div>
       <div class="nm">${s.title}</div>
-      <div class="st ${s.status}"></div>
+      <div class="st ${s.status}" title="${s.status}"></div>
     </div>`).join("");
-  el.querySelectorAll(".item").forEach(n => n.onclick = () => { CUR = n.dataset.id; render(); });
 }
+function select(id){ CUR = id; render(); }
 
-function chart(series){
+function chart(series, isPrice){
   const svg = document.getElementById("chart");
-  const W = 800, H = 210, P = 10;
+  const W = 800, H = 220, P = 12;
   if(!series || series.length < 2){
-    svg.innerHTML = `<text x="400" y="105" fill="#4a5163" font-size="13" text-anchor="middle">данных пока нет</text>`;
+    POINTS = null;
+    svg.innerHTML = `<text x="400" y="110" fill="#4a5163" font-size="13" text-anchor="middle">данных пока нет</text>`;
     return;
   }
   const ys = series.map(p => p[1]);
   const min = Math.min(...ys), max = Math.max(...ys), span = (max-min)||1;
-  const pts = series.map((p,i) => {
-    const x = P + i*(W-2*P)/(series.length-1);
-    const y = H-P - (p[1]-min)*(H-2*P)/span;
-    return [x,y];
-  });
+  const pts = series.map((p,i) => [P + i*(W-2*P)/(series.length-1), H-P - (p[1]-min)*(H-2*P)/span]);
+  POINTS = pts.map((p,i) => ({x:p[0], y:p[1], label:series[i][0], v:series[i][1]}));
   const d = pts.map((p,i)=> (i?"L":"M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
   const last = pts[pts.length-1];
   const up = ys[ys.length-1] >= ys[0];
   const color = up ? "#2fd07b" : "#ff4d5e";
   svg.innerHTML = `
     <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="${color}" stop-opacity=".35"/>
+      <stop offset="0%" stop-color="${color}" stop-opacity=".32"/>
       <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
     </linearGradient></defs>
     <path d="${d} L ${W-P} ${H-P} L ${P} ${H-P} Z" fill="url(#g)"/>
     <path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>
-    <circle cx="${last[0]}" cy="${last[1]}" r="4" fill="${color}"/>`;
+    <circle cx="${last[0]}" cy="${last[1]}" r="4" fill="${color}"/>
+    <line id="cursor" x1="0" y1="0" x2="0" y2="${H-P}" stroke="#4a5163" stroke-dasharray="3 3" opacity="0"/>
+    <text x="${W-P}" y="16" fill="#8b90a0" font-size="11" text-anchor="end">${isPrice ? "цена, M5" : "P&L, ₽"}</text>`;
 }
+
+document.getElementById("chart").addEventListener("mousemove", ev => {
+  if(!POINTS) return;
+  const svg = document.getElementById("chart");
+  const box = svg.getBoundingClientRect();
+  const x = (ev.clientX - box.left) / box.width * 800;
+  let best = POINTS[0];
+  for(const p of POINTS) if(Math.abs(p.x - x) < Math.abs(best.x - x)) best = p;
+  const cur = document.getElementById("cursor");
+  cur.setAttribute("x1", best.x); cur.setAttribute("x2", best.x);
+  cur.setAttribute("opacity", "1");
+  const tip = document.getElementById("tip");
+  tip.style.display = "block";
+  tip.style.left = (ev.clientX - box.left + 12) + "px";
+  tip.style.top = (ev.clientY - box.top - 28) + "px";
+  tip.textContent = best.label + " · " + best.v;
+});
+document.getElementById("chart").addEventListener("mouseleave", () => {
+  document.getElementById("tip").style.display = "none";
+  const cur = document.getElementById("cursor"); if(cur) cur.setAttribute("opacity","0");
+});
 
 function render(){
   renderSidebar();
   const s = DATA.strategies.find(x => x.id === CUR) || DATA.strategies[0];
   document.getElementById("h-title").textContent = s.title.toUpperCase();
   document.getElementById("h-desc").textContent = s.desc;
-  document.getElementById("sw-off").className = s.status === "live" ? "" : "on";
-  document.getElementById("sw-on").className = s.status === "live" ? "on live" : "";
+
+  const h = DATA.health;
+  const live = !h.stop;
+  document.getElementById("sw-off").className = live ? "" : "on";
+  document.getElementById("sw-on").className = live ? "on live" : "";
 
   const total = s.pnl + (s.unrealized || 0);
   document.getElementById("pnl").textContent = fmt(total);
   document.getElementById("pnl").className = "big " + (total >= 0 ? "pos" : "neg");
-  document.getElementById("pnl-unreal").textContent = fmt(s.unrealized || 0);
+  document.getElementById("pnl-unreal").textContent = "нереал. " + fmt(s.unrealized || 0);
   document.getElementById("pnl-unreal").className = "chip " + ((s.unrealized||0) >= 0 ? "up" : "down");
-  const pct = s.entry_price && s.position ? (s.unrealized/1000*100/(s.entry_price*s.position||1)) : 0;
+  const pct = (s.entry_price && s.position) ? (s.unrealized/1000*100/(s.entry_price*Math.abs(s.position))) : 0;
   document.getElementById("pnl-pct").textContent = (pct>=0?"+":"") + pct.toFixed(2) + "%";
   document.getElementById("pnl-pct").className = "chip " + (pct >= 0 ? "up" : "down");
   document.getElementById("date").textContent = DATA.generated;
 
-  const series = (s.equity && s.equity.length > 1) ? s.equity : (DATA.prices || []);
-  chart(series);
+  const hasEquity = s.equity && s.equity.length > 1;
+  chart(hasEquity ? s.equity : (DATA.prices || []), !hasEquity);
+  document.getElementById("chart-src").textContent = hasEquity ? "P&L" : "цена";
 
   const d = document.getElementById("dir");
   d.className = "dir " + (s.position > 0 ? "long" : s.position < 0 ? "short" : "flat");
-  d.textContent = s.position > 0 ? "LONG" : s.position < 0 ? "SHORT" : "ВНЕ РЫНКА";
+  d.textContent = dirText(s.position);
   document.getElementById("trade-note").textContent = s.last ? (s.last.note || "") : "решений ещё не было";
   document.getElementById("t-qty").textContent = Math.abs(s.position) + " контракт" + (Math.abs(s.position)===1?"":"ов");
   document.getElementById("t-entry").textContent = s.entry_price ? s.entry_price.toFixed(3) + " ₽" : "—";
@@ -251,32 +319,65 @@ function render(){
   document.getElementById("t-last").textContent = s.last ? `${s.last.date} ${s.last.action}` : "—";
 
   document.getElementById("tbody").innerHTML = DATA.strategies.map(x => `
-    <tr><td>${x.title}</td>
+    <tr onclick="select('${x.id}')">
+        <td>${x.title}</td>
         <td class="${x.position>0?"pos":x.position<0?"neg":""}">${x.position>0?"+1":x.position<0?"−1":"0"}</td>
         <td class="${x.pnl>=0?"pos":"neg"}">${fmt(x.pnl)}</td>
         <td>${x.trades}</td>
-        <td class="badge">${x.last ? x.last.date + " " + x.last.time : "—"}</td></tr>`).join("");
+        <td><span class="chip">${x.last ? x.last.date + " " + x.last.time : "—"}</span></td></tr>`).join("");
 
-  const h = DATA.health;
   const q = DATA.quote || {};
+  document.getElementById("q-line").textContent = q.bid ? `${q.bid} / ${q.ask}` : "нет котировки";
   document.getElementById("health").innerHTML = `
-    <div>таймеры: <b>${h.timers.morning}</b> / <b>${h.timers.daily}</b></div>
-    <div>котировка: <b>${q.bid ?? "—"}</b> / <b>${q.ask ?? "—"}</b> · спред <b>${q.spread_ticks ?? "—"}</b> тик.</div>
-    <div>стоп-флаг: <b>${h.stop ? "ВКЛ" : "выкл"}</b></div>
-    <div>обновлено: <b>${DATA.generated}</b></div>`;
+    <div><span class="dot-live"></span>таймеры: <b>${h.timers.morning}</b> / <b>${h.timers.daily}</b></div>
+    <div>спред: <b>${q.spread_ticks ?? "—"}</b> тик.</div>
+    <div>стоп-флаг: <b class="${h.stop?"neg":"pos"}">${h.stop ? "ВКЛ" : "выкл"}</b></div>
+    <div>обновление через <b id="cnt">${TICK}</b> с</div>`;
   document.getElementById("log").textContent = (h.log || []).join("\n") || "пусто";
-
-  const p = document.getElementById("power");
-  p.classList.toggle("on", h.stop);
+  document.getElementById("power").classList.toggle("on", !h.stop);
+  document.getElementById("upd").textContent = "обновлено " + DATA.generated.slice(11);
 }
 
-document.getElementById("power").onclick = async () => {
+document.getElementById("power").onclick = () => toggleStop();
+document.getElementById("sw-off").onclick = () => toggleStop(true);
+document.getElementById("sw-on").onclick = () => toggleStop(false);
+
+async function toggleStop(setStop){
+  const isStop = DATA.health.stop;
+  const target = (setStop === undefined) ? !isStop : setStop;
+  if(target === isStop) return;
   await fetch("/api/stop", {method:"POST"});
-  load();
+  await load(true);
+}
+
+document.getElementById("t-refresh").onclick = () => load(true);
+document.getElementById("t-broker").onclick = () => {
+  const q = DATA.quote || {};
+  openModal("Брокер и счёт", `
+    <div class="kv"><span>Брокер</span><b>Финам · Trade API</b></div>
+    <div class="kv"><span>Инструмент</span><b>CNYRUBF@RTSX</b></div>
+    <div class="kv"><span>Котировка</span><b>${q.bid ?? "—"} / ${q.ask ?? "—"}</b></div>
+    <div class="kv"><span>Спред</span><b>${q.spread_ticks ?? "—"} тик.</b></div>
+    <div class="kv"><span>Режим</span><b>${DATA.health.stop ? "остановлен" : "бумажная торговля"}</b></div>
+    <div class="kv"><span>Счёт</span><b>2102993</b></div>
+    <div class="kv"><span>Заявки</span><b>выключены (FINAM_ALLOW_TRADING=0)</b></div>`);
+};
+document.getElementById("t-params").onclick = () => {
+  const s = DATA.strategies.find(x => x.id === CUR) || DATA.strategies[0];
+  const p = s.params || {};
+  const rows = Object.entries(p).map(([k,v]) => `<div class="kv"><span>${k}</span><b>${v}</b></div>`).join("");
+  openModal("Параметры · " + s.title, rows + `
+    <p style="color:var(--muted);font-size:12px;margin:14px 0 0">
+      Параметры зафиксированы до конца теста. Изменение — только новой конфигурацией.</p>`);
 };
 
 load();
-setInterval(load, 30000);
+setInterval(() => {
+  TICK -= 1;
+  const c = document.getElementById("cnt");
+  if(c) c.textContent = Math.max(TICK, 0);
+  if(TICK <= 0) load();
+}, 1000);
 </script>
 </body>
 </html>
