@@ -1,8 +1,10 @@
 """Дополнительные роботы для бумажной торговли (новые id, работают параллельно).
 
 Конфигурации зафиксированы ДО начала бумажного теста: реестр `CONFIGS` не меняется.
-Все три кандидата прошли check OOS 2026 (reports/param-search-2025-2026.md,
-reports/entry-time-validation.md) и получают ATR-резку сайза по `algo/risk.py`.
+Три кандидата прошли check OOS 2026, четвёртый (`p-train`) — **контроль подгонки**:
+лучший по train 2023–25 набор, который на OOS проиграл базе. Все получают ATR-резку
+сайза по `algo/risk.py`. Исследование — `reports/param-search-2025-2026.md`,
+`reports/entry-time-validation.md`, `reports/regime-vs-overfit.md`.
 """
 
 from __future__ import annotations
@@ -33,6 +35,15 @@ ROBOT_CONFIGS: list[Config] = [
         "вход 13:40: CNY train PF 1.81 / OOS 2.15 против 1.73/1.83 у u-base; "
         "Si 2009–25 лучше, 2026 хуже — риск-резка обязательна",
         "Универсалка · 13:40 риск",
+    ),
+    Config(
+        "p-train", "prostushka",
+        dict(ma_window=250, entry="13:40", filter_bars=1,
+             short_friday=False, risk_vol=True),
+        "КОНТРОЛЬ ПОДГОНКИ: лучший по train 2023–25 PF 2.02 (MA50, 13:40, фильтр 1, "
+        "без шорта в пятницу), но на OOS 2026 PF 1.47 против 1.53 у p-base — "
+        "проверяем, подтвердится ли шум в бумажном контуре",
+        "Простушка · train-пик риск",
     ),
 ]
 

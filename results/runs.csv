@@ -171,3 +171,7 @@ ts,strategy,instrument,period,params,trades,net,pf,avg,dd,in_market,note
 2026-11-20 23:19,robot,p-ma50,train 2023-25 / OOS 2026,ma_window=250;entry=13:50;filter_bars=3;short_friday=False;risk_vol=True,390,-767.96,0.0,,-769.07,,"new robot, ATR risk enabled"
 2026-11-20 23:19,robot,p-fast2,train 2023-25 / OOS 2026,ma_window=250;entry=13:40;filter_bars=3;short_friday=True;risk_vol=True,365,-716.87,0.0,,-717.98,,"new robot, ATR risk enabled"
 2026-11-20 23:19,robot,u-1340,train 2023-25 / OOS 2026,ref=10:05;entry=13:40;long_off=0.004;short_off=0.002;hold=daily;short_friday=False;risk_vol=True,254,6896.96,1.81,,-1319.92,,"new robot, ATR risk enabled"
+2026-11-20 23:46,robot,p-ma50,train 2023-25 / OOS 2026,ma_window=250;entry=13:50;filter_bars=3;short_friday=False;risk_vol=True,390,-767.96,0.0,,-769.07,,"new robot, ATR risk enabled"
+2026-11-20 23:46,robot,p-fast2,train 2023-25 / OOS 2026,ma_window=250;entry=13:40;filter_bars=3;short_friday=True;risk_vol=True,365,-716.87,0.0,,-717.98,,"new robot, ATR risk enabled"
+2026-11-20 23:46,robot,u-1340,train 2023-25 / OOS 2026,ref=10:05;entry=13:40;long_off=0.004;short_off=0.002;hold=daily;short_friday=False;risk_vol=True,254,6896.96,1.81,,-1319.92,,"new robot, ATR risk enabled"
+2026-11-20 23:46,robot,p-train,train 2023-25 / OOS 2026,ma_window=250;entry=13:40;filter_bars=1;short_friday=False;risk_vol=True,384,-753.99,0.0,,-755.1,,"new robot, ATR risk enabled"
