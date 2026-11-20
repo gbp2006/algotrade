@@ -13,3 +13,5 @@ results/web-local.log
 results/finam_m5_*.csv
 INDEX.md.bak-*
 cache/
+
+opencode.jsonc.bak-*
