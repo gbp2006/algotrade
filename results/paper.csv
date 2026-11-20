@@ -17,3 +17,4 @@ date,time,config,instrument,symbol,strategy,price,signal,target,contracts,equity
 2026-11-20,13:30,u-morning,CNY,CNYRUBF@RTSX,universal,12.305,0,0,0,200000,решение,0,"репер 12.261, close 12.305, порог +0.4%/-0.2%; лот 0, equity 200000"
 2026-11-20,13:50,p-rts,RTS,RIZ6@RTSX,prostushka,89150,0,0,0,260000,решение,0,"close 89150.000 vs MA40 89777.2500; лот 0, equity 260000"
 2026-11-20,13:50,p-gold,GOLD,GDZ6@RTSX,prostushka,3632.4,1,1,1,450000,решение,1,"close 3632.400 vs MA40 3619.7775; лот 1, equity 450000"
+2026-11-20,18:40,p-friday,CNY,CNYRUBF@RTSX,prostushka,12.147,0,0,0,0,пятница,0,закрытие перед выходными по 12.147

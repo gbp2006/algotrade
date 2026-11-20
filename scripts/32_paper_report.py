@@ -84,14 +84,23 @@ def expected(cfg, m5: pd.DataFrame, start: str, end: str,
         contracts = size_contracts(capital + pnl, dec.price, mult,
                                               exposure_of(cfg)) if dec.target != 0 else 0
         target = dec.target * contracts
-        if target == pos:
-            continue
-        if pos != 0:
-            pnl += (dec.price - entry) * mult * pos
-            trades += 1
-        if target != 0:
-            entry = dec.price
-        pos = target
+        if target != pos:
+            if pos != 0:
+                pnl += (dec.price - entry) * mult * pos
+                trades += 1
+            if target != 0:
+                entry = dec.price
+            pos = target
+        # p-friday закрывается в 18:45 пятницы — ожидание обязано это моделировать,
+        # иначе отчёт показывает ложный tracking error после срабатывания таймера.
+        if cfg.params.get("close_friday") and day.weekday() == 4 and pos != 0:
+            today = m5[m5.index.date == day]
+            closed = today[(today.index.hour * 60 + today.index.minute) <= 18 * 60 + 45]
+            if not closed.empty:
+                exit_price = float(closed["close"].iloc[-1])
+                pnl += (exit_price - entry) * mult * pos
+                trades += 1
+                entry, pos = 0.0, 0
     if decisions == 0:
         return None, None          # архив не покрывает период — ожидания нет
     return trades, pnl
