@@ -12,7 +12,17 @@ from pathlib import Path
 
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+# Живой контур читает .env (ALGO_EXPOSURE, ALGO_CAPITAL). Ожидание обязано
+# считаться теми же деньгами, иначе tracking error показывает разницу лотности,
+# а не расхождение сигнала с исполнением.
+try:
+    from dotenv import load_dotenv  # type: ignore
+    load_dotenv(ROOT / ".env")
+except ImportError:
+    pass
 
 from algo.configs import CONFIGS  # noqa: E402
 from algo.data import load_cached  # noqa: E402
@@ -63,10 +73,12 @@ def expected(cfg, m5: pd.DataFrame, start: str, end: str,
     entry = 0.0
     pnl = 0.0
     trades = 0
+    decisions = 0
     for day in days:
         dec = decision(cfg, m5[m5.index.date <= day], day)
         if dec is None:
             continue
+        decisions += 1
         contracts = size_contracts(capital + pnl, dec.price, mult,
                                               exposure_of(cfg)) if dec.target != 0 else 0
         target = dec.target * contracts
@@ -78,6 +90,8 @@ def expected(cfg, m5: pd.DataFrame, start: str, end: str,
         if target != 0:
             entry = dec.price
         pos = target
+    if decisions == 0:
+        return None, None          # архив не покрывает период — ожидания нет
     return trades, pnl
 
 
