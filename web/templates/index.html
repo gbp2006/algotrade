@@ -181,6 +181,7 @@
       <div class="switcher">
         <button id="sw-off" title="Остановить торговлю">○ Offline</button>
         <button id="sw-on" title="Разрешить торговлю">● Live</button>
+        <span id="h-status" class="chip">...</span>
       </div>
     </section>
 
@@ -464,8 +465,12 @@ function render(){
   document.getElementById("h-desc").textContent = s.desc;
 
   const h = DATA.health, live = !h.stop;
+  const hStatus = h.status === "OK" ? "ok" : (h.status === "PROBLEMS" ? "bad" : "");
+  const hLabel = hStatus === "bad" ? "ПРОБЛЕМЫ" : (hStatus === "ok" ? "OK" : "...");
   document.getElementById("sw-off").className = live ? "" : "on";
   document.getElementById("sw-on").className = live ? "on live" : "";
+  document.getElementById("h-status").textContent = hLabel;
+  document.getElementById("h-status").className = "chip " + (hStatus === "bad" ? "down" : hStatus === "ok" ? "up" : "");
 
   const card = s.card || {};
   const total = s.pnl + (s.unrealized || 0);
@@ -498,7 +503,7 @@ function render(){
     <tr onclick="select('${x.id}')">
         <td>${x.title}</td>
         <td class="${x.position>0?"pos":x.position<0?"neg":""}">${x.position>0?"+"+x.position:x.position<0?"−"+Math.abs(x.position):"0"}</td>
-        <td class="${x.pnl>=0?"pos":"neg"}">${fmt(x.pnl)}</td>
+        <td class="${x.pnl + (x.unrealized||0) >=0?"pos":"neg"}">${fmt(x.pnl + (x.unrealized||0))}</td>
         <td>${x.trades}</td>
         <td><span class="chip">${x.last ? x.last.date + " " + x.last.time : "—"}</span></td>
         <td style="text-align:right"><button class="btn" style="padding:4px 10px;font-size:11px"

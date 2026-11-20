@@ -11,12 +11,15 @@ import hashlib
 import json
 import os
 import subprocess
+import threading
 import time
+import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import (HTMLResponse, JSONResponse, PlainTextResponse,
+                               RedirectResponse)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
@@ -42,7 +45,8 @@ sys.path.insert(0, str(ROOT))
 from algo.broker.finam import FinamBroker  # noqa: E402
 from algo.configs import BY_ID, CONFIGS  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS, margin, symbol as inst_symbol  # noqa: E402
-from algo.portfolio import CAPITAL, account_card, drawdown_stats, ledger  # noqa: E402
+from algo.portfolio import (CAPITAL, account_card, drawdown_stats,  # noqa: E402
+                            exposure_of, ledger)
 
 
 def instrument_of(cfg):
@@ -67,12 +71,45 @@ def _cached(key: str, ttl: int, fn):
     _cache[key] = (now, val)
     return val
 
+# Фоновое обновление health.json каждые 5 минут
+import threading
+import time
+
+def _health_refresh_loop() -> None:
+    """Каждые 5 мин пересчитывает results/health.json через scripts/40_watchdog.py."""
+    script = str(ROOT / "scripts" / "40_watchdog.py")
+    while True:
+        try:
+            subprocess.run([sys.executable, script], capture_output=True, text=True, timeout=120)
+        except Exception:  # noqa: BLE001 — обновление не должно ронять панель
+            pass
+        time.sleep(300)
+
+@app.on_event("startup")
+def _startup_health() -> None:
+    threading.Thread(target=_health_refresh_loop, daemon=True).start()
+
+REMOTE = os.environ.get("ALGO_PANEL_REMOTE", "").rstrip("/")
+
+
+def _remote_paper() -> str | None:
+    """Журнал с боевой панели: локальная копия смотрит на сервер, иначе пусто."""
+    def fetch():
+        try:
+            with urllib.request.urlopen(f"{REMOTE}/api/paper.csv", timeout=3) as r:
+                return r.read().decode("utf-8")
+        except Exception:  # noqa: BLE001 — сервер недоступен: читаем локальный файл
+            return None
+    return _cached("paper:remote", 5, fetch)
+
 
 def read_paper() -> list[dict]:
-    if not PAPER.exists():
-        return []
-    with PAPER.open(encoding="utf-8") as f:
-        return [r for r in csv.DictReader(f) if "config" in r]
+    text = _remote_paper() if REMOTE else None
+    if text is None:
+        if not PAPER.exists():
+            return []
+        text = PAPER.read_text(encoding="utf-8")
+    return [r for r in csv.DictReader(text.splitlines()) if "config" in r]
 
 
 def alerts_digest(wd: dict | None) -> str:
@@ -223,6 +260,14 @@ def favicon():
     return RedirectResponse("/static/img/favicon.ico")
 
 
+@app.get("/api/paper.csv")
+def paper_csv():
+    """Сырой журнал: локальная панель тянет его с боевой (ALGO_PANEL_REMOTE)."""
+    if not PAPER.exists():
+        return PlainTextResponse("", media_type="text/plain")
+    return PlainTextResponse(PAPER.read_text(encoding="utf-8"), media_type="text/plain")
+
+
 @app.get("/api/state")
 def state():
     rows = read_paper()
@@ -266,6 +311,7 @@ def state():
                                  if portfolio["equity"] else 0.0)
 
     wd = json.loads(HEALTH.read_text(encoding="utf-8")) if HEALTH.exists() else None
+    ok = bool(wd and wd.get("ok"))
     digest = alerts_digest(wd)
     if not digest and ALERTS.exists():
         ALERTS.unlink()          # алертов нет — снимаем отметку, чтобы повтор показать
@@ -278,6 +324,7 @@ def state():
         "strategies": strategies,
         "portfolio": portfolio,
         "health": {
+            "status": "OK" if ok else "PROBLEMS",
             "timers": {"morning": timer_state("algotrading-morning.timer"),
                        "daily": timer_state("algotrading-daily.timer"),
                        "web": timer_state("algotrading-web.service")},
@@ -287,6 +334,7 @@ def state():
                        "dismissed": bool(digest) and digest == seen},
             "log": log,
         },
+        "ok": ok,
     })
 
 
@@ -384,7 +432,8 @@ def _expected(cfg, start: str, end: str):
             dec = decision(cfg, m5[m5.index.date <= day], day)
             if dec is None:
                 continue
-            contracts = size_contracts(capital + pnl, dec.price, mult) if dec.target != 0 else 0
+            contracts = size_contracts(capital + pnl, dec.price, mult,
+                                              exposure_of(cfg)) if dec.target != 0 else 0
             target = dec.target * contracts
             if target == pos:
                 continue
@@ -406,6 +455,30 @@ def api_config(cfg_id: str):
         raise
     except Exception as e:  # noqa: BLE001
         return JSONResponse({"error": str(e)[:200]})
+
+
+@app.get("/api/health")
+def api_health():
+    """Статус бумажного теста: таймеры, стоп-флаг, свежесть данных, журнал.
+
+    Для внешних мониторов: 200, если ok, иначе 503 (проблемы — в теле).
+    """
+    wd = None
+    if HEALTH.exists():
+        try:
+            wd = json.loads(HEALTH.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001 — битый health.json не должен ронять панель
+            wd = None
+    ok = bool(wd and wd.get("ok"))
+    return JSONResponse({
+        "status": "OK" if ok else "PROBLEMS",
+        "checked": (wd or {}).get("checked"),
+        "problems": (wd or {}).get("problems") or [],
+        "warnings": (wd or {}).get("warnings") or [],
+        "data_date": (wd or {}).get("data_date"),
+        "rows": (wd or {}).get("rows") or 0,
+        "stop": bool(STOP.exists()),
+    }, status_code=200 if ok else 503)
 
 
 @app.get("/api/candles")

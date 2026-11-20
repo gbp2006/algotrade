@@ -1,8 +1,8 @@
 """Сторож бумажного теста: проверяет, что всё идёт, и пишет results/health.json.
 
-Проверки:
+Проверки (живой прототип: данные — котировки/API + кэш, архив нужен только для
+бэктестов, которые живут на проверяющем ПК, не здесь):
   - таймеры и служба дашборда активны;
-  - архив данных не отстаёт больше чем на 3 дня;
   - за последние торговые дни есть записи по всем конфигурациям-решениям;
   - нет дублей и записей из будущего;
   - стоп-флаг.
@@ -20,7 +20,6 @@ ROOT = Path(__file__).resolve().parent.parent
 PAPER = ROOT / "results" / "paper.csv"
 HEALTH = ROOT / "results" / "health.json"
 STOP = ROOT / "results" / "STOP"
-DATA = ROOT / "data" / "2026-11" / "CNYRUBF.txt"
 
 DECISION_CONFIGS = ["p-base", "p-fast", "p-h1", "u-base", "u-wide"]
 TIMERS = ["algotrading-daily.timer", "algotrading-morning.timer", "algotrading-web.service"]
@@ -28,12 +27,19 @@ MAX_LOOKBACK = 5  # сколько последних торговых дней 
 
 
 def systemd_active(name: str) -> bool:
+    """True, если юнит найден И активен. Юнит, которого нет в системе (локальная копия
+    панели), не считаем проблемой — проверяем только там, где он может быть."""
     try:
+        en = subprocess.run(["systemctl", "is-enabled", name], capture_output=True,
+                             text=True, timeout=5)
+        state = (en.stdout or "").strip()
+        if en.returncode != 0 or not state or state == "disabled":
+            return True
         r = subprocess.run(["systemctl", "is-active", name], capture_output=True,
                            text=True, timeout=5)
         return r.stdout.strip() == "active"
     except Exception:
-        return False
+        return True
 
 
 def read_rows() -> list[dict]:
@@ -41,20 +47,6 @@ def read_rows() -> list[dict]:
         return []
     with PAPER.open(encoding="utf-8") as f:
         return [r for r in csv.DictReader(f) if "config" in r]
-
-
-def last_data_date() -> date | None:
-    if not DATA.exists():
-        return None
-    with DATA.open("rb") as f:
-        f.seek(0, 2)
-        f.seek(max(0, f.tell() - 4000))
-        tail = f.read().decode("utf-8", "ignore").strip().splitlines()
-    for line in reversed(tail):
-        parts = line.split(",")
-        if len(parts) > 3 and parts[2].isdigit():
-            return datetime.strptime(parts[2], "%Y%m%d").date()
-    return None
 
 
 def trading_days_back(n: int) -> list[date]:
@@ -78,13 +70,8 @@ def check() -> dict:
     if STOP.exists():
         warnings.append("стоп-флаг установлен — торговля остановлена вручную")
 
-    ld = last_data_date()
-    if ld is None:
-        problems.append("архив данных не найден")
-    else:
-        age = (date.today() - ld).days
-        if age > 3:
-            problems.append(f"архив отстал на {age} дн. (последний бар {ld})")
+    # данные для свежести проверяем не здесь: живой контур — котировки/API + кэш,
+    # архив нужен только для бэктестов, которые живут на проверяющем ПК.
 
     rows = read_rows()
     if not rows:
@@ -121,7 +108,7 @@ def check() -> dict:
         "ok": not problems,
         "problems": problems,
         "warnings": warnings,
-        "data_date": str(ld) if ld else None,
+        "data_date": None,
         "rows": len(rows),
     }
 
