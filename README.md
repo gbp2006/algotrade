@@ -15,7 +15,7 @@
 Если `.venv` нет: `python3 -m venv .venv && ./.venv/bin/pip install -r requirements.txt`.
 Запуск OpenCode — алиас `algo` (изолированный профиль песочницы).
 
-Данные: `data/` — симлинк на `/mnt/DiskD/MOEX/Исторические данные`
+Данные: `data/` — симлинк на `materials/01_Данные/Исторические данные`
 (`2026-11/CNYRUBF.txt`, `2026-11/Si.txt`; обновление — через `scripts/10_append_iss.py`).
 
 ## Что важно знать

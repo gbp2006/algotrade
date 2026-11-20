@@ -17,10 +17,11 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-# Архив физически перемещён в песочницу; старый путь оставлен compatibility-ссылкой.
-MOEX = ROOT / "materials" / "moex"
+# Архив физически перемещён в песочницу и рассортирован по смысловым разделам.
+MOEX = ROOT / "materials"
 if not MOEX.is_dir():
-    MOEX = Path("/mnt/DiskD/MOEX")
+    print(f"нет каталога архива: {MOEX}")
+    raise SystemExit(1)
 DB = ROOT / "infra" / "db" / "moex_catalog.db"
 TMP = DB.with_name(DB.name + "-new")
 
@@ -96,8 +97,39 @@ def schema(conn: sqlite3.Connection) -> None:
         );
         CREATE INDEX ix_file_section ON file(section);
         CREATE INDEX ix_file_name ON file(name);
+
+        -- смысловые теги по префиксу пути (не требуют перечитать файлы)
+        CREATE TABLE tag (
+            prefix   TEXT PRIMARY KEY,
+            role     TEXT,
+            author   TEXT,
+            status   TEXT,
+            linked_doc TEXT,
+            robot    TEXT
+        );
         """
     )
+
+
+TAGS = [
+    # prefix, role, author, status, linked_doc, robot
+    ("01_Данные", "данные", "", "актив", "", ""),
+    ("02_Стратегии/ТС/Силаев/ТС Трендовушка-простушка", "стратегия", "Силаев", "в работе",
+     "docs/strategies/prostushka.md", "p-base, p-ma50, p-fast2, p-train"),
+    ("02_Стратегии/ТС/Силаев/ТС Трендовушка-универсалка", "стратегия", "Силаев", "в работе",
+     "docs/strategies/universal.md", "u-base, u-1340"),
+    ("02_Стратегии/ТС/Силаев/ТС Трендовушка Хитрушка 2я версия", "стратегия", "Силаев",
+     "отброшен", "docs/strategies/samurai.md; reports/samurai-research.md", ""),
+    ("02_Стратегии/ТС/Силаев/ТС Трендовушка Хитрушка 1я версия", "стратегия", "Силаев",
+     "ждёт разбора", "", ""),
+    ("02_Стратегии/ТС/Умный трейдер", "стратегия", "Коваль-Зайцев", "отброшен",
+     "reports/channel-break-research.md", ""),
+    ("02_Стратегии/ТС/ТС OsEngine 4 стратегии", "стратегия", "OsEngine", "ждёт разбора", "", ""),
+    ("02_Стратегии/ТС/Разобрать", "стратегия", "", "ждёт разбора", "", ""),
+    ("03_Обучение", "обучение", "", "справочник", "", ""),
+    ("04_Софт_и_инструменты", "софт", "", "справочник", "", ""),
+    ("05_Документы", "документы", "", "архив", "", ""),
+]
 
 
 def build() -> int:
@@ -160,6 +192,10 @@ def build() -> int:
     conn.executemany(
         "INSERT INTO section (name, size, files) VALUES (?, ?, ?)",
         [(name, size, files) for name, (size, files) in sorted(sections.items())],
+    )
+    conn.executemany(
+        "INSERT INTO tag (prefix, role, author, status, linked_doc, robot)"
+        " VALUES (?, ?, ?, ?, ?, ?)", TAGS,
     )
     conn.execute("INSERT INTO file_fts(file_fts) VALUES('rebuild')")
     conn.commit()

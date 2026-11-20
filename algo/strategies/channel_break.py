@@ -61,7 +61,7 @@ def targets(
     channel_mode: "night" — канал previous switch -> start (правила ТЗ),
                   "day" — канал start -> switch (оригинальный C#).
     boundary_mode: "exact" — граница только по бару с меткой ровно start_time
-                  (как в C#;literal 01:00 на MOEX даёт 0 сделок),
+                  (как в C#; буквальные 01:00 на MOEX дают 0 сделок),
                   "first_bar" — граница = первая свеча дня с t >= start_time
                   (молчаливая подстановка; на MOEX даёт утреннюю границу).
     """
@@ -96,7 +96,6 @@ def targets(
         return pd.Series(out, index=df.index, name="channel_break_target")
 
     sw_date = date_arr[sw_pos]
-    b_date = date_arr[b_pos]
     slip = tick * slippage_ticks
     allow_long = direction in ("long", "both")
     allow_short = direction in ("short", "both")
@@ -122,7 +121,7 @@ def targets(
             ch_end = -1
             jb = int(np.searchsorted(b_pos, ch_start, side="right"))
             if jb < jx:
-                ch_end = int(b_pos[jb])          # границаstart предыдущего цикла
+                ch_end = int(b_pos[jb])          # граница start предыдущего цикла
             if ch_end < 0:
                 continue
             # dir: сравнение закрытий на двух соседних границах start

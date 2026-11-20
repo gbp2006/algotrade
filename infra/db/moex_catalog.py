@@ -2,7 +2,9 @@
 """Поиск по каталогу архива MOEX (infra/db/moex_catalog.db).
 
     ./infra/db/moex_catalog.py find "пробой канала"
-    ./infra/db/moex_catalog.py section ТС
+    ./infra/db/moex_catalog.py section 02_Стратегии
+    ./infra/db/moex_catalog.py author Силаев
+    ./infra/db/moex_catalog.py status отброшен
     ./infra/db/moex_catalog.py stats
 
 Не более 20 строк вывода.
@@ -97,6 +99,27 @@ def section(name: str) -> int:
     return 0
 
 
+def tagged(kind: str, value: str) -> int:
+    if kind not in ("role", "author", "status"):
+        print(f"неизвестный тег: {kind}")
+        return 2
+    conn = connect()
+    rows = list(conn.execute(
+        "SELECT f.path, f.size, t.role, t.author, t.status FROM file f "
+        "JOIN tag t ON f.path LIKE t.prefix || '%' "
+        f"WHERE t.{kind} LIKE ? ORDER BY f.size DESC LIMIT ?",
+        (f"%{value}%", LIMIT),
+    ))
+    conn.close()
+    if not rows:
+        print(f"нет файлов с {kind}={value}")
+        return 0
+    print(f"{kind}={value}: {len(rows)} файлов")
+    for path, size, role, author, status in rows:
+        print(f"{path}  [{human(size)}, {role}/{author}/{status}]")
+    return 0
+
+
 def stats() -> int:
     conn = connect()
     rows = list(conn.execute(
@@ -119,6 +142,8 @@ def main() -> int:
         return find(" ".join(args))
     if cmd == "section" and args:
         return section(" ".join(args))
+    if cmd in ("role", "author", "status") and args:
+        return tagged(cmd, " ".join(args))
     if cmd == "stats":
         return stats()
     print(__doc__)

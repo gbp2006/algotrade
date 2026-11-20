@@ -24,7 +24,7 @@ args = p.parse_args()
 
 out = Path(
     args.out
-    or f"/mnt/DiskD/MOEX/Исторические данные/2026-11/{args.secid}.txt"
+    or str(ROOT / "materials" / "01_Данные" / "2026-11" / f"{args.secid}.txt")
 )
 
 print(f"Скачиваю {args.secid} за {args.date_from} .. {args.date_till}")
