@@ -13,6 +13,7 @@ case "${1:-help}" in
   test)   "$PY" tests/test_engine.py ;;
   check)  "$PY" scripts/01_data_check.py "${2:-CNYRUBF.txt}" ;;
   update) "$PY" scripts/10_append_iss.py ;;
+  update-live) "$PY" scripts/10b_append_finam.py ;;
   signal) "$PY" scripts/20_mvp_signal.py ;;
   paper)  "$PY" scripts/21_mvp_paper.py ;;
   broker) "$PY" scripts/30_broker_check.py ;;
@@ -54,7 +55,8 @@ usage: ./run.sh <команда>
 
   test     юнит-тесты движка
   check    качество данных (по умолчанию CNYRUBF.txt)
-  update   добрать свежие бары с MOEX ISS
+  update       добрать свежие бары с MOEX ISS (независимый архив)
+  update-live  дописать M5-бары Финама на диск (как раз решает робот)
   signal   сигнал Простушки на сегодня
   paper    записать сигнал в бумажный журнал (по архиву)
   broker   проверка доступа к Финаму

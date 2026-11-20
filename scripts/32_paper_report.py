@@ -110,6 +110,18 @@ def _dd_stats(rows: list[dict], mult: float, capital: float) -> dict:
     return drawdown_stats(pts)
 
 
+def expected_bars(inst) -> pd.DataFrame | None:
+    """Бары для ожидания: живые M5 Финама, иначе архив (ISS/daytradingschool)."""
+    live = ROOT / "results" / f"finam_m5_{inst.code}.csv"
+    if live.exists():
+        df = pd.read_csv(live, parse_dates=["dt"]).set_index("dt")
+        return df[["open", "high", "low", "close", "vol"]]
+    try:
+        return load_cached(inst.file, 5) if inst.file else None
+    except (FileNotFoundError, TypeError):
+        return None
+
+
 def main() -> int:
     if not PAPER.exists():
         print("журнала нет")
@@ -132,14 +144,11 @@ def main() -> int:
         inst = instrument_of(cfg)
         mult, capital = inst.mult, capital_of(cfg)
         trades, pnl, days = ledger(mine, mult)
-        if inst.file not in cache:
-            try:
-                cache[inst.file] = load_cached(inst.file, 5)
-            except FileNotFoundError:
-                cache[inst.file] = None          # архива нет на этой машине
+        if inst.code not in cache:
+            cache[inst.code] = expected_bars(inst)
         e_pnl = None
-        if cache[inst.file] is not None:
-            e_trades, e_pnl = expected(cfg, cache[inst.file], start, end, mult, capital)
+        if cache[inst.code] is not None:
+            e_trades, e_pnl = expected(cfg, cache[inst.code], start, end, mult, capital)
         dd = _dd_stats(mine, mult, capital)
         exp_s = f"{e_pnl:>9.0f} {pnl - e_pnl:>8.0f}" if e_pnl is not None else f"{'—':>9} {'—':>8}"
         print(f"{cfg.id:11} {inst.code:6} {days:>5} {trades:>5} {pnl:>9.0f} "

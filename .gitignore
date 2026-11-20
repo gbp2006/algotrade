@@ -10,5 +10,6 @@ infra/db/*.db-*
 infra/db/*.lock
 infra/exports/
 results/web-local.log
+results/finam_m5_*.csv
 INDEX.md.bak-*
 cache/
