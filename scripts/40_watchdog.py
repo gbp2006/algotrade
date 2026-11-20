@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import csv
+import importlib.util
 import json
 import subprocess
 from datetime import date, datetime, timedelta
@@ -22,7 +23,9 @@ HEALTH = ROOT / "results" / "health.json"
 STOP = ROOT / "results" / "STOP"
 
 DECISION_CONFIGS = ["p-base", "p-fast", "p-h1", "p-friday", "u-base", "u-wide", "u-morning", "p-rts", "p-gold"]
-TIMERS = ["algotrading-daily.timer", "algotrading-morning.timer", "algotrading-web.service"]
+TIMERS = ["algotrading-daily.timer", "algotrading-morning.timer",
+          "algotrading-friday.timer", "algotrading-update-live.timer",
+          "algotrading-web.service"]
 MAX_LOOKBACK = 5  # сколько последних торговых дней проверять
 
 
@@ -58,10 +61,50 @@ def trading_days_back(n: int) -> list[date]:
     return out
 
 
+def data_freshness() -> str | None:
+    """Дата последнего живого M5-бара: CSV Финама, при отсутствии — БД."""
+    live = ROOT / "results" / "finam_m5_CNY.csv"
+    if live.exists():
+        try:
+            lines = live.read_text(encoding="utf-8").strip().splitlines()
+            if len(lines) > 1:
+                return lines[-1].split(",")[0][:10]
+        except Exception:  # noqa: BLE001 — битый файл не должен ронять панель
+            pass
+    try:
+        from algo import store
+        st = store.stats()
+        if not st.empty:
+            return str(st["last"].max())[:10]
+    except Exception:  # noqa: BLE001
+        pass
+    return None
+
+
+def tracking_errors() -> list[str]:
+    """Расхождения факта с ожиданием по той же логике, что и ./run.sh report."""
+    try:
+        path = ROOT / "scripts" / "32_paper_report.py"
+        spec = importlib.util.spec_from_file_location("paper_report_for_watchdog", path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        rows, _, _ = mod.build_rows()
+        return [f"{r['config']}: факт−ожидание {r['error']:+.0f} ₽"
+                for r in rows if r["error"] is not None and abs(r["error"]) > 1]
+    except Exception as exc:  # noqa: BLE001 — отчёт не обязан быть доступен сторожу
+        return [f"не удалось проверить tracking error: {str(exc)[:80]}"]
+
+
 def check() -> dict:
     problems: list[str] = []
     warnings: list[str] = []
     now = datetime.now()
+    data_date = data_freshness()
+    if data_date:
+        last_trading_day = str(trading_days_back(1)[0])
+        if data_date < last_trading_day:
+            warnings.append(f"данные устарели: последний бар {data_date}")
+    problems.extend(tracking_errors())
 
     for t in TIMERS:
         if not systemd_active(t):
@@ -113,7 +156,7 @@ def check() -> dict:
         "ok": not problems,
         "problems": problems,
         "warnings": warnings,
-        "data_date": None,
+        "data_date": data_date,
         "rows": len(rows),
     }
 

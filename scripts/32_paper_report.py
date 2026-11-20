@@ -144,20 +144,17 @@ def expected_bars(inst) -> pd.DataFrame | None:
         return None
 
 
-def main() -> int:
+def build_rows() -> tuple[list[dict], str, str]:
+    """Сводка факт/ожидание для отчёта и для стража (одна логика, без парсинга вывода)."""
     if not PAPER.exists():
-        print("журнала нет")
-        return 0
+        return [], "", ""
     with PAPER.open(encoding="utf-8") as f:
         rows = [r for r in csv.DictReader(f) if "config" in r]
     if not rows:
-        print("журнал пуст")
-        return 0
+        return [], "", ""
 
     start, end = rows[0]["date"], rows[-1]["date"]
-    print(f"бумажная торговля {start} .. {end}")
-    print(f"{'config':11} {'инстр':6} {'дней':>5} {'сдел':>5} {'факт':>9} "
-          f"{'ожид':>9} {'ошибка':>8} {'DD':>8} {'DDдн':>5}")
+    out: list[dict] = []
     cache: dict[str, pd.DataFrame] = {}
     for cfg in CONFIGS:
         mine = [r for r in rows if r["config"] == cfg.id]
@@ -172,9 +169,26 @@ def main() -> int:
         if cache[inst.code] is not None:
             e_trades, e_pnl = expected(cfg, cache[inst.code], start, end, mult, capital)
         dd = _dd_stats(mine, mult, capital)
-        exp_s = f"{e_pnl:>9.0f} {pnl - e_pnl:>8.0f}" if e_pnl is not None else f"{'—':>9} {'—':>8}"
-        print(f"{cfg.id:11} {inst.code:6} {days:>5} {trades:>5} {pnl:>9.0f} "
-              f"{exp_s} {dd['max_dd']:>8.0f} {dd['max_dd_days']:>5}")
+        out.append({"config": cfg.id, "instrument": inst.code, "days": days,
+                    "trades": trades, "pnl": pnl, "expected": e_pnl,
+                    "error": None if e_pnl is None else pnl - e_pnl,
+                    "max_dd": dd["max_dd"], "max_dd_days": dd["max_dd_days"]})
+    return out, start, end
+
+
+def main() -> int:
+    rows, start, end = build_rows()
+    if not rows:
+        print("журнала нет" if not PAPER.exists() else "журнал пуст")
+        return 0
+    print(f"бумажная торговля {start} .. {end}")
+    print(f"{'config':11} {'инстр':6} {'дней':>5} {'сдел':>5} {'факт':>9} "
+          f"{'ожид':>9} {'ошибка':>8} {'DD':>8} {'DDдн':>5}")
+    for r in rows:
+        exp_s = (f"{r['expected']:>9.0f} {r['error']:>8.0f}"
+                 if r["expected"] is not None else f"{'—':>9} {'—':>8}")
+        print(f"{r['config']:11} {r['instrument']:6} {r['days']:>5} {r['trades']:>5} "
+              f"{r['pnl']:>9.0f} {exp_s} {r['max_dd']:>8.0f} {r['max_dd_days']:>5}")
     return 0
 
 

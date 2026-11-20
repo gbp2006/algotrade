@@ -17,6 +17,8 @@ cd "$ROOT"
 
 REMOTE="${ALGO_WSL:-wsl-algo}"
 REMOTE_DIR="${ALGO_WSL_DIR:-~/algotrading}"
+# тильда не раскрывается в кавычках — спросим у удалённой оболочки реальный путь
+REMOTE_ABS="$(ssh "$REMOTE" "cd $REMOTE_DIR && pwd")"
 APPLY=0
 RESTART=0
 LIST=0
@@ -64,12 +66,12 @@ else
 fi
 
 echo "деплой ${REMOTE}:${REMOTE_DIR}, файлов ${#FILES[@]}, режим $([ "$APPLY" = 1 ] && echo APPLY || echo DRY-RUN)"
-rsync "${FLAGS[@]}" "${FILES[@]}" "$REMOTE:$REMOTE_DIR/"
+rsync "${FLAGS[@]}" "${FILES[@]}" "$REMOTE:$REMOTE_ABS/"
 
 if [ "$APPLY" = 1 ]; then
   local_md5="$(md5sum "${FILES[@]}")"
   remote_md5="$(printf '%s\n' "${FILES[@]}" | \
-    ssh "$REMOTE" "cd '$REMOTE_DIR' && xargs -d '\\n' md5sum 2>/dev/null" || true)"
+    ssh "$REMOTE" "cd '$REMOTE_ABS' && xargs -d '\\n' md5sum 2>/dev/null" || true)"
   if [ "$local_md5" = "$remote_md5" ]; then
     echo "md5: OK (${#FILES[@]} файлов совпадают)"
   else

@@ -534,6 +534,7 @@ function render(){
   const wdClass = wdText === "проблемы" ? "neg" : wdText === "ок" ? "pos" : "";
   document.getElementById("health").innerHTML = `
     <div><span class="dot-live"></span>таймеры: <b>${h.timers.morning}</b> / <b>${h.timers.daily}</b></div>
+    <div>данные до: <b>${wdNow?.data_date ?? "—"}</b></div>
     <div>спред: <b>${q.spread_ticks ?? "—"}</b> тик.</div>
     <div>сторож: <b class="${wdClass}">${wdText}</b>${dismissed ? ' <span style="opacity:.6">· прочитано</span>' : ''}</div>
     <div>стоп-флаг: <b class="${h.stop?"neg":"pos"}">${h.stop ? "ВКЛ" : "выкл"}</b></div>`;
