@@ -53,7 +53,7 @@ class Limits:
 
 @dataclass(frozen=True)
 class Result:
-    status: str             # blocked / rejected / duplicate / sent / error / uncertain
+    status: str             # blocked / rejected / duplicate / planned / sent / error / uncertain
     reason: str = ""
     response: Any = None
     client_order_id: str = ""
@@ -122,9 +122,15 @@ class OrderGateway:
             return f"дневной убыток {order.daily_pnl:.0f} выше лимита {lim.max_daily_loss:.0f}"
         return ""
 
-    def submit(self, order: Order, account: str | None = None) -> Result:
+    def submit(self, order: Order, account: str | None = None,
+               dry_run: bool = False) -> Result:
+        """`dry_run=True` проверяет всё, кроме отправки, и пишет статус `planned`.
+
+        Нужен для репетиции G3: при выключенном флаге обычный `submit` сразу
+        возвращает `blocked` и не проверяет лимиты/цену — репетировать нечего.
+        """
         cid = client_order_id(order.client_id)
-        if os.environ.get("FINAM_ALLOW_TRADING") != "1":
+        if os.environ.get("FINAM_ALLOW_TRADING") != "1" and not dry_run:
             return self._write(order, Result("blocked", "FINAM_ALLOW_TRADING != 1",
                                              client_order_id=cid))
 
@@ -145,6 +151,10 @@ class OrderGateway:
             if reason:
                 return self._write(order, Result("rejected", reason,
                                                  client_order_id=cid))
+            if dry_run:
+                return self._write(order, Result(
+                    "planned", "dry-run: проверено, заявка не отправлена",
+                    client_order_id=cid))
             try:
                 response = self.broker.place_limit(
                     order.symbol, order.side, order.qty, order.price, account, cid)

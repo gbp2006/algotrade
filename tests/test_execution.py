@@ -107,6 +107,19 @@ class TestGateway(unittest.TestCase):
         self.assertEqual(gw._rows()[0]["status"], "error")
 
 
+    def test_dry_run_validates_without_flag(self):
+        with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "0"}):
+            ok = self.gw.submit(order(client_id="dry-ok", min_step=0.001),
+                                dry_run=True)
+            bad = self.gw.submit(order(client_id="dry-bad", price=12.2905,
+                                       min_step=0.001), dry_run=True)
+        self.assertEqual(ok.status, "planned")
+        self.assertEqual(bad.status, "rejected")
+        self.assertIn("кратна", bad.reason)
+        self.assertEqual(self.broker.calls, [])
+        self.assertEqual([r["status"] for r in self.gw._rows()][:2],
+                         ["planned", "rejected"])
+
     def test_lost_response_found_on_server_is_uncertain(self):
         class LostBroker(FakeBroker):
             def place_limit(self, *a, **k):

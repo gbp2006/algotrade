@@ -25,6 +25,7 @@ STOP = ROOT / "results" / "STOP"
 DECISION_CONFIGS = ["p-base", "p-fast", "p-h1", "p-friday", "u-base", "u-wide", "u-morning", "p-rts", "p-gold"]
 TIMERS = ["algotrading-daily.timer", "algotrading-morning.timer",
           "algotrading-friday.timer", "algotrading-update-live.timer",
+          "algotrading-shadow.timer",
           "algotrading-web.service"]
 MAX_LOOKBACK = 5  # сколько последних торговых дней проверять
 

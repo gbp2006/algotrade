@@ -19,6 +19,7 @@ case "${1:-help}" in
   paper)  "$PY" scripts/21_mvp_paper.py ;;
   broker) "$PY" scripts/30_broker_check.py ;;
   paper-live) shift; "$PY" scripts/31_paper_live.py "$@" ;;
+  shadow) "$PY" scripts/33_shadow_live.py ;;
   report) "$PY" scripts/32_paper_report.py ;;
   store) shift; "$PY" scripts/00_store.py "$@" ;;
   sweep)  "$PY" scripts/15_sweep_full.py ;;
@@ -65,6 +66,7 @@ usage: ./run.sh <команда>
   broker   проверка доступа к Финаму
   paper-live  бумажная торговля по живым котировкам (6 конфигураций)
   report   отчёт: факт против бэктеста
+  shadow   теневой прогон G3: плановые заявки без отправки
   store    хранилище баров: init|import-txt|import-finam|export|import-csv|stats
   sweep    полная сетка параметров Простушки
   all      прогоны Простушки на Si + Универсалки
