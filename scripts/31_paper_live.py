@@ -27,6 +27,7 @@ except Exception:
     pass
 
 from algo import risk, store  # noqa: E402
+from algo.channel_live import channel_decision  # noqa: E402
 from algo.broker.finam import FinamBroker  # noqa: E402
 from algo.configs import CONFIGS  # noqa: E402
 from algo.robot_configs import ROBOT_CONFIGS  # noqa: E402
@@ -140,6 +141,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", help="реплей дня, формат YYYY-MM-DD")
     ap.add_argument("--dry-run", action="store_true", help="ничего не записывать")
+    ap.add_argument("--channel", action="store_true",
+                    help="фаза внутридневного пробоя канала (отдельный таймер)")
     args = ap.parse_args()
 
     ensure_schema()
@@ -234,6 +237,47 @@ def main() -> int:
                     "note": "утренний выход 10:20"})
             closed += 1
         print(f"{day}: утренний выход, закрыто позиций {closed}")
+        return 0
+
+    # фаза канала: внутридневной пробой, запускается отдельным таймером.
+    # Утренний выход (09:00) — тот же таймер, что и у всех: если позиция ещё
+    # открыта, channel_decision вернёт 0 по границе start.
+    channel_cfgs = [c for c in ALL_CONFIGS if c.strategy == "channel_break"]
+    if channel_cfgs and args.channel:
+        written = 0
+        for cfg in channel_cfgs:
+            inst = instrument_of(cfg)
+            m5 = m5_by.get(symbols[cfg.id])
+            cur_pos = position_of(rows, cfg.id)
+            entry = 0.0
+            if cur_pos != 0:
+                rr = last_row(rows, cfg.id)
+                entry = float(rr["price"]) if rr else 0.0
+            dec = channel_decision(cfg.params, m5, cur_pos, entry)
+            if dec is None or recorded(rows, str(day), cfg.id, "канал"):
+                continue
+            pos = position_of(rows, cfg.id)
+            equity = equity_of(rows, cfg)
+            contracts, risk_note = risk.contracts_for_config(
+                cfg, equity, dec.price, inst.mult, m5, rows, day, capital_of(cfg))
+            target = dec.target * contracts
+            if args.dry_run:
+                print(f"{cfg.id:9} {symbols[cfg.id]:13} {dec.ts:%H:%M} канал {dec.target:+d} "
+                      f"-> {target:+d} контр. [{risk_note}]  [dry-run]")
+                continue
+            append({"date": str(day), "time": dec.ts.strftime("%H:%M"),
+                    "config": cfg.id, "instrument": inst.code,
+                    "symbol": symbols[cfg.id], "strategy": cfg.strategy,
+                    "price": f"{dec.price:.{inst.digits}f}", "signal": dec.target,
+                    "target": target, "contracts": contracts,
+                    "equity_before": f"{equity:.0f}", "action": "канал",
+                    "position_after": target,
+                    "note": f"{dec.detail}; лот {contracts}, equity {equity:.0f}"
+                            + (f"; {risk_note}" if risk_note else "")}, rows)
+            written += 1
+            print(f"{cfg.id:9} {symbols[cfg.id]:13} {dec.ts:%H:%M} канал {dec.target:+d} "
+                  f"-> {target:+d} контр. [{risk_note}]")
+        print(f"{day}: канал записано {written}")
         return 0
 
     # фаза решений

@@ -285,3 +285,6 @@ ts,strategy,instrument,period,params,trades,net,pf,avg,dd,in_market,note
 2026-11-21 00:02,channel_break,Si,oos 2026-2026,variant=both-SL;start=23:40;switch=15:00;channel=night;sl=sl;boundary=exact,106,-1123.74,0.93,-10.6,-5360.01,23.8,прокси границы; интрабарный стоп по open следующего бара
 2026-11-21 00:02,channel_break,RTS,oos 2026-2026,variant=both-noSL;start=23:40;switch=15:00;channel=night;sl=none;boundary=exact,91,21813.43,1.56,239.71,-8057.9,17.5,прокси границы; интрабарный стоп по open следующего бара
 2026-11-21 00:02,channel_break,RTS,oos 2026-2026,variant=both-SL;start=23:40;switch=15:00;channel=night;sl=sl;boundary=exact,92,16110.23,1.36,175.11,-10096.91,16.4,прокси границы; интрабарный стоп по open следующего бара
+2026-11-21 00:23,channel_break,CNY,grid OOS 2026,start=23:40;switch=13:00;mode=day;direction=long;sl=tight,48,765.69,2.099359373337749,,-210.99,,"deep grid, notice: proxy boundary"
+2026-11-21 00:23,channel_break,CNY,grid OOS 2026,start=01:00;switch=13:00;mode=day;direction=long;sl=tight,47,715.31,2.168614713734877,,-130.0,,"deep grid, notice: proxy boundary"
+2026-11-21 00:23,channel_break,CNY,grid OOS 2026,start=22:00;switch=15:00;mode=day;direction=short;sl=sl,27,332.96,2.5048080030192392,,-134.05,,"deep grid, notice: proxy boundary"

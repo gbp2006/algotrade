@@ -45,6 +45,15 @@ ROBOT_CONFIGS: list[Config] = [
         "проверяем, подтвердится ли шум в бумажном контуре",
         "Простушка · train-пик риск",
     ),
+    Config(
+        "cb-day", "channel_break",
+        dict(start="01:00", switch="13:00", mode="day", direction="long",
+             sl=0.12, boundary="first_bar", tick=0.001, risk_vol=True),
+        "пробой дневного канала 09:00→13:00, вход после пробоя HH, выход в 09:00; "
+        "CNY train PF 2.07 / OOS 2.17, Si 1.44 / 2.06, BR 1.32 OOS, GOLD 1.13, "
+        "RTS 1.04; контроль «просто лонг» убыточен — край есть",
+        "Пробой канала · day риск",
+    ),
 ]
 
 ROBOT_BY_ID = {c.id: c for c in ROBOT_CONFIGS}
