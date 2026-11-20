@@ -36,6 +36,28 @@ def _first_at(df: pd.DataFrame, hhmm: str) -> pd.Timestamp | None:
     return df.index[mask][0] if mask.any() else None
 
 
+def _last_closed_at(df: pd.DataFrame, hhmm: str, tf: int) -> pd.Timestamp | None:
+    """Последний бар, который к указанному времени уже закрылся.
+
+    Для таймфреймов больше M5 бар с меткой 12:00 (tf=60) закрывается в 13:00,
+    поэтому в 13:50 решение принимается по нему, а не по ещё не закрытому 13:00.
+    """
+    h, m = (int(x) for x in hhmm.split(":"))
+    need = h * 60 + m
+    ends = df.index + pd.Timedelta(minutes=tf)
+    mask = (ends.hour * 60 + ends.minute <= need) & (ends.date == df.index.date)
+    return df.index[mask][-1] if mask.any() else None
+
+
+def decision_configs(configs) -> list:
+    """Конфигурации, которые входят в фазу решений.
+
+    `hold="morning"` тоже решает (вход 13:30), просто выходит отдельной фазой
+    в 10:25 — раньше её ошибочно пропускали и она не могла открыть позицию.
+    """
+    return [c for c in configs if c.strategy in ("prostushka", "universal")]
+
+
 def decision(cfg: Config, m5: pd.DataFrame, day) -> Decision | None:
     """Целевая позиция по конфигурации на указанный день. None — решения ещё нет."""
     params = cfg.params
@@ -48,7 +70,11 @@ def decision(cfg: Config, m5: pd.DataFrame, day) -> Decision | None:
         df = _tf_bars(m5, tf)
         bars = max(3, round(params["ma_window"] / tf))
         ma = df["close"].rolling(bars).mean()
-        ts = _first_at(df[df.index.date == day], params["entry"])
+        if tf > 5:
+            # H1 и старше: берём только закрытые бары, иначе подглядываем в будущее
+            ts = _last_closed_at(df, params["entry"], tf)
+        else:
+            ts = _first_at(df[df.index.date == day], params["entry"])
         if ts is None:
             return None
         ma_val = float(ma.loc[ts])

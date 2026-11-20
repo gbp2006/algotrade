@@ -1,0 +1,20 @@
+PL76DtREkiCAQWAFpknk0I6INrgchcU37W|Кросс-тестирование через Скринеры.
+PL76DtREkiCARrJ-FlLcgRq6hktSjlfyG5|Свечи и преобразование ленты сделок.
+PL76DtREkiCARWZvSiTvZNYDhovq3H2_Vh|Ротация бумаг между алгоритмами по стадиям волатильности.
+PL76DtREkiCATNDSuUY-Qoio4s3luVrXFl|Тренд через Walk Forwards
+PL76DtREkiCAQ3qHO7zOPbuxiiI3ANpJMn|Введение в алготрейдинг.
+PL76DtREkiCAThK95ECkkBTXc8VvMzb7WK|С# для алготрейдера.
+PL76DtREkiCASxD2bwi74gG0yB2ZpQWCBr|Определения и термины.
+PL76DtREkiCARwZaoyTFdDoUFSFpg0cYmF|Крипта VS MOEX
+PL76DtREkiCAS0BUrpzVBOWXuxZKlEKVX-|Разработка OsEngine.
+PL76DtREkiCAThTP6UlMzVOoZXN-JVPcQq|Арбитраж
+PL76DtREkiCAR0dtHH49X6iuCHPAR6x1kJ|Отдел обучения o-s-a.net
+PL76DtREkiCATeCqp8NvSRux_kaZtNKisI|Войти в IT
+PL76DtREkiCARJaV1GX4t6chfjcfGP10mF|Стратегии
+PL76DtREkiCASOyhVnRT061JrgkM3R821U|Торгуя сотни миллионов
+PL76DtREkiCARpFkueyGW1UiNaTbyxSCqa|Ошибки в трейдинге
+PL76DtREkiCASoQwT4C4fa0_I_9ssrY6mC|О трейдинге в дороге
+PL76DtREkiCATqKEfnVXGUsm_Bns8ksiWU|Юридический отдел
+PL76DtREkiCAQa7xUouBn0bEfgi4Uqvzqy|Новичку в алготрейдинге и программировании
+PL76DtREkiCAQt_JiDuZlV43sUHSrY1s_N|Тестирование идей
+PL76DtREkiCATe28yPbAT_5em1JqA4xEiB|Os.Engine Tutorial

@@ -50,5 +50,17 @@ ts,strategy,instrument,period,params,trades,net,pf,avg,dd,in_market,note
 2026-11-19 12:20,prostushka,SBRF,2009-12..2025-12,ma_period=48;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,2044,77622.74,1.31,,-8722.71,,"multi-instrument, MA48, акции"
 2026-11-19 12:20,prostushka,GAZR,2009-12..2025-12,ma_period=40;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,2022,53512.1,1.2,,-17079.15,,"multi-instrument, MA40, акции"
 2026-11-19 12:20,prostushka,GAZR,2009-12..2025-12,ma_period=48;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False;skip_weekend=True,2004,66830.47,1.26,,-13944.59,,"multi-instrument, MA48, акции"
-2026-11-19 12:37,author-fit,Si,2026-03-25..2026-11-18,tf=15;n=48;adds=5;trend=100,103,,,,,,sign_agree=0.71; ev_open=0.89
-2026-11-19 12:37,author-fit,CR,2026-03-25..2026-11-18,tf=5;n=48;adds=1;trend=100,108,,,,,,sign_agree=0.65; ev_open=0.94
+2026-11-19 13:05,author-fit-oos,CR,2022-01-01..2025-12-31,tf=60;n=12;trend=10;adds=3;stop=99.0,537,62601,1.68,,-4061,,"проверка правил, подобранных на 2026"
+2026-11-19 13:05,author-fit-oos,Si,2022-01-01..2025-12-31,tf=60;n=12;trend=5;adds=1;stop=99.0,708,637168,2.92,,-11776,,"проверка правил, подобранных на 2026"
+2026-11-19 13:53,author-fit-oos,CR,2022-01-01..2025-12-31,model=daily-trend;tf=60;n=12;trend=10;adds=3;stop=99.0,537,62601,1.68,,-4061,,"проверка правил, подобранных на 2026"
+2026-11-19 13:53,author-fit-oos,Si,2022-01-01..2025-12-31,model=daily-trend;tf=60;n=12;trend=5;adds=1;stop=99.0,708,637168,2.92,,-11776,,"проверка правил, подобранных на 2026"
+2026-11-19 13:53,author-fit-oos,GL,2022-01-01..2025-12-31,model=breakout;tf=60;n=12;trend=0;adds=3;stop=0.0,888,1634,1.03,,-8168,,"проверка правил, подобранных на 2026"
+2026-11-19 13:53,author-fit-oos,MM,2022-01-01..2025-12-31,model=breakout;tf=15;n=12;trend=100;adds=1;stop=0.0,3474,30758,1.14,,-9795,,"проверка правил, подобранных на 2026"
+2026-11-19 14:05,author-fit-oos,CR,2022-01-01..2025-12-31,model=daily-trend;tf=60;n=12;trend=10;adds=1;stop=99.0,401,38640,1.76,,-2077,,"проверка правил, подобранных на 2026"
+2026-11-19 14:05,author-fit-oos,Si,2022-01-01..2025-12-31,model=daily-trend;tf=60;n=12;trend=5;adds=3;stop=99.0,956,1078787,2.84,,-23362,,"проверка правил, подобранных на 2026"
+2026-11-19 14:05,author-fit-oos,GL,2022-01-01..2025-12-31,model=breakout;tf=60;n=12;trend=0;adds=3;stop=0.0,888,1634,1.03,,-8168,,"проверка правил, подобранных на 2026"
+2026-11-19 14:05,author-fit-oos,MM,2022-01-01..2025-12-31,model=breakout;tf=15;n=12;trend=100;adds=1;stop=0.0,3474,30758,1.14,,-9795,,"проверка правил, подобранных на 2026"
+2026-11-19 14:09,author-fit,MM,2026-03-25..2026-11-18,model=breakout;tf=15;n=12;adds=3;trend=100;stop=0.0,909,5023,1.11,,-6844,,sign_agree=0.85; ev_open=0.91
+2026-11-19 14:09,author-fit,CR,2026-03-25..2026-11-18,model=daily-trend;tf=60;n=12;adds=1;trend=10;stop=99.0,80,8146,2.17,,-674,,sign_agree=0.86; ev_open=0.71
+2026-11-19 14:09,author-fit,Si,2026-03-25..2026-11-18,model=daily-trend;tf=60;n=12;adds=3;trend=5;stop=99.0,159,135764,3.32,,-5907,,sign_agree=0.77; ev_open=0.86
+2026-11-19 14:09,author-fit,GL,2026-03-25..2026-11-18,model=breakout;tf=60;n=12;adds=5;trend=0;stop=0.0,392,1126,1.03,,-6533,,sign_agree=0.73; ev_open=0.78

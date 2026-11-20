@@ -14,13 +14,19 @@ CAPITAL = float(os.environ.get("ALGO_CAPITAL", 200_000))
 EXPOSURE = float(os.environ.get("ALGO_EXPOSURE", 1.0))
 
 
+def exposure_of(cfg) -> float:
+    """Потолок экспозиции конфигурации: свой (риск по DD) или общий из env."""
+    return float(getattr(cfg, "exposure", None) or EXPOSURE)
+
+
 def size_contracts(equity: float, price: float, mult: float = MULT,
-                   exposure: float = EXPOSURE) -> int:
+                   exposure: float | None = None) -> int:
     """Сколько контрактов брать при данном equity и цене."""
     if price <= 0 or equity <= 0:
         return 1
+    exp = EXPOSURE if exposure is None else exposure
     notional_per = price * mult
-    n = int((equity * exposure) // notional_per)
+    n = int((equity * exp) // notional_per)
     return max(1, n)
 
 

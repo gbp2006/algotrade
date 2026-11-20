@@ -5,7 +5,7 @@
 
 ## Точка входа
 
-Рабочая папка: `/mnt/DiskD/algotrading`. Данные — симлинк `data/` на
+Рабочая папка: `/mnt/DiskD/opencode-algo`. Данные — симлинк `data/` на
 `/mnt/DiskD/MOEX/Исторические данные` (не открывать файлы данных напрямую!).
 
 Порядок чтения (только это, дальше по необходимости):
@@ -103,7 +103,7 @@ cd ~/algotrading
 rsync -az --delete --exclude data --exclude .venv --exclude .cache \
   --exclude __pycache__ --exclude 'results/daily.log' --exclude 'results/paper.csv' \
   -e "ssh -p 2222 -i ~/.ssh/wsl_algotrading" \
-  /mnt/DiskD/algotrading/ zt@192.168.0.230:~/algotrading/
+  /mnt/DiskD/opencode-algo/ zt@192.168.0.230:~/algotrading/
 ```
 
 Расписание: системный таймер `algotrading-daily.timer`, будни 14:05 МСК,

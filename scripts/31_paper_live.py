@@ -29,8 +29,9 @@ except Exception:
 from algo.broker.finam import FinamBroker  # noqa: E402
 from algo.configs import CONFIGS  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS, margin, symbol  # noqa: E402
-from algo.live import decision, morning_exit_price  # noqa: E402
-from algo.portfolio import CAPITAL, ledger, size_contracts  # noqa: E402
+from algo.live import decision, decision_configs, morning_exit_price  # noqa: E402
+from algo.portfolio import (CAPITAL, exposure_of, ledger,  # noqa: E402
+                            size_contracts)
 
 PAPER = Path(__file__).resolve().parent.parent / "results" / "paper.csv"
 FIELDS = ["date", "time", "config", "instrument", "symbol", "strategy", "price",
@@ -236,9 +237,8 @@ def main() -> int:
         return 0
 
     written = 0
-    for cfg in CONFIGS:
-        if cfg.params.get("hold") == "morning":
-            continue  # у него своя фаза выхода
+    for cfg in decision_configs(CONFIGS):
+        # hold="morning" решает здесь же (вход 13:30), а выходит своей фазой в 10:25
         inst = instrument_of(cfg)
         sym = symbols[cfg.id]
         m5 = m5_by.get(sym)
@@ -273,7 +273,8 @@ def main() -> int:
 
         pos = position_of(rows, cfg.id)
         equity = equity_of(rows, cfg)
-        contracts = size_contracts(equity, dec.price, inst.mult) if dec.target != 0 else 0
+        contracts = (size_contracts(equity, dec.price, inst.mult, exposure_of(cfg))
+                     if dec.target != 0 else 0)
         target = dec.target * contracts
         action = "держать" if target == pos else (
             "закрыть" if target == 0 else ("купить" if target > 0 else "продать"))

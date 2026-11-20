@@ -93,5 +93,54 @@ class TestProstushka(unittest.TestCase):
             self.assertEqual(tg.loc[sat[0]], tg.loc[tg.index[tg.index < sat[0]][-1]])
 
 
+class TestLiveH1(unittest.TestCase):
+    """H1-конфигурация решает по последнему ЗАКРЫТОМУ бару, а не по будущему."""
+
+    def _m5(self) -> pd.DataFrame:
+        idx = pd.date_range("2026-11-16 10:00", "2026-11-19 13:55", freq="5min")
+        close = pd.Series(np.linspace(10.0, 11.0, len(idx)), index=idx)
+        return pd.DataFrame({"open": close, "high": close, "low": close,
+                             "close": close, "vol": 1.0}, index=idx)
+
+    def test_h1_uses_last_closed_bar(self):
+        from algo.configs import BY_ID
+        from algo.live import decision
+
+        m5 = self._m5()
+        dec = decision(BY_ID["p-h1"], m5, m5.index[-1].date())
+        self.assertIsNotNone(dec, "в 13:55 H1-бар 12:00 уже закрыт — решение должно быть")
+        self.assertEqual((dec.ts.hour, dec.ts.minute), (12, 0))
+
+    def test_u_morning_enters(self):
+        """hold="morning" решает в фазе решений; раньше её пропускали и она не торговала."""
+        from algo.configs import BY_ID, CONFIGS
+        from algo.live import decision, decision_configs
+
+        self.assertIn("u-morning", [c.id for c in decision_configs(CONFIGS)])
+        m5 = self._m5()
+        dec = decision(BY_ID["u-morning"], m5, m5.index[-1].date())
+        self.assertIsNotNone(dec)
+
+    def test_risk_sizing_rts_gold(self):
+        """Потолок экспозиции от DD: RTS 60%, золото 70%, минимальный лот 1."""
+        from algo.configs import BY_ID
+        from algo.portfolio import exposure_of, size_contracts
+
+        rts, gold = BY_ID["p-rts"], BY_ID["p-gold"]
+        self.assertAlmostEqual(exposure_of(rts), 0.60)
+        self.assertAlmostEqual(exposure_of(gold), 0.70)
+        self.assertEqual(size_contracts(260_000, 93_290, 1.644562, exposure_of(rts)), 1)
+        self.assertEqual(size_contracts(450_000, 3778.3, 82.2281, exposure_of(gold)), 1)
+
+    def test_m5_uses_entry_bar(self):
+        from algo.configs import BY_ID
+        from algo.live import decision
+
+        m5 = self._m5()
+        dec = decision(BY_ID["p-base"], m5, m5.index[-1].date())
+        self.assertIsNotNone(dec)
+        self.assertEqual((dec.ts.hour, dec.ts.minute), (13, 50))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

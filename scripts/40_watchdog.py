@@ -21,7 +21,7 @@ PAPER = ROOT / "results" / "paper.csv"
 HEALTH = ROOT / "results" / "health.json"
 STOP = ROOT / "results" / "STOP"
 
-DECISION_CONFIGS = ["p-base", "p-fast", "p-h1", "u-base", "u-wide"]
+DECISION_CONFIGS = ["p-base", "p-fast", "p-h1", "p-friday", "u-base", "u-wide", "u-morning", "p-rts", "p-gold"]
 TIMERS = ["algotrading-daily.timer", "algotrading-morning.timer", "algotrading-web.service"]
 MAX_LOOKBACK = 5  # сколько последних торговых дней проверять
 
@@ -87,8 +87,13 @@ def check() -> dict:
         if dups:
             warnings.append(f"дубли записей: {len(dups)}")
 
+        # проверяем только дни начиная с даты старта теста (первой записи в журнале)
+        start_date = date.fromisoformat(min(r["date"] for r in rows))
+
         # после 14:00 по будням должны быть решения по всем конфигурациям
         for d in trading_days_back(MAX_LOOKBACK):
+            if d < start_date:
+                continue
             if d == date.today() and now.hour * 60 + now.minute < 14 * 60 + 5:
                 continue
             day_rows = [r for r in rows if r["date"] == str(d)]

@@ -1,0 +1,10 @@
+{
+  "name": "mcp-websearch",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Локальный MCP-сервер веб-поиска без API-ключей (Bing RSS, Google News RSS)",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1"
+  }
+}

@@ -1,6 +1,6 @@
 # Дайджест Telegram-экспортов Силаева
 
-Источники: `cources/tg_relevant.txt` (115 сообщений), `cources/tg_messages.txt` (выборка). Даты — публикации.
+Источники: `materials/tg_relevant.txt` (115 сообщений), `materials/tg_messages.txt` (выборка). Даты — публикации.
 
 ## Проскальзывание
 

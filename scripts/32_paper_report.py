@@ -18,7 +18,8 @@ from algo.configs import CONFIGS  # noqa: E402
 from algo.data import load_cached  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS  # noqa: E402
 from algo.live import decision  # noqa: E402
-from algo.portfolio import CAPITAL, drawdown_stats, size_contracts  # noqa: E402
+from algo.portfolio import (CAPITAL, drawdown_stats,  # noqa: E402
+                            exposure_of, size_contracts)
 
 PAPER = Path(__file__).resolve().parent.parent / "results" / "paper.csv"
 
@@ -66,7 +67,8 @@ def expected(cfg, m5: pd.DataFrame, start: str, end: str,
         dec = decision(cfg, m5[m5.index.date <= day], day)
         if dec is None:
             continue
-        contracts = size_contracts(capital + pnl, dec.price, mult) if dec.target != 0 else 0
+        contracts = size_contracts(capital + pnl, dec.price, mult,
+                                              exposure_of(cfg)) if dec.target != 0 else 0
         target = dec.target * contracts
         if target == pos:
             continue

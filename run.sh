@@ -4,7 +4,10 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 PY="${PY:-$(dirname "$0")/.venv/bin/python}"
-[ -x "$PY" ] || PY="/mnt/DiskD/opencode/venv/bin/python"
+if [ ! -x "$PY" ]; then
+  echo "нет .venv: python3 -m venv .venv && ./.venv/bin/pip install -r requirements.txt" >&2
+  exit 1
+fi
 
 case "${1:-help}" in
   test)   "$PY" tests/test_engine.py ;;

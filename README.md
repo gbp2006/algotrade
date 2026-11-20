@@ -7,12 +7,13 @@
 ## Быстрый старт
 
 ```bash
-P=/mnt/DiskD/opencode/venv/bin/python
-$P scripts/08_oos_2026.py       # Простушка на 2026
-$P scripts/09_si_check.py       # Простушка на Si за 18 лет
-$P scripts/11_universal.py      # Универсалка
-$P scripts/12_samurai.py        # Самурай (пул секций)
+./run.sh test          # юнит-тесты движка
+./run.sh all           # Простушка на Si + Универсалка
+./run.sh dash          # локальная панель на :8809
 ```
+
+Если `.venv` нет: `python3 -m venv .venv && ./.venv/bin/pip install -r requirements.txt`.
+Запуск OpenCode — алиас `algo` (изолированный профиль песочницы).
 
 Данные: `data/` — симлинк на `/mnt/DiskD/MOEX/Исторические данные`
 (`2026-11/CNYRUBF.txt`, `2026-11/Si.txt`; обновление — через `scripts/10_append_iss.py`).
@@ -25,3 +26,32 @@ $P scripts/12_samurai.py        # Самурай (пул секций)
 - Решения по выходным отключаем: с 2026 у MOEX есть субботние сессии, они ломают
   логику «раз в сутки».
 - Журнал прогонов: `results/runs.csv` (через `algo.results.record`).
+
+## Структура
+
+| Путь | Что там |
+|---|---|
+| `algo/` | движок, данные, стратегии (импортируется как `algo.*`) |
+| `scripts/` | нумерованные прогоны и утилиты (`01_…`, `10_…`, `44_…`) |
+| `tests/` | юнит-тесты движка |
+| `web/` | локальная панель FastAPI + Jinja, статика |
+| `docs/` | решения (`decisions.md`), how-to, стратегии, источники |
+| `reports/` | отчёты для человека, эквити, csv-выгрузки |
+| `results/` | `runs.csv`, журнал бумажного контура, health |
+| `sessions/` | журнал работы: `<дата>/notes.md` |
+| `infra/db/` | индекс истории (`memory.py`, `memory.db`) — производный |
+| `infra/exports/` | JSON-бэкапы перенесённых чатов (не коммитить) |
+| `materials/` | материалы автора: записи счёта, TG-дампы, лекции |
+| `cache/iss/` | сырые выгрузки MOEX ISS |
+| `assets/` | исходники картинок (обложка панели) |
+| `data` | симлинк на исторические данные MOEX (не коммитить) |
+
+## Сессии и память
+
+- Запуск OpenCode — алиас `algo` (изолированный профиль: свои БД сессий,
+  конфиг и сервис; не смешивается с `/mnt/DiskD/opencode-hub`).
+- Ноутбук сессии — `sessions/<YYYY-MM-DD_HH-MM_slug>/notes.md`.
+- `INDEX.md` — производный; статусы берутся из записей «Конец:».
+- Поиск по истории: `./infra/db/memory.py brief|lookup|search|outline` или
+  MCP-сервер `memory`; веб-поиск — MCP `websearch`.
+

@@ -1,0 +1,442 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+// ==== SYNCED PROVIDERS BEGIN (генерируется infra/bin/sync-providers.py, править в hub) ====
+  "providers": {
+    "g4f": {
+      "name": "G4F (gpt4free, локально)",
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "http://127.0.0.1:1337/v1",
+        "headerTimeout": 600000,
+        "chunkTimeout": 600000
+      },
+      "models": {
+        "glm-4.7": {
+          "disabled": true,
+          "name": "GLM-4.7 (Zhipu)",
+          "body": {
+            "provider": "GLM"
+          },
+          "limit": {
+            "context": 128000,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "gpt-4o-mini": {
+          "name": "GPT-4o mini (ChatGPT) — БЕЗ инструментов",
+          "body": {
+            "provider": "ChatGPT"
+          },
+          "limit": {
+            "context": 128000,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          },
+          "disabled": true
+        },
+        "command-a": {
+          "disabled": true,
+          "name": "Command A (Cohere)",
+          "body": {
+            "provider": "CohereForAI_C4AI_Command"
+          },
+          "limit": {
+            "context": 256000,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "command-r": {
+          "disabled": true,
+          "name": "Command R (HuggingFace)",
+          "body": {
+            "provider": "HuggingSpace"
+          },
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "command-a-hf": {
+          "disabled": true,
+          "name": "Command A (HuggingFace, резерв)",
+          "modelID": "command-a",
+          "body": {
+            "provider": "HuggingSpace"
+          },
+          "limit": {
+            "context": 256000,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "command-r-cohere": {
+          "disabled": true,
+          "name": "Command R (Cohere, резерв)",
+          "modelID": "command-r-08-2024",
+          "body": {
+            "provider": "CohereForAI_C4AI_Command"
+          },
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "qwen3.8-max": {
+          "disabled": true,
+          "name": "Qwen 3.8 Max (Alibaba)",
+          "body": {
+            "provider": "Qwen"
+          },
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "qwen3.7-plus": {
+          "disabled": true,
+          "name": "Qwen 3.7 Plus (Alibaba)",
+          "body": {
+            "provider": "Qwen"
+          },
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "openrouter-free": {
+          "disabled": true,
+          "name": "OpenRouter Free (маршрутизатор)",
+          "modelID": "openrouter/free",
+          "body": {
+            "provider": "KiloCode"
+          },
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "kilo-small": {
+          "disabled": true,
+          "name": "Kilo Auto Small (быстрая)",
+          "modelID": "kilo-auto/small",
+          "body": {
+            "provider": "KiloCode"
+          },
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "nemotron-550b": {
+          "disabled": true,
+          "name": "Nemotron 3 Ultra 550B (Nvidia)",
+          "modelID": "nvidia/nemotron-3-ultra-550b-a55b:free",
+          "body": {
+            "provider": "KiloCode"
+          },
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "nemotron-vl": {
+          "disabled": true,
+          "name": "Nemotron 3.5 Super VL (Nvidia)",
+          "modelID": "nvidia/nemotron-3.5-super-vl:free",
+          "body": {
+            "provider": "KiloCode"
+          },
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "beam-free": {
+          "name": "Reflection Beam (бесплатная)",
+          "modelID": "reflection/beam-free",
+          "body": {
+            "provider": "KiloCode"
+          },
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "laguna-s": {
+          "disabled": true,
+          "name": "Poolside Laguna S 2.1",
+          "modelID": "poolside/laguna-s-2.1:free",
+          "body": {
+            "provider": "KiloCode"
+          },
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "xing4-29b": {
+          "disabled": true,
+          "name": "Xing4 29B (Xingchen)",
+          "modelID": "xingchen-agi/xing4.0-29b-a4b:free",
+          "body": {
+            "provider": "KiloCode"
+          },
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "command-a-2025": {
+          "disabled": true,
+          "name": "Command A 03-2025 (Cohere)",
+          "modelID": "command-a-03-2025",
+          "body": {
+            "provider": "CohereForAI_C4AI_Command"
+          },
+          "limit": {
+            "context": 256000,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "command-r-plus": {
+          "disabled": true,
+          "name": "Command R+ (Cohere)",
+          "modelID": "command-r-plus-08-2024",
+          "body": {
+            "provider": "CohereForAI_C4AI_Command"
+          },
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "command-r7b": {
+          "disabled": true,
+          "name": "Command R7B (лёгкая, быстрая)",
+          "modelID": "command-r7b-12-2024",
+          "body": {
+            "provider": "HuggingSpace"
+          },
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "gemini-g4f": {
+          "disabled": true,
+          "name": "Gemini (через g4f)",
+          "modelID": "cf41b0e0dd7d53e5",
+          "body": {
+            "provider": "Gemini"
+          },
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "command-r-plus-08-2024": {
+          "disabled": true,
+          "name": "command-r-plus-08-2024 (HuggingSpace, авто-добавление)",
+          "body": {
+            "provider": "HuggingSpace"
+          },
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "command-a-03-2025": {
+          "disabled": true,
+          "name": "command-a-03-2025 (HuggingSpace, авто-добавление)",
+          "body": {
+            "provider": "HuggingSpace"
+          },
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        }
+      }
+    },
+    "gweb": {
+      "name": "Gemini Web (подписка AI Pro)",
+      "env": [
+        "GWEB_KEY"
+      ],
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "http://127.0.0.1:8017/v1",
+        "headerTimeout": 300000,
+        "chunkTimeout": 900000
+      },
+      "models": {
+        "gemini-4-carbon": {
+          "name": "Gemini 4 Carbon (web, код)",
+          "limit": {
+            "context": 48000,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "gemini-4-neon": {
+          "name": "Gemini 4 Neon (web, анализ)",
+          "limit": {
+            "context": 48000,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "gemini-4-hydrogen": {
+          "name": "Gemini 4 Hydrogen (web, быстрая)",
+          "limit": {
+            "context": 48000,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+        "gemini-auto": {
+          "name": "Gemini Auto (web, авто-выбор)",
+          "limit": {
+            "context": 48000,
+            "output": 8192
+          },
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        }
+      }
+    }
+  },
+  // ==== SYNCED PROVIDERS END ====
+
+  // Проект песочницы алготрейдинга. Запуск — алиас `algo` (изолированный
+  // XDG-профиль, своя БД сессий и свой фоновый сервис).
+
+  "mcp": {
+    "servers": {
+      // Свой индекс истории: notes.md сессий, PROGRESS.md, docs, reports.
+      "memory": {
+        "type": "local",
+        "command": ["python3", "/mnt/DiskD/opencode-algo/infra/db/memory.py", "--mcp"],
+        "environment": {
+          "OC_MEMORY_ROOT": "/mnt/DiskD/opencode-algo",
+          "OC_MEMORY_SESSIONS": "sessions"
+        }
+      },
+      "websearch": {
+        "type": "local",
+        "command": ["node", "/mnt/DiskD/opencode-algo/infra/mcp/websearch/server.js"]
+      },
+      // Брокер Финам: котировки, портфель, заявки. Только в алго-песочнице.
+      "finam-mcp": {
+        "type": "remote",
+        "url": "https://mcp.finam.ru/sk_cX7zrq5h7Fs0BRGrRdvm3uHMPA4pYGFY05fvngYnIkY"
+      }
+    }
+  },
+
+  "permissions": [
+    // В песочнице доступны только два рабочих скилла, общие — скрыты.
+    { "action": "skill", "resource": "*", "effect": "deny" },
+    { "action": "skill", "resource": "session-workflow", "effect": "allow" },
+    { "action": "skill", "resource": "memory-index", "effect": "allow" },
+
+    // Данные рынка — только через скрипты, не инструментами чтения.
+    { "action": "read", "resource": "/mnt/DiskD/MOEX/**", "effect": "deny" },
+    { "action": "edit", "resource": "/mnt/DiskD/MOEX/**", "effect": "deny" },
+    { "action": "edit", "resource": "data/**", "effect": "deny" }
+  ]
+}

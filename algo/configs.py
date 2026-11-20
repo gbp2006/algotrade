@@ -18,6 +18,7 @@ class Config:
     display: str = ""
     instrument: str = "CNY"    # ключ из algo.instruments.INSTRUMENTS
     capital: float | None = None   # свой счёт; None — ALGO_CAPITAL
+    exposure: float | None = None  # свой потолок номинала; None — ALGO_EXPOSURE
 
 
 CONFIGS: list[Config] = [
@@ -54,14 +55,17 @@ CONFIGS: list[Config] = [
            "выход в 10:20 следующего дня",
            "Универсалка · утро"),
     # --- пул инструментов (19.11.2026): те же правила, другой класс актива ---
+    # DD номинала: RTS 50.6%, золото 43.5% (reports/prostushka-multi-instrument.md).
+    # Потолок экспозиции = 30% бюджета просадки / DD инструмента, счёт подобран так,
+    # чтобы минимальный лот не выходил за потолок: RTS 1 контракт = 59%, золото 69%.
     Config("p-rts", "prostushka",
            dict(ma_window=200, entry="13:50", filter_bars=3, short_friday=False),
            "как база, на индексе РТС (RI); диверсификация к CNY",
-           "Простушка · РТС", instrument="RTS"),
+           "Простушка · РТС", instrument="RTS", capital=260_000, exposure=0.60),
     Config("p-gold", "prostushka",
            dict(ma_window=200, entry="13:50", filter_bars=3, short_friday=False),
            "как база, на золоте (GD); ноль корреляции к валюте и рынку РФ",
-           "Простушка · золото", instrument="GOLD"),
+           "Простушка · золото", instrument="GOLD", capital=450_000, exposure=0.70),
 ]
 
 BY_ID = {c.id: c for c in CONFIGS}

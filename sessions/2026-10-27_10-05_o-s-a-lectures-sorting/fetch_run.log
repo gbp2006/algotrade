@@ -1,0 +1,1152 @@
+в архиве yt-dlp видео: 390 (добавлено новых записей: 0)
+=== Обход плейлистов и курсов канала ===
+--- плейлист PL76DtREkiCAQ3qHO7zOPbuxiiI3ANpJMn
+[youtube:tab] Extracting URL: https://www.youtube.com/playlist?list=PL76DtREkiCAQ3qHO7zOPbuxiiI3ANpJMn
+[youtube:tab] PL76DtREkiCAQ3qHO7zOPbuxiiI3ANpJMn: Downloading webpage
+[youtube:tab] PL76DtREkiCAQ3qHO7zOPbuxiiI3ANpJMn: Redownloading playlist API JSON with unavailable videos
+[download] Downloading playlist: Введение в алготрейдинг.
+[youtube:tab] Playlist Введение в алготрейдинг.: Downloading 3 items of 3
+[download] Downloading item 1 of 3
+[youtube] Extracting URL: https://www.youtube.com/watch?v=6-zkCSqL8Rs
+[youtube] 6-zkCSqL8Rs: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] 6-zkCSqL8Rs: Downloading android vr player API JSON
+[info] 6-zkCSqL8Rs: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 2 of 3
+[youtube] Extracting URL: https://www.youtube.com/watch?v=uYRWAUP35wE
+[youtube] uYRWAUP35wE: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] uYRWAUP35wE: Downloading android vr player API JSON
+[info] uYRWAUP35wE: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 3 of 3
+[youtube] Extracting URL: https://www.youtube.com/watch?v=dbhbAhTc-jc
+[youtube] dbhbAhTc-jc: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] dbhbAhTc-jc: Downloading android vr player API JSON
+[info] dbhbAhTc-jc: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Finished downloading playlist: Введение в алготрейдинг.
+ПРЕДУПРЕЖДЕНИЕ: плейлист PL76DtREkiCAQ3qHO7zOPbuxiiI3ANpJMn скачан не полностью
+--- плейлист PL76DtREkiCAQa7xUouBn0bEfgi4Uqvzqy
+[youtube:tab] Extracting URL: https://www.youtube.com/playlist?list=PL76DtREkiCAQa7xUouBn0bEfgi4Uqvzqy
+[youtube:tab] PL76DtREkiCAQa7xUouBn0bEfgi4Uqvzqy: Downloading webpage
+WARNING: [youtube:tab] YouTube said: INFO - 1 unavailable video is hidden
+[youtube:tab] PL76DtREkiCAQa7xUouBn0bEfgi4Uqvzqy: Redownloading playlist API JSON with unavailable videos
+[download] Downloading playlist: Новичку в алготрейдинге и программировании
+[youtube:tab] Playlist Новичку в алготрейдинге и программировании: Downloading 5 items of 5
+[download] OIVGkO7GiBs: Проблемы тестирования торговых роботов has already been recorded in the archive
+[download] -yVWvNiTbMM: Об ордерах и позициях в алготрейдинге has already been recorded in the archive
+[download] vsR73cpUsuw: Почему следует выбрать язык СиШарп если охота заниматься алготрейдингом has already been recorded in the archive
+[download] NoykrRaMf2I: Who Are Programmers? How to Start Learning C# has already been recorded in the archive
+[download] Downloading item 5 of 5
+[youtube] Extracting URL: https://www.youtube.com/watch?v=cEjLl3y6RtE
+[youtube] cEjLl3y6RtE: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] cEjLl3y6RtE: Downloading android vr player API JSON
+ERROR: [youtube] cEjLl3y6RtE: Private video
+[download] Finished downloading playlist: Новичку в алготрейдинге и программировании
+ПРЕДУПРЕЖДЕНИЕ: плейлист PL76DtREkiCAQa7xUouBn0bEfgi4Uqvzqy скачан не полностью
+--- плейлист PL76DtREkiCAQt_JiDuZlV43sUHSrY1s_N
+[youtube:tab] Extracting URL: https://www.youtube.com/playlist?list=PL76DtREkiCAQt_JiDuZlV43sUHSrY1s_N
+[youtube:tab] PL76DtREkiCAQt_JiDuZlV43sUHSrY1s_N: Downloading webpage
+[youtube:tab] PL76DtREkiCAQt_JiDuZlV43sUHSrY1s_N: Redownloading playlist API JSON with unavailable videos
+[download] Downloading playlist: Тестирование идей
+[youtube:tab] Playlist Тестирование идей: Downloading 1 items of 1
+[download] zDf7fqR7_Dg: Прибыльный контр-тренд для бессмертных. Ежеквартальная ребалансировка портфелей фондов has already been recorded in the archive
+[download] Finished downloading playlist: Тестирование идей
+--- плейлист PL76DtREkiCAQWAFpknk0I6INrgchcU37W
+[youtube:tab] Extracting URL: https://www.youtube.com/playlist?list=PL76DtREkiCAQWAFpknk0I6INrgchcU37W
+[youtube:tab] PL76DtREkiCAQWAFpknk0I6INrgchcU37W: Downloading webpage
+[youtube:tab] PL76DtREkiCAQWAFpknk0I6INrgchcU37W: Redownloading playlist API JSON with unavailable videos
+[download] Downloading playlist: Кросс-тестирование через Скринеры.
+[youtube:tab] Playlist Кросс-тестирование через Скринеры.: Downloading 5 items of 5
+[download] Downloading item 1 of 5
+[youtube] Extracting URL: https://www.youtube.com/watch?v=M86xNGLvYcI
+[youtube] M86xNGLvYcI: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] M86xNGLvYcI: Downloading android vr player API JSON
+[info] M86xNGLvYcI: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 2 of 5
+[youtube] Extracting URL: https://www.youtube.com/watch?v=chJFr7Y3tEE
+[youtube] chJFr7Y3tEE: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] chJFr7Y3tEE: Downloading android vr player API JSON
+[info] chJFr7Y3tEE: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 3 of 5
+[youtube] Extracting URL: https://www.youtube.com/watch?v=bRNTeK_nn-Y
+[youtube] bRNTeK_nn-Y: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] bRNTeK_nn-Y: Downloading android vr player API JSON
+[info] bRNTeK_nn-Y: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 4 of 5
+[youtube] Extracting URL: https://www.youtube.com/watch?v=Fz768SQqPyY
+[youtube] Fz768SQqPyY: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] Fz768SQqPyY: Downloading android vr player API JSON
+[info] Fz768SQqPyY: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 5 of 5
+[youtube] Extracting URL: https://www.youtube.com/watch?v=VMHn13B42So
+[youtube] VMHn13B42So: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] VMHn13B42So: Downloading android vr player API JSON
+[info] VMHn13B42So: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Finished downloading playlist: Кросс-тестирование через Скринеры.
+ПРЕДУПРЕЖДЕНИЕ: плейлист PL76DtREkiCAQWAFpknk0I6INrgchcU37W скачан не полностью
+--- плейлист PL76DtREkiCAR0dtHH49X6iuCHPAR6x1kJ
+[youtube:tab] Extracting URL: https://www.youtube.com/playlist?list=PL76DtREkiCAR0dtHH49X6iuCHPAR6x1kJ
+[youtube:tab] PL76DtREkiCAR0dtHH49X6iuCHPAR6x1kJ: Downloading webpage
+WARNING: [youtube:tab] unable to extract yt initial data; please report this issue on  https://github.com/yt-dlp/yt-dlp/issues?q= , filling out the appropriate issue template. Confirm you are on the latest version using  yt-dlp -U
+WARNING: [youtube:tab] Incomplete yt initial data received. Retrying (1/3)...
+[youtube:tab] PL76DtREkiCAR0dtHH49X6iuCHPAR6x1kJ: Downloading webpage
+WARNING: [youtube:tab] unable to extract yt initial data; please report this issue on  https://github.com/yt-dlp/yt-dlp/issues?q= , filling out the appropriate issue template. Confirm you are on the latest version using  yt-dlp -U
+WARNING: [youtube:tab] Incomplete yt initial data received. Retrying (2/3)...
+[youtube:tab] PL76DtREkiCAR0dtHH49X6iuCHPAR6x1kJ: Downloading webpage
+WARNING: [youtube:tab] unable to extract yt initial data; please report this issue on  https://github.com/yt-dlp/yt-dlp/issues?q= , filling out the appropriate issue template. Confirm you are on the latest version using  yt-dlp -U
+WARNING: [youtube:tab] Incomplete yt initial data received. Retrying (3/3)...
+[youtube:tab] PL76DtREkiCAR0dtHH49X6iuCHPAR6x1kJ: Downloading webpage
+WARNING: [youtube:tab] unable to extract yt initial data; please report this issue on  https://github.com/yt-dlp/yt-dlp/issues?q= , filling out the appropriate issue template. Confirm you are on the latest version using  yt-dlp -U
+WARNING: [youtube:tab] Incomplete yt initial data received; please report this issue on  https://github.com/yt-dlp/yt-dlp/issues?q= , filling out the appropriate issue template. Confirm you are on the latest version using  yt-dlp -U. Giving up after 3 retries
+[youtube:tab] PL76DtREkiCAR0dtHH49X6iuCHPAR6x1kJ: Downloading API parameters API JSON
+[youtube:tab] PL76DtREkiCAR0dtHH49X6iuCHPAR6x1kJ: Downloading API JSON
+WARNING: [youtube:tab] YouTube said: INFO - 2 unavailable videos are hidden
+[youtube:tab] PL76DtREkiCAR0dtHH49X6iuCHPAR6x1kJ: Redownloading playlist API JSON with unavailable videos
+[download] Downloading playlist: Отдел обучения o-s-a.net
+[youtube:tab] Playlist Отдел обучения o-s-a.net: Downloading 10 items of 10
+[download] 714vY2bgJNk: Intro для отдела обучения. O-S-A.net has already been recorded in the archive
+[download] 1ODor91kyeo: C# Starter - Intro has already been recorded in the archive
+[download] QsQqqIjs3zE: OsEngine Base - Intro has already been recorded in the archive
+[download] 1w76WKMVPnk: OsEngine Brut Force - Intro has already been recorded in the archive
+[download] tA5SNMlcBkM: Arbitrage Intro has already been recorded in the archive
+[download] TbGyoJoKQk4: OsEngine Risk has already been recorded in the archive
+[download] zpp77y6-kl4: OsEngine Trend has already been recorded in the archive
+[download] klRpVK3LG8U: HFT Intro has already been recorded in the archive
+[download] Downloading item 9 of 10
+[youtube] Extracting URL: https://www.youtube.com/watch?v=TqgaJURMMGE
+[youtube] TqgaJURMMGE: Downloading webpage
+WARNING: [youtube] unable to extract yt initial data; please report this issue on  https://github.com/yt-dlp/yt-dlp/issues?q= , filling out the appropriate issue template. Confirm you are on the latest version using  yt-dlp -U
+WARNING: [youtube] Incomplete data received in embedded initial data; re-fetching using API.
+[youtube] TqgaJURMMGE: Downloading initial data API JSON
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] TqgaJURMMGE: Downloading android vr player API JSON
+ERROR: [youtube] TqgaJURMMGE: Private video
+[download] Downloading item 10 of 10
+[youtube] Extracting URL: https://www.youtube.com/watch?v=HImMKINcn3E
+[youtube] HImMKINcn3E: Downloading webpage
+WARNING: [youtube] unable to extract yt initial data; please report this issue on  https://github.com/yt-dlp/yt-dlp/issues?q= , filling out the appropriate issue template. Confirm you are on the latest version using  yt-dlp -U
+WARNING: [youtube] Incomplete data received in embedded initial data; re-fetching using API.
+[youtube] HImMKINcn3E: Downloading initial data API JSON
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] HImMKINcn3E: Downloading android vr player API JSON
+ERROR: [youtube] HImMKINcn3E: Private video
+[download] Finished downloading playlist: Отдел обучения o-s-a.net
+ПРЕДУПРЕЖДЕНИЕ: плейлист PL76DtREkiCAR0dtHH49X6iuCHPAR6x1kJ скачан не полностью
+--- плейлист PL76DtREkiCARJaV1GX4t6chfjcfGP10mF
+[youtube:tab] Extracting URL: https://www.youtube.com/playlist?list=PL76DtREkiCARJaV1GX4t6chfjcfGP10mF
+[youtube:tab] PL76DtREkiCARJaV1GX4t6chfjcfGP10mF: Downloading webpage
+[youtube:tab] PL76DtREkiCARJaV1GX4t6chfjcfGP10mF: Redownloading playlist API JSON with unavailable videos
+[download] Downloading playlist: Стратегии
+[youtube:tab] Playlist Стратегии: Downloading 23 items of 23
+[download] 2AXkGnn6APs: Trading Strategies: An Overview has already been recorded in the archive
+[download] YJREaj17UWE: Индикатор Ван-Герчик has already been recorded in the archive
+[download] PEKJVviDKNA: ZZ Channel Indicator has already been recorded in the archive
+[download] hCEMmOXhPPU: Скринеры и пробои has already been recorded in the archive
+[download] Vo59ss5-8tY: Ivashov Indicator as a Gift for February 23rd has already been recorded in the archive
+[download] BjWbwJYjmME: Торговый робот Pump Detector has already been recorded in the archive
+[download] 4KGuOxnF-AA: Robot. Reverse Adaptive Price Channel has already been recorded in the archive
+[download] M7dS-sMj9_o: Робот. Parabolic Envelope has already been recorded in the archive
+[download] MSGruHZ2DCo: Робот. Parabolic Bollinger has already been recorded in the archive
+[download] ngUYKZzZJ9c: Робот. Parabolic Sar Classic Trade has already been recorded in the archive
+[download] B9aaNUQZTfg: Роботы. Параболики has already been recorded in the archive
+[download] OcOQmXv_S_M: Торговый робот Break Linear RegressionChannel has already been recorded in the archive
+[download] 8_2A-_lFjEw: Торговый робот. Break BB has already been recorded in the archive
+[download] fOlY9UlYbNU: Торговый робот. Break ATR has already been recorded in the archive
+[download] wNItxkneQF4: Пробойные роботы has already been recorded in the archive
+[download] RRyPEVQ0pHM: Импульсный робот. Impulse Sma LR has already been recorded in the archive
+[download] Qkm7UHdaQPc: Торговый робот. Impulse HMA has already been recorded in the archive
+[download] XIYmmiR-QHM: Торговый робот. Impulse Two Sma has already been recorded in the archive
+[download] DPob5FnW87M: Торговый робот. Reverse Adaptive Envelope has already been recorded in the archive
+[download] TNVf-gfdPek: Торговый робот. Reverse AlmaChannel has already been recorded in the archive
+[download] cZ49833cVDI: Реверсные роботы has already been recorded in the archive
+[download] fMitNHjp1bs: Торговый робот. Candle Patterns Boost has already been recorded in the archive
+[download] TUGvDWDqws0: Робот. Fractal pattern break. has already been recorded in the archive
+[download] Finished downloading playlist: Стратегии
+--- плейлист PL76DtREkiCARpFkueyGW1UiNaTbyxSCqa
+[youtube:tab] Extracting URL: https://www.youtube.com/playlist?list=PL76DtREkiCARpFkueyGW1UiNaTbyxSCqa
+[youtube:tab] PL76DtREkiCARpFkueyGW1UiNaTbyxSCqa: Downloading webpage
+WARNING: [youtube:tab] YouTube said: INFO - 1 unavailable video is hidden
+[youtube:tab] PL76DtREkiCARpFkueyGW1UiNaTbyxSCqa: Redownloading playlist API JSON with unavailable videos
+[download] Downloading playlist: Ошибки в трейдинге
+[youtube:tab] Playlist Ошибки в трейдинге: Downloading 6 items of 6
+[download] _Gen3xE30nI: Почему так много слитых депозитов? Ошибки трейдеров. Плечи и избыточный риск. has already been recorded in the archive
+[download] oT2Rq_W2x6w: Why are so many deposits lost? Trader errors. Machine learning. has already been recorded in the archive
+[download] VPhnbDe14MU: Почему так много слитых депозитов? Ошибки трейдеров. Нехватка знаний has already been recorded in the archive
+[download] Downloading item 4 of 6
+[youtube] Extracting URL: https://www.youtube.com/watch?v=tcnEAwhHupY
+[youtube] tcnEAwhHupY: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] tcnEAwhHupY: Downloading android vr player API JSON
+ERROR: [youtube] tcnEAwhHupY: Private video
+[download] Qcss2Q-fFGw: PNL в % в плюс, абсолют в минус. Почему так происходит? has already been recorded in the archive
+[download] dQGGOee_nDg: How to stay calm during prolonged equity drawdowns? has already been recorded in the archive
+[download] Finished downloading playlist: Ошибки в трейдинге
+ПРЕДУПРЕЖДЕНИЕ: плейлист PL76DtREkiCARpFkueyGW1UiNaTbyxSCqa скачан не полностью
+--- плейлист PL76DtREkiCARrJ-FlLcgRq6hktSjlfyG5
+[youtube:tab] Extracting URL: https://www.youtube.com/playlist?list=PL76DtREkiCARrJ-FlLcgRq6hktSjlfyG5
+[youtube:tab] PL76DtREkiCARrJ-FlLcgRq6hktSjlfyG5: Downloading webpage
+[youtube:tab] PL76DtREkiCARrJ-FlLcgRq6hktSjlfyG5: Redownloading playlist API JSON with unavailable videos
+[download] Downloading playlist: Свечи и преобразование ленты сделок.
+[youtube:tab] Playlist Свечи и преобразование ленты сделок.: Downloading 7 items of 7
+[download] Downloading item 1 of 7
+[youtube] Extracting URL: https://www.youtube.com/watch?v=ix6tkcpE2Ew
+[youtube] ix6tkcpE2Ew: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] ix6tkcpE2Ew: Downloading android vr player API JSON
+[info] ix6tkcpE2Ew: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 2 of 7
+[youtube] Extracting URL: https://www.youtube.com/watch?v=-AlckAezY5A
+[youtube] -AlckAezY5A: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] -AlckAezY5A: Downloading android vr player API JSON
+[info] -AlckAezY5A: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 3 of 7
+[youtube] Extracting URL: https://www.youtube.com/watch?v=TM9Bpc1aeFk
+[youtube] TM9Bpc1aeFk: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] TM9Bpc1aeFk: Downloading android vr player API JSON
+[info] TM9Bpc1aeFk: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 4 of 7
+[youtube] Extracting URL: https://www.youtube.com/watch?v=RGOBiRIcZpM
+[youtube] RGOBiRIcZpM: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] RGOBiRIcZpM: Downloading android vr player API JSON
+[info] RGOBiRIcZpM: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 5 of 7
+[youtube] Extracting URL: https://www.youtube.com/watch?v=dXzGOUZxrYs
+[youtube] dXzGOUZxrYs: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] dXzGOUZxrYs: Downloading android vr player API JSON
+[info] dXzGOUZxrYs: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 6 of 7
+[youtube] Extracting URL: https://www.youtube.com/watch?v=DHfWVBNag1c
+[youtube] DHfWVBNag1c: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] DHfWVBNag1c: Downloading android vr player API JSON
+[info] DHfWVBNag1c: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 7 of 7
+[youtube] Extracting URL: https://www.youtube.com/watch?v=dE-1QFxaSQ0
+[youtube] dE-1QFxaSQ0: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] dE-1QFxaSQ0: Downloading android vr player API JSON
+[info] dE-1QFxaSQ0: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Finished downloading playlist: Свечи и преобразование ленты сделок.
+ПРЕДУПРЕЖДЕНИЕ: плейлист PL76DtREkiCARrJ-FlLcgRq6hktSjlfyG5 скачан не полностью
+--- плейлист PL76DtREkiCARwZaoyTFdDoUFSFpg0cYmF
+[youtube:tab] Extracting URL: https://www.youtube.com/playlist?list=PL76DtREkiCARwZaoyTFdDoUFSFpg0cYmF
+[youtube:tab] PL76DtREkiCARwZaoyTFdDoUFSFpg0cYmF: Downloading webpage
+[youtube:tab] PL76DtREkiCARwZaoyTFdDoUFSFpg0cYmF: Redownloading playlist API JSON with unavailable videos
+[download] Downloading playlist: Крипта VS MOEX
+[youtube:tab] Playlist Крипта VS MOEX: Downloading 11 items of 11
+[download] L8oqMLjzUdw: ZigZag Channel. Сравнительные тесты на Московской бирже и на Крипте одних и тех же стратегий. has already been recorded in the archive
+[download] 3akWz9SRT_E: Канал линейной регрессии. Сравнительные тесты на Московской бирже и на Крипте. has already been recorded in the archive
+[download] OZqpPPV7jvQ: Bollinger Band. Сравнительные тесты на Московской бирже и на Крипте. has already been recorded in the archive
+[download] TZHuA0fFLbE: Робот на основе Parabolic Sar. Сравнительные тесты на Московской бирже и на Крипте. has already been recorded in the archive
+[download] Cr4K4dBFvL0: Робот на основе Impulse Hma. Сравнительные тесты на Московской бирже и на Крипте. has already been recorded in the archive
+[download] 2m2_-ucWxD0: Робот на основе Reverse Adaptive Price Channel. Сравнительные тесты на Московской бирже и на Крипте. has already been recorded in the archive
+[download] VG1ZmAcNwQQ: Робот на основе Keltner Channel. Сравнительные тесты на Московской бирже и на Крипте. has already been recorded in the archive
+[download] yR0CbWIdeWQ: Робот на основе Parabolic Adaptive Envelope. Сравнительные тесты на Московской бирже и на Крипте. has already been recorded in the archive
+[download] qBrw5fEhUEA: Робот на основе Impulse Two Sma. Сравнительные тесты на Московской бирже и на Крипте. has already been recorded in the archive
+[download] -ufPPLAp48I: Робот на основе Volatility Patterns. Сравнительные тесты на Московской бирже и на Крипте. has already been recorded in the archive
+[download] 4MQQGbzg2z0: Сравнение трендовости рынков. MOEX VS Крипта. Результаты исследования на основе 10 различных ботов. has already been recorded in the archive
+[download] Finished downloading playlist: Крипта VS MOEX
+--- плейлист PL76DtREkiCARWZvSiTvZNYDhovq3H2_Vh
+[youtube:tab] Extracting URL: https://www.youtube.com/playlist?list=PL76DtREkiCARWZvSiTvZNYDhovq3H2_Vh
+[youtube:tab] PL76DtREkiCARWZvSiTvZNYDhovq3H2_Vh: Downloading webpage
+[youtube:tab] PL76DtREkiCARWZvSiTvZNYDhovq3H2_Vh: Redownloading playlist API JSON with unavailable videos
+[download] Downloading playlist: Ротация бумаг между алгоритмами по стадиям волатильности.
+[youtube:tab] Playlist Ротация бумаг между алгоритмами по стадиям волатильности.: Downloading 5 items of 5
+[download] Downloading item 1 of 5
+[youtube] Extracting URL: https://www.youtube.com/watch?v=DDxhTgr3Tjg
+[youtube] DDxhTgr3Tjg: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] DDxhTgr3Tjg: Downloading android vr player API JSON
+[info] DDxhTgr3Tjg: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 2 of 5
+[youtube] Extracting URL: https://www.youtube.com/watch?v=ouYzQBsMriU
+[youtube] ouYzQBsMriU: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] ouYzQBsMriU: Downloading android vr player API JSON
+[info] ouYzQBsMriU: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 3 of 5
+[youtube] Extracting URL: https://www.youtube.com/watch?v=4nASCyZl5HE
+[youtube] 4nASCyZl5HE: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] 4nASCyZl5HE: Downloading android vr player API JSON
+[info] 4nASCyZl5HE: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 4 of 5
+[youtube] Extracting URL: https://www.youtube.com/watch?v=waRz91_IMXo
+[youtube] waRz91_IMXo: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] waRz91_IMXo: Downloading android vr player API JSON
+[info] waRz91_IMXo: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 5 of 5
+[youtube] Extracting URL: https://www.youtube.com/watch?v=ZBYyV9b_W-U
+[youtube] ZBYyV9b_W-U: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] ZBYyV9b_W-U: Downloading android vr player API JSON
+[info] ZBYyV9b_W-U: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Finished downloading playlist: Ротация бумаг между алгоритмами по стадиям волатильности.
+ПРЕДУПРЕЖДЕНИЕ: плейлист PL76DtREkiCARWZvSiTvZNYDhovq3H2_Vh скачан не полностью
+--- плейлист PL76DtREkiCAS0BUrpzVBOWXuxZKlEKVX-
+[youtube:tab] Extracting URL: https://www.youtube.com/playlist?list=PL76DtREkiCAS0BUrpzVBOWXuxZKlEKVX-
+[youtube:tab] PL76DtREkiCAS0BUrpzVBOWXuxZKlEKVX-: Downloading webpage
+[youtube:tab] PL76DtREkiCAS0BUrpzVBOWXuxZKlEKVX-: Redownloading playlist API JSON with unavailable videos
+[download] Downloading playlist: Разработка OsEngine.
+[youtube:tab] Playlist Разработка OsEngine.: Downloading 7 items of 7
+[download] -DXaPixHbKI: Разработка OsEngine. Отчет за февраль 2023. has already been recorded in the archive
+[download] NiHqQoUjNpk: Разработка OsEngine. Отчет за март 2023. has already been recorded in the archive
+[download] UK42sqo6ouY: Разработка OsEngine. Отчет за апрель 2023. has already been recorded in the archive
+[download] ZXqxjpT64N0: OsData 2.0. Презентация и обзор. has already been recorded in the archive
+[download] qofvWZC_ci8: Разработка OsEngine. Отчет за май 2023. has already been recorded in the archive
+[download] sR_8B4kYpW4: Разработка Os Engine. Отчет за июнь 2023г. has already been recorded in the archive
+[download] QLbcxs_3uow: Разработка Os Engine. Отчет за июль 2023г. has already been recorded in the archive
+[download] Finished downloading playlist: Разработка OsEngine.
+--- плейлист PL76DtREkiCASoQwT4C4fa0_I_9ssrY6mC
+[youtube:tab] Extracting URL: https://www.youtube.com/playlist?list=PL76DtREkiCASoQwT4C4fa0_I_9ssrY6mC
+[youtube:tab] PL76DtREkiCASoQwT4C4fa0_I_9ssrY6mC: Downloading webpage
+[youtube:tab] PL76DtREkiCASoQwT4C4fa0_I_9ssrY6mC: Redownloading playlist API JSON with unavailable videos
+[download] Downloading playlist: О трейдинге в дороге
+[youtube:tab] Playlist О трейдинге в дороге: Downloading 4 items of 4
+[download] z0oev9hgrE4: Питер. Конференция СмартЛаба. Июнь 2021. Отзыв has already been recorded in the archive
+[download] EejzaGsJC8A: St. Petersburg. SmartLab Conference. About the trend. Part 1 has already been recorded in the archive
+[download] 7pmEkQ3_Yww: Питер. Конференция СмартЛаба. Про тренд. Часть 2 has already been recorded in the archive
+[download] Nr0-awvuM-w: A True Story About Algo Traders has already been recorded in the archive
+[download] Finished downloading playlist: О трейдинге в дороге
+--- плейлист PL76DtREkiCASOyhVnRT061JrgkM3R821U
+[youtube:tab] Extracting URL: https://www.youtube.com/playlist?list=PL76DtREkiCASOyhVnRT061JrgkM3R821U
+[youtube:tab] PL76DtREkiCASOyhVnRT061JrgkM3R821U: Downloading webpage
+WARNING: [youtube:tab] YouTube said: INFO - 4 unavailable videos are hidden
+[youtube:tab] PL76DtREkiCASOyhVnRT061JrgkM3R821U: Redownloading playlist API JSON with unavailable videos
+[download] Downloading playlist: Торгуя сотни миллионов
+[youtube:tab] Playlist Торгуя сотни миллионов: Downloading 21 items of 21
+[download] 5TwwmR92OVU: Что нужно, чтобы торговать миллионами? has already been recorded in the archive
+[download] tL_ceWza5x8: Роботы. Стратегии. Точки входа. has already been recorded in the archive
+[download] zyOsN5yAx6U: Роботы. Стратегии. Точки выхода has already been recorded in the archive
+[download] 7v_vU1PkV24: Роботы. Стратегии. Фильтры has already been recorded in the archive
+[download] W6AmBlk5Tmg: Тестируем торговых роботов. Классика has already been recorded in the archive
+[download] M2kusnvWzHQ: Тестируем торговых роботов. Walk-forwards has already been recorded in the archive
+[download] CY6oqUyB6i4: Тестируем торговых роботов. По волатильности has already been recorded in the archive
+[download] rMlf60GYpz4: How to save your deposit? has already been recorded in the archive
+[download] LlZSaWcms74: Распределение объемов - портфельное тестирование has already been recorded in the archive
+[download] ywqefQ9tjT0: Ансамблирование объемов has already been recorded in the archive
+[download] 7BsQcUyPmSU: Запуск торговых роботов при помощи саб-стратегий has already been recorded in the archive
+[download] 4saRKtp_fHk: Choosing a Trading Server has already been recorded in the archive
+[download] Downloading item 13 of 21
+[youtube] Extracting URL: https://www.youtube.com/watch?v=5ltxkGONGwQ
+[youtube] 5ltxkGONGwQ: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] 5ltxkGONGwQ: Downloading android vr player API JSON
+ERROR: [youtube] 5ltxkGONGwQ: Private video
+[download] C_SG1nLg3fo: Trend Speed has already been recorded in the archive
+[download] Downloading item 15 of 21
+[youtube] Extracting URL: https://www.youtube.com/watch?v=oj2VOn5xX4U
+[youtube] oj2VOn5xX4U: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] oj2VOn5xX4U: Downloading android vr player API JSON
+ERROR: [youtube] oj2VOn5xX4U: Private video
+[download] Downloading item 16 of 21
+[youtube] Extracting URL: https://www.youtube.com/watch?v=iIQBc-blE1A
+[youtube] iIQBc-blE1A: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] iIQBc-blE1A: Downloading android vr player API JSON
+ERROR: [youtube] iIQBc-blE1A: Private video
+[download] 2NheXB_xlxg: Trading Profits: Compound Interest has already been recorded in the archive
+[download] Downloading item 18 of 21
+[youtube] Extracting URL: https://www.youtube.com/watch?v=8KPh6IRjlfo
+[youtube] 8KPh6IRjlfo: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] 8KPh6IRjlfo: Downloading android vr player API JSON
+ERROR: [youtube] 8KPh6IRjlfo: Private video
+[download] khN8m7AmPwE: Робастность стратегии has already been recorded in the archive
+[download] l19x5cYlFQc: Reducing Drawdowns has already been recorded in the archive
+[download] Kr48nxbjjw4: Проскальзывания в трендовой торговле. Просадки, и как их минимизировать. has already been recorded in the archive
+[download] Finished downloading playlist: Торгуя сотни миллионов
+ПРЕДУПРЕЖДЕНИЕ: плейлист PL76DtREkiCASOyhVnRT061JrgkM3R821U скачан не полностью
+--- плейлист PL76DtREkiCASxD2bwi74gG0yB2ZpQWCBr
+[youtube:tab] Extracting URL: https://www.youtube.com/playlist?list=PL76DtREkiCASxD2bwi74gG0yB2ZpQWCBr
+[youtube:tab] PL76DtREkiCASxD2bwi74gG0yB2ZpQWCBr: Downloading webpage
+[youtube:tab] PL76DtREkiCASxD2bwi74gG0yB2ZpQWCBr: Redownloading playlist API JSON with unavailable videos
+[download] Downloading playlist: Определения и термины.
+[youtube:tab] Playlist Определения и термины.: Downloading 2 items of 2
+[download] slN7Q4ID4Cw: Types of P/L in Trading Platform Journals. Understanding Profit and Loss Differences. has already been recorded in the archive
+[download] GAW3HLv8jHQ: Численный показатель робастности при Walk-Forward оптимизации. has already been recorded in the archive
+[download] Finished downloading playlist: Определения и термины.
+--- плейлист PL76DtREkiCATe28yPbAT_5em1JqA4xEiB
+[youtube:tab] Extracting URL: https://www.youtube.com/playlist?list=PL76DtREkiCATe28yPbAT_5em1JqA4xEiB
+[youtube:tab] PL76DtREkiCATe28yPbAT_5em1JqA4xEiB: Downloading webpage
+WARNING: [youtube:tab] YouTube said: INFO - 8 unavailable videos are hidden
+[youtube:tab] PL76DtREkiCATe28yPbAT_5em1JqA4xEiB: Redownloading playlist API JSON with unavailable videos
+[download] Downloading playlist: Os.Engine Tutorial
+[youtube:tab] Playlist Os.Engine Tutorial: Downloading 56 items of 56
+[download] TE_F4UWIpb0: Loading extensive candlestick history for trading via OsEngine has already been recorded in the archive
+[download] PI96l83WMS0: Connecting OsEngine to Quick starting with version 7 via DDE has already been recorded in the archive
+[download] 4oVSeJOV8Nk: Creating a robot in OsEngine with parameters has already been recorded in the archive
+[download] kXKNUh9KIqA: Обзор Оптимизатора в OsEngine has already been recorded in the archive
+[download] Downloading item 5 of 56
+[youtube] Extracting URL: https://www.youtube.com/watch?v=r4gSCRa6NsM
+[youtube] r4gSCRa6NsM: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] r4gSCRa6NsM: Downloading android vr player API JSON
+ERROR: [youtube] r4gSCRa6NsM: Private video
+[download] 4ttYZriLCBw: Знакомьтесь Os.Miner has already been recorded in the archive
+[download] Downloading item 7 of 56
+[youtube] Extracting URL: https://www.youtube.com/watch?v=SkZRbvza1Q0
+[youtube] SkZRbvza1Q0: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] SkZRbvza1Q0: Downloading android vr player API JSON
+ERROR: [youtube] SkZRbvza1Q0: Private video
+[download] RhDe3NIxv3Y: Running Robots in OsEngine. Trading. Alerts. Volume Profile has already been recorded in the archive
+[download] V1Oa--wmXXI: Trading Robots for Binance: Connection Setup has already been recorded in the archive
+[download] JvVM9MDKANU: Торговые роботы для TWS от interactive Brokers has already been recorded in the archive
+[download] Lrpp9H199Bw: Скачивание исторических данных с биржи Binance при помощи OsEngine has already been recorded in the archive
+[download] j5asX3TqEqw: Downloading Historical Data from Finam Using OsEngine has already been recorded in the archive
+[download] xl7_4RxBEBg: Testing Trading Robots in the OsEngine Platform has already been recorded in the archive
+[download] 2A_hXKNr3G4: Optimizing robots in OsEngine has already been recorded in the archive
+[download] 4niRyKY1Ho8: Майним прибыльные паттерны (свечные, индикаторые) и запускаем в торговлю has already been recorded in the archive
+[download] 6f9CAtwfCgU: Арбитражный робот для Binance, Bitfinex, BitStapm, Bitmex, Kraken, Quik, Plaza 2, SmartCom, Transaq has already been recorded in the archive
+[download] wn3HquclZNk: Делаем индикатор в OsEngine has already been recorded in the archive
+[download] 7X1iLTil0IQ: Работа с новыми индикаторами из робота и расположение роботов подгружаемых из файла has already been recorded in the archive
+[download] 07kgSk8ewzw: Снижаем нагрузку на оперативную память от OsEngine has already been recorded in the archive
+[download] 3OT0eHyD2Rc: Загрузка свечных данных за длительный период для OsEngine has already been recorded in the archive
+[download] NNrhStjDvKw: Automated Data Download from the Moscow Exchange has already been recorded in the archive
+[download] Downloading item 22 of 56
+[youtube] Extracting URL: https://www.youtube.com/watch?v=VSW59E7dgT0
+[youtube] VSW59E7dgT0: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] VSW59E7dgT0: Downloading android vr player API JSON
+[info] VSW59E7dgT0: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] WDfb58WmrgQ: Using multithreading in trading robots has already been recorded in the archive
+[download] rcy0VgR3KOM: Оптимизатор нового поколения в OsEngine has already been recorded in the archive
+[download] JK1vxklFO_k: Бесплатный новый робот в OsEngine на параметре TimeOfDay has already been recorded in the archive
+[download] YgOCnYXfhe8: String Parameters for Robots and Loading Third-Party Libraries into Robots and Indicators in Scripts has already been recorded in the archive
+[download] SnACZ0KkOnI: Открытие и сопровождение нескольких позиций по разным сигналам одновременно в OsEngine has already been recorded in the archive
+[download] 6EVFFBJqSNY: OsEngine Optimizer. Ver 3 has already been recorded in the archive
+[download] ruOZxqTSSb0: Automatic position tracking in OsEngine has already been recorded in the archive
+[download] kRObxYM10j8: Богатое окно параметров для робота на OsEngine has already been recorded in the archive
+[download] Downloading item 31 of 56
+[youtube] Extracting URL: https://www.youtube.com/watch?v=8FC1phKYVt8
+[youtube] 8FC1phKYVt8: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] 8FC1phKYVt8: Downloading android vr player API JSON
+ERROR: [youtube] 8FC1phKYVt8: Private video
+[download] Downloading item 32 of 56
+[youtube] Extracting URL: https://www.youtube.com/watch?v=seBMdZn7jbo
+[youtube] seBMdZn7jbo: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] seBMdZn7jbo: Downloading android vr player API JSON
+ERROR: [youtube] seBMdZn7jbo: Private video
+[download] Downloading item 33 of 56
+[youtube] Extracting URL: https://www.youtube.com/watch?v=yt8cfREJ45k
+[youtube] yt8cfREJ45k: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] yt8cfREJ45k: Downloading android vr player API JSON
+ERROR: [youtube] yt8cfREJ45k: Private video
+[download] Downloading item 34 of 56
+[youtube] Extracting URL: https://www.youtube.com/watch?v=TqgaJURMMGE
+[youtube] TqgaJURMMGE: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] TqgaJURMMGE: Downloading android vr player API JSON
+ERROR: [youtube] TqgaJURMMGE: Private video
+[download] DxmIz3dYluE: Обзор архитектуры  OsEngine has already been recorded in the archive
+[download] GMS8-1VlFhk: Качаем свечные данные через OsData, для тестера has already been recorded in the archive
+[download] jCDg081ayJY: Trailing Stop в OsEngine has already been recorded in the archive
+[download] bInNPjChvEg: Connecting OsEngine to Quik using the LUA connector has already been recorded in the archive
+[download] K-SXlotzFh0: Структура OS Engine has already been recorded in the archive
+[download] P3SywvPXtRU: Торгуем наклонные уровни и тренды с помощью OsEngine has already been recorded in the archive
+[download] Downloading item 41 of 56
+[youtube] Extracting URL: https://www.youtube.com/watch?v=nXLekG2lEIo
+[youtube] nXLekG2lEIo: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] nXLekG2lEIo: Downloading android vr player API JSON
+ERROR: [youtube] nXLekG2lEIo: Private video
+[download] Z42QjMy5zRU: Trading Bot Example with Multiple Entries and Exits has already been recorded in the archive
+[download] YT_jCCbEK9o: Пример работы с элементами на чарте has already been recorded in the archive
+[download] Downloading item 44 of 56
+[youtube] Extracting URL: https://www.youtube.com/watch?v=n4AN44wNOtI
+[youtube] n4AN44wNOtI: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] n4AN44wNOtI: Downloading android vr player API JSON
+ERROR: [youtube] n4AN44wNOtI: Private video
+[download] 7P4reTTLXIg: OsEngin пример. Отключение индикаторов has already been recorded in the archive
+[download] LbHSgI6dHPE: Журнал сделок 2.0 has already been recorded in the archive
+[download] rDVMkpAM-Mc: How to download OsEngine from GitHub. How to run the program? has already been recorded in the archive
+[download] gK6Mkvk71Iw: Обзор OsEngine. has already been recorded in the archive
+[download] rLPfu6jyy0k: Обзор Os Data has already been recorded in the archive
+[download] mff7E2jUGLE: How to Create Binance API Keys has already been recorded in the archive
+[download] dFP0H3lSGy4: Как запустить скриптовый индикатор в режиме дебаггинга в OsEngine. has already been recorded in the archive
+[download] CsQ0KGOcwxY: Алерты. has already been recorded in the archive
+[download] ZXqxjpT64N0: OsData 2.0. Презентация и обзор. has already been recorded in the archive
+[download] o2hB4RPaF7E: Optimizer Update has already been recorded in the archive
+[download] bxmkfYgIN5M: Окна открытия и закрытия позиций. has already been recorded in the archive
+[download] ItFxmDWuwHQ: Connector support table in Os Engine. has already been recorded in the archive
+[download] Finished downloading playlist: Os.Engine Tutorial
+ПРЕДУПРЕЖДЕНИЕ: плейлист PL76DtREkiCATe28yPbAT_5em1JqA4xEiB скачан не полностью
+--- плейлист PL76DtREkiCATeCqp8NvSRux_kaZtNKisI
+[youtube:tab] Extracting URL: https://www.youtube.com/playlist?list=PL76DtREkiCATeCqp8NvSRux_kaZtNKisI
+[youtube:tab] PL76DtREkiCATeCqp8NvSRux_kaZtNKisI: Downloading webpage
+WARNING: [youtube:tab] YouTube said: INFO - 3 unavailable videos are hidden
+[youtube:tab] PL76DtREkiCATeCqp8NvSRux_kaZtNKisI: Redownloading playlist API JSON with unavailable videos
+[download] Downloading playlist: Войти в IT
+[youtube:tab] Playlist Войти в IT: Downloading 21 items of 21
+[download] Downloading item 1 of 21
+[youtube] Extracting URL: https://www.youtube.com/watch?v=EFMAiGdTBUI
+[youtube] EFMAiGdTBUI: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] EFMAiGdTBUI: Downloading android vr player API JSON
+ERROR: [youtube] EFMAiGdTBUI: Private video
+[download] DdAxVlUnNNw: Зарплата программиста. Вчера. Сегодня. Завтра. has already been recorded in the archive
+[download] 03QYLVF-nFc: Престижные профессии. Вчера. Сегодня. Завтра has already been recorded in the archive
+[download] Downloading item 4 of 21
+[youtube] Extracting URL: https://www.youtube.com/watch?v=NC9LwCgro2U
+[youtube] NC9LwCgro2U: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] NC9LwCgro2U: Downloading android vr player API JSON
+ERROR: [youtube] NC9LwCgro2U: Private video
+[download] R0PukvLnMLE: Кто может стать программистом has already been recorded in the archive
+[download] v4IMsBvJUMs: Нужно ли высшее образование, чтобы стать программистом has already been recorded in the archive
+[download] rj6GZVLInZc: Фриланс. Работа в офисе. Что выбрать? has already been recorded in the archive
+[download] wVlSnzx25ew: Лучший язык программирования has already been recorded in the archive
+[download] Zr5OBs_muB0: Язык C# в создании игр. Как долго надо учиться до прохождения собеседования? Личный опыт has already been recorded in the archive
+[download] ebGBUNbPWHQ: Язык C# в алготрейдинге. Разработка роботов на заказ и фриланс. Сколько можно заработать? has already been recorded in the archive
+[download] hjHx8edbqgY: Работа СиШарп программистом в Back-End и Desktop. has already been recorded in the archive
+[download] vdJsIBqJBa4: Личный блог программиста has already been recorded in the archive
+[download] Kk7R2kOeCOg: Выученная беспомощность has already been recorded in the archive
+[download] o1lSCQaP_dA: Прокрастинация и как с ней бороться, чтобы войти в IT? has already been recorded in the archive
+[download] Downloading item 15 of 21
+[youtube] Extracting URL: https://www.youtube.com/watch?v=eJrMv0vM-_k
+[youtube] eJrMv0vM-_k: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] eJrMv0vM-_k: Downloading android vr player API JSON
+ERROR: [youtube] eJrMv0vM-_k: Private video
+[download] xoqMjRN9Cx8: Планирование дня. Войти в IT 15 has already been recorded in the archive
+[download] x6XEbBxHJiQ: Стратегическое планирование. Войти в IT 16. has already been recorded in the archive
+[download] WmFwIH02iaI: Матрица компетенции. Войти в IT 17. has already been recorded in the archive
+[download] PpRtat_TeoA: Суета – враг программиста и алготрейдера. Войти в IT 18. has already been recorded in the archive
+[download] YGfjSDy-kAE: On Drugs and Programmers. Breaking Into IT 19 has already been recorded in the archive
+[download] TnKhmlNNYyk: Отпуск с пользой. Войти в IT 20. has already been recorded in the archive
+[download] Finished downloading playlist: Войти в IT
+ПРЕДУПРЕЖДЕНИЕ: плейлист PL76DtREkiCATeCqp8NvSRux_kaZtNKisI скачан не полностью
+--- плейлист PL76DtREkiCAThK95ECkkBTXc8VvMzb7WK
+[youtube:tab] Extracting URL: https://www.youtube.com/playlist?list=PL76DtREkiCAThK95ECkkBTXc8VvMzb7WK
+[youtube:tab] PL76DtREkiCAThK95ECkkBTXc8VvMzb7WK: Downloading webpage
+[youtube:tab] PL76DtREkiCAThK95ECkkBTXc8VvMzb7WK: Redownloading playlist API JSON with unavailable videos
+[download] Downloading playlist: С# для алготрейдера.
+[youtube:tab] Playlist С# для алготрейдера.: Downloading 9 items of 9
+[download] Downloading item 1 of 9
+[youtube] Extracting URL: https://www.youtube.com/watch?v=t6X_F_abqaw
+[youtube] t6X_F_abqaw: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] t6X_F_abqaw: Downloading android vr player API JSON
+[info] t6X_F_abqaw: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 2 of 9
+[youtube] Extracting URL: https://www.youtube.com/watch?v=3q49pysfojU
+[youtube] 3q49pysfojU: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] 3q49pysfojU: Downloading android vr player API JSON
+[info] 3q49pysfojU: Downloading 1 format(s): 399+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 3 of 9
+[youtube] Extracting URL: https://www.youtube.com/watch?v=avmVjyChfKA
+[youtube] avmVjyChfKA: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] avmVjyChfKA: Downloading android vr player API JSON
+[info] avmVjyChfKA: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 4 of 9
+[youtube] Extracting URL: https://www.youtube.com/watch?v=6_6qembxiPw
+[youtube] 6_6qembxiPw: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] 6_6qembxiPw: Downloading android vr player API JSON
+[info] 6_6qembxiPw: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 5 of 9
+[youtube] Extracting URL: https://www.youtube.com/watch?v=asq4omdUva0
+[youtube] asq4omdUva0: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] asq4omdUva0: Downloading android vr player API JSON
+[info] asq4omdUva0: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 6 of 9
+[youtube] Extracting URL: https://www.youtube.com/watch?v=K4NpF7dXVzw
+[youtube] K4NpF7dXVzw: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] K4NpF7dXVzw: Downloading android vr player API JSON
+[info] K4NpF7dXVzw: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 7 of 9
+[youtube] Extracting URL: https://www.youtube.com/watch?v=TuJ2uAecqlY
+[youtube] TuJ2uAecqlY: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] TuJ2uAecqlY: Downloading android vr player API JSON
+[info] TuJ2uAecqlY: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 8 of 9
+[youtube] Extracting URL: https://www.youtube.com/watch?v=XLhpnxEl4iw
+[youtube] XLhpnxEl4iw: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] XLhpnxEl4iw: Downloading android vr player API JSON
+[info] XLhpnxEl4iw: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 9 of 9
+[youtube] Extracting URL: https://www.youtube.com/watch?v=ORqlASrIUVU
+[youtube] ORqlASrIUVU: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] ORqlASrIUVU: Downloading android vr player API JSON
+[info] ORqlASrIUVU: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Finished downloading playlist: С# для алготрейдера.
+ПРЕДУПРЕЖДЕНИЕ: плейлист PL76DtREkiCAThK95ECkkBTXc8VvMzb7WK скачан не полностью
+--- плейлист PL76DtREkiCAThTP6UlMzVOoZXN-JVPcQq
+[youtube:tab] Extracting URL: https://www.youtube.com/playlist?list=PL76DtREkiCAThTP6UlMzVOoZXN-JVPcQq
+[youtube:tab] PL76DtREkiCAThTP6UlMzVOoZXN-JVPcQq: Downloading webpage
+WARNING: [youtube:tab] YouTube said: INFO - 1 unavailable video is hidden
+[youtube:tab] PL76DtREkiCAThTP6UlMzVOoZXN-JVPcQq: Redownloading playlist API JSON with unavailable videos
+[download] Downloading playlist: Арбитраж
+[youtube:tab] Playlist Арбитраж: Downloading 12 items of 12
+[download] 3LemrV6WzZk: Types of Arbitrage. Arbitrage Part 1. has already been recorded in the archive
+[download] UW3ofMZxd3M: Pairs Arbitration. Arbitration Part 2. has already been recorded in the archive
+[download] 8hBueIUevVY: Inter-exchange Arbitrage. Arbitrage Part 3. has already been recorded in the archive
+[download] lkChGSDUroY: Тройной Арбитраж. Арбитраж часть 4. has already been recorded in the archive
+[download] KAgrDMEegHw: Одноногий арбитраж. Арбитраж часть 5. has already been recorded in the archive
+[download] emZ4mYrrdBg: Market-Neutral and Statistical Arbitrage. Arbitrage Part 6. has already been recorded in the archive
+[download] YpfDdcNOX2o: Single-Leg Index Arbitrage. Arbitrage Part 7. has already been recorded in the archive
+[download] EYyeglGLKYg: Should you trade trend and arbitrage simultaneously? Arbitrage Part 8. has already been recorded in the archive
+[download] YU_DQ_HYrsI: Back-Forwards и арбитраж. Арбитраж часть 9. has already been recorded in the archive
+[download] SpYUJeMSNxs: Arbitrage Playlist Review. Arbitrage Part 10. has already been recorded in the archive
+[download] Downloading item 11 of 12
+[youtube] Extracting URL: https://www.youtube.com/watch?v=gycvULD-G0Q
+[youtube] gycvULD-G0Q: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] gycvULD-G0Q: Downloading android vr player API JSON
+ERROR: [youtube] gycvULD-G0Q: Private video
+[download] DHgjNBxcXA4: Индекс, взвешенный по объёму. Арбитраж часть 12. has already been recorded in the archive
+[download] Finished downloading playlist: Арбитраж
+ПРЕДУПРЕЖДЕНИЕ: плейлист PL76DtREkiCAThTP6UlMzVOoZXN-JVPcQq скачан не полностью
+--- плейлист PL76DtREkiCATNDSuUY-Qoio4s3luVrXFl
+[youtube:tab] Extracting URL: https://www.youtube.com/playlist?list=PL76DtREkiCATNDSuUY-Qoio4s3luVrXFl
+[youtube:tab] PL76DtREkiCATNDSuUY-Qoio4s3luVrXFl: Downloading webpage
+[youtube:tab] PL76DtREkiCATNDSuUY-Qoio4s3luVrXFl: Redownloading playlist API JSON with unavailable videos
+[download] Downloading playlist: Тренд через Walk Forwards
+[youtube:tab] Playlist Тренд через Walk Forwards: Downloading 5 items of 5
+[download] Downloading item 1 of 5
+[youtube] Extracting URL: https://www.youtube.com/watch?v=sJHWHMTnOHE
+[youtube] sJHWHMTnOHE: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] sJHWHMTnOHE: Downloading android vr player API JSON
+[info] sJHWHMTnOHE: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 2 of 5
+[youtube] Extracting URL: https://www.youtube.com/watch?v=JuPObULcHz4
+[youtube] JuPObULcHz4: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] JuPObULcHz4: Downloading android vr player API JSON
+[info] JuPObULcHz4: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 3 of 5
+[youtube] Extracting URL: https://www.youtube.com/watch?v=-qnMZBm1sCQ
+[youtube] -qnMZBm1sCQ: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] -qnMZBm1sCQ: Downloading android vr player API JSON
+[info] -qnMZBm1sCQ: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 4 of 5
+[youtube] Extracting URL: https://www.youtube.com/watch?v=uoeXTo6AyVo
+[youtube] uoeXTo6AyVo: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] uoeXTo6AyVo: Downloading android vr player API JSON
+[info] uoeXTo6AyVo: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Downloading item 5 of 5
+[youtube] Extracting URL: https://www.youtube.com/watch?v=HYysnIMZ5bU
+[youtube] HYysnIMZ5bU: Downloading webpage
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[youtube] HYysnIMZ5bU: Downloading android vr player API JSON
+[info] HYysnIMZ5bU: Downloading 1 format(s): 137+140
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+[download] Finished downloading playlist: Тренд через Walk Forwards
+ПРЕДУПРЕЖДЕНИЕ: плейлист PL76DtREkiCATNDSuUY-Qoio4s3luVrXFl скачан не полностью
+--- плейлист PL76DtREkiCATqKEfnVXGUsm_Bns8ksiWU
+[youtube:tab] Extracting URL: https://www.youtube.com/playlist?list=PL76DtREkiCATqKEfnVXGUsm_Bns8ksiWU
+[youtube:tab] PL76DtREkiCATqKEfnVXGUsm_Bns8ksiWU: Downloading webpage
+[youtube:tab] PL76DtREkiCATqKEfnVXGUsm_Bns8ksiWU: Redownloading playlist API JSON with unavailable videos
+[download] Downloading playlist: Юридический отдел
+[youtube:tab] Playlist Юридический отдел: Downloading 1 items of 1
+[download] Nm5zahYlYEk: Юридический отдел o-s-a.net. Интро has already been recorded in the archive
+[download] Finished downloading playlist: Юридический отдел
+--- плейлист PL76DtREkiCATwX1dt8qqmSKk5kw9wOv2Q
+[youtube:tab] Extracting URL: https://www.youtube.com/playlist?list=PL76DtREkiCATwX1dt8qqmSKk5kw9wOv2Q
+[youtube:tab] PL76DtREkiCATwX1dt8qqmSKk5kw9wOv2Q: Downloading webpage
+[youtube:tab] PL76DtREkiCATwX1dt8qqmSKk5kw9wOv2Q: Redownloading playlist API JSON with unavailable videos
+[download] Downloading playlist: R для каждого
+[youtube:tab] Playlist R для каждого: Downloading 6 items of 6
+[download] _1lU1PjKsOY: R. Урок Первый has already been recorded in the archive
+[download] YY8mZCOAoyI: R. Урок второй has already been recorded in the archive
+[download] vnAHzDCD8sg: R. Урок третий has already been recorded in the archive
+[download] YdtP3QPOU1Q: R Урок четвёртый has already been recorded in the archive
+[download] VnTmladK2Fg: R Урок пятый has already been recorded in the archive
+[download] M_hKzS74WXs: R Урок шестой has already been recorded in the archive
+[download] Finished downloading playlist: R для каждого
+=== Обход вкладки «Видео» ===
+[youtube:tab] Extracting URL: https://www.youtube.com/@o-s-anet/videos
+[youtube:tab] @o-s-anet/videos: Downloading webpage
+[download] Downloading playlist: Научный трейдинг (o-s-a.net) - Videos
+[youtube:tab] UCLmOUsdFs48mo37hgXmIJTQ page 1: Downloading API JSON
+[youtube:tab] UCLmOUsdFs48mo37hgXmIJTQ page 2: Downloading API JSON
+[youtube:tab] UCLmOUsdFs48mo37hgXmIJTQ page 3: Downloading API JSON
+[youtube:tab] UCLmOUsdFs48mo37hgXmIJTQ page 4: Downloading API JSON
+[youtube:tab] UCLmOUsdFs48mo37hgXmIJTQ page 5: Downloading API JSON
+[youtube:tab] UCLmOUsdFs48mo37hgXmIJTQ page 6: Downloading API JSON
+[youtube:tab] UCLmOUsdFs48mo37hgXmIJTQ page 7: Downloading API JSON
+[youtube:tab] UCLmOUsdFs48mo37hgXmIJTQ page 8: Downloading API JSON
+[youtube:tab] UCLmOUsdFs48mo37hgXmIJTQ page 9: Downloading API JSON
+[youtube:tab] UCLmOUsdFs48mo37hgXmIJTQ page 10: Downloading API JSON
+[youtube:tab] UCLmOUsdFs48mo37hgXmIJTQ page 11: Downloading API JSON
+[youtube:tab] UCLmOUsdFs48mo37hgXmIJTQ page 12: Downloading API JSON
+[youtube:tab] Playlist Научный трейдинг (o-s-a.net) - Videos: Downloading 387 items of 387
+[download] owPdkZ39JfI: Введение в алготрейдинг на фьючерсах | Фьючерсы акций. Лекция 1 has already been recorded in the archive
+[download] eJrQpndxueI: Как слить депозит торговыми роботами: главные способы | Лекция №10 Алготрейдинг. База has already been recorded in the archive
+[download] Hpkh9VciaDI: Портфельный тест в OsEngine: налоги, маржа и TMON на ночь | Лекция №9 Алготрейдинг. База has already been recorded in the archive
+[download] eh0enJ13t18: Как проверить робота на десятках акций: cross-test в OsEngine | Лекция №8 Алготрейдинг. База has already been recorded in the archive
+[download] jHSAgOlXt4c: Как проверить робота перед запуском: Walk-forward в OsEngine | Лекция №7 Алготрейдинг. База has already been recorded in the archive
+[download] k1p4U4G1SFA: Хакатон от Т-Банка: AI-решения для инвестиций has already been recorded in the archive
+[download] Wrj6zDBA5m0: Наивная оптимизация торговых роботов | Лекция №6 Алготрейдинг. База has already been recorded in the archive
+[download] ABTueOXtc7Q: Как загрузить данные с биржи для тестирования роботов | Лекция №5 Алготрейдинг. База has already been recorded in the archive
+[download] fISkE0JbRkY: Оптимизация торговых роботов: робастность и схемы тестирования | Лекция №4 Алготрейдинг. База has already been recorded in the archive
+[download] s5ASTQGcYlg: Сложности алготрейдинга: какой класс торговых роботов выбрать новичку | Лекция №3 Алготрейдинг. База has already been recorded in the archive
+[download] uq93d82AKsw: Все способы заработка торговых роботов: 3 класса алгоритмов | Лекция №2 Алготрейдинг. База has already been recorded in the archive
+[download] GU1Bytrv1Pk: как устроена биржа и кто такие алготрейдеры | Лекция №1 Алготрейдинг. База has already been recorded in the archive
+[download] 6fD_0wrr1OA: Как начать торговать роботами с нуля | Обзор курса Алготрейдинг. База has already been recorded in the archive
+[download] g3ms_baibhw: Как подобрать лучшие параметры роботов | Лекция №11 Скринеры акций. Стартовый набор роботов has already been recorded in the archive
+[download] XTDho1OrLBo: Тестируем роботов с учётом налогов и маржиналки | Лекция №10 Скринеры акций. Стартовый набор роботов has already been recorded in the archive
+[download] B6LFBT35dyw: Автоинвестиции в TMON на ночь. Робот для фонда денежного рынка | Лекция №9 Скринеры акций has already been recorded in the archive
+[download] 1OGrbNJcu1k: Как тестировать торговых роботов на истории | Лекция №8 Скринеры акций. Стартовый набор роботов has already been recorded in the archive
+[download] FPC28_mKhj0: Как перенести торговых роботов на VPS-сервер | Курс «Скринеры акций» Лекция №7 has already been recorded in the archive
+[download] _jZVZipsqwg: Cкринер акций на наклонном канале ZigZag | Курс «Скринеры акций» Лекция №6 has already been recorded in the archive
+[download] 8N41EiU4GmA: Скринеры акций: запуск робота на адаптивном ценовом канале | Лекция №5 has already been recorded in the archive
+[download] ZQ_sRpy12k8: Скринеры акций: робот на паттерне «Три солдата». Лекция №4 has already been recorded in the archive
+[download] v6rMpiPYha4: Скринеры акций: запускаем в торги робота на канале линейной регрессии has already been recorded in the archive
+[download] 32lJ8oNCSn0: Скринеры акций. Стартовый набор роботов. Лекция №2. День теории has already been recorded in the archive
+[download] j6R-ovnepmc: Скринеры акций: Стартовый набор роботов. Лекция 1. Введение и установка OsEngine has already been recorded in the archive
+[download] rUcNbnb-2uI: Создаём дивидендного робота c ИИ в OsEngine | Вайб-кодинг: OpenCode + DeepSeek has already been recorded in the archive
+[download] ZJQYRfucFZ8: Индикатор SuperTrend в OsEngine: сигналы, формулы расчёта и бесплатный робот has already been recorded in the archive
+[download] 2HvhIez1C9w: Индексный арбитраж, фьючерсы и индикатор пилы с ИИ в OsEngine. Вайб-кодинг: продвинутый уровень №2 has already been recorded in the archive
+[download] r7bQ5c1y_DI: Индикатор DeltaByCandles в OsEngine: тиковый анализ и бесплатный робот has already been recorded in the archive
+[download] fkP8R79bJb4: Скринер и алгомонитор при помощи ИИ в OsEngine. Вайб-кодинг: продвинутый уровень has already been recorded in the archive
+[download] We34d4HtyGU: Индикатор RAVI: формулы расчёта, сигналы и бесплатный робот has already been recorded in the archive
+[download] gJyXaC5SC9A: Торговый робот при помощи ИИ в OsEngine. Вайб-кодинг: быстрый старт has already been recorded in the archive
+[download] z0OdWLH_Bqk: Индикатор Bulls Power в OsEngine: формулы расчёта, сигналы и бесплатные роботы has already been recorded in the archive
+[download] LpxrGwKz1gs: Индикатор NRTR в OsEngine: формулы расчёта, сигналы и бесплатный робот has already been recorded in the archive
+[download] y5M5gJOWsOw: Если хедж-фонд, то Т-Инвестиции has already been recorded in the archive
+[download] FdtKyjHSjv0: EOM Watcher в OsEngine: формулы, сигналы и бесплатный робот has already been recorded in the archive
+[download] AKyuoXPgpPU: Индикатор QStick в OsEngine: формулы, сигналы и бесплатный робот has already been recorded in the archive
+[download] apAJTniZyIA: Индикатор OsMa в OsEngine: формулы, сигналы и бесплатный робот has already been recorded in the archive
+[download] YHHYEMUffrw: Индикатор Mass Index в OsEngine: расчёт, сигналы и бесплатный робот has already been recorded in the archive
+[download] 3ZZ6Qi0lmsU: Индикатор Standard Deviation в OsEngine: формулы расчёта, сигналы и бесплатный робот has already been recorded in the archive
+[download] F_PyIMXDci8: Индикатор Stochastic Momentum Index в OsEngine: формулы, сигналы и бесплатный робот has already been recorded in the archive
+[download] JidbdfyEURI: Индикатор Stochastic в OsEngine: формулы, сигналы и бесплатный робот has already been recorded in the archive
+[download] T9AFZC2aurY: Индикатор ROC в OsEngine: формула расчёта, возможные сигналы и бесплатный робот has already been recorded in the archive
+[download] tT51kpmN_AI: Индикатор RVI в OsEngine: формулы, сигналы и бесплатный робот has already been recorded in the archive
+[download] suJNHQOm_pA: Индикатор Volume в OsEngine: расчёт, сигналы и бесплатный робот has already been recorded in the archive
+[download] FKK7qn6Q73I: Индикатор Pivot Floor в OsEngine: формулы, сигналы и бесплатный робот has already been recorded in the archive
+[download] D-SzMKxMt1g: Индикатор DPO в OsEngine: формула, сигналы и бесплатный робот has already been recorded in the archive
+[download] _Ny32Ox2Q_Q: Center of Gravity Oscillator в OsEngine: история, формулы расчёта и бесплатный робот has already been recorded in the archive
+[download] mHWnz_AgW0w: Индикатор ZigZag в OsEngine: формулы расчёта, сигналы и бесплатный робот has already been recorded in the archive
+[download] O3drrguVsUE: Сделаем больше бесплатного софта в России has already been recorded in the archive
+[download] QlVmCPSxEpQ: RuBrokerLink — новый сервис поддержки разработчиков ПО для трейдинга в России! has already been recorded in the archive
+[download] cce45cIhnIM: Индикатор DeMarker в OsEngine: история, расчёт, сигналы и бесплатный робот has already been recorded in the archive
+[download] Cn-Ve2TgzKg: Parabolic SAR в OsEngine: формула, сигналы и бесплатный робот has already been recorded in the archive
+[download] qKJqn4gut9Y: Индикатор TRIX в OsEngine: история, формула, сигналы и бесплатный робот has already been recorded in the archive
+[download] IlJQ4hNJEN8: Индикатор Aroon в OsEngine: история, формулы и бесплатный робот для торговли has already been recorded in the archive
+[download] gLdHsfINeMI: ASI Indicator in OsEngine: Formulas, Signals, and a Free Robot has already been recorded in the archive
+[download] UdQQ9Esp3QY: Тестирование роботов в OsEngine: почему логика должна быть в CandleFinishedEvent has already been recorded in the archive
+[download] AQ3I708QzGI: Индикатор EMA: история появления, сигналы и бесплатный робот для OsEngine has already been recorded in the archive
+[download] khQsLUTDhv8: Индикатор VWMA (Volume Weighted Moving Average): формула расчёта и бесплатный робот в OsEngine has already been recorded in the archive
+[download] U6sTGZhIhGQ: Как в OsEngine создаются торговые роботы: класс BotFactory has already been recorded in the archive
+[download] ZTIn-mQ_Yjk: SMA (Simple Moving Average): как работает индикатор и бесплатный робот для OsEngine has already been recorded in the archive
+[download] 7x2aKWdpRE0: Gate IO Data Server в OsEngine. Ускоренное скачивание сделок и свечей через FTP has already been recorded in the archive
+[download] -v09JlY-A4s: Генерация свечей при каждом изменении стакана в OsEngine has already been recorded in the archive
+[download] i8WV45aW5QI: Настройка глобальных неторговых периодов в OsEngine для торговых роботов has already been recorded in the archive
+[download] -THEjMgg8KE: Индикатор Ишимоку (Ichimoku) — разбор, сигналы и робот в OsEngine has already been recorded in the archive
+[download] m64U156QM60: Среда разработки торговых роботов: установка Visual Studio и .NET для OsEngine has already been recorded in the archive
+[download] A4OmZA1DXb8: Усреднение позиций через открытие новых позиций | Микроменеджмент в OsEngine has already been recorded in the archive
+[download] knNgBzSG06A: Индикатор Fractal: торговые сигналы и робот для OsEngine has already been recorded in the archive
+[download] do-Ffk5gFQA: Кремниевый юг России: история переезда и развития OsEngine has already been recorded in the archive
+[download] z726bf_vHyg: Микроменеджмент позиций в OsEngine: закрытие позиции несколькими ордерами через множество открытий has already been recorded in the archive
+[download] J2aSURsVxDI: Kalman Filter в алготрейдинге: разбор индикатора в OsEngine has already been recorded in the archive
+[download] MrVXA0uPpL8: Контроль позиций в OsEngine по типам сигналов: SignalTypeOpen и SignalTypeClose has already been recorded in the archive
+[download] zA8iDhTELLY: OsEngine: обновление гарантийного обеспечения для фьючерсов has already been recorded in the archive
+[download] dRGTT_AB2Z8: Итоги OsEngine 2025 года и планы на 2026. Новогодний выпуск has already been recorded in the archive
+[download] CdGIkBnMDiI: Качаем слепки стаканов и запускаем тестер has already been recorded in the archive
+[download] Z9oeu35TwZg: Эмулятор OsEngine: тестируем роботов в режиме «бумажной торговли» has already been recorded in the archive
+[download] NfbRlLdr78Q: Синхронизация позиций у брокера и в OsEngine: как избежать рассинхрона has already been recorded in the archive
+[download] wuSzgBssdsM: Как правильно обновить OsEngine и избежать ошибок has already been recorded in the archive
+[download] OnhkOhFYEt0: Как подключить OsEngine к API Т-инвестиций + решение популярных ошибок has already been recorded in the archive
+[download] 7jwz-9Y85xo: Автоинвестиции в TMON на ночь has already been recorded in the archive
+[download] 8CnQw4phKzg: Force Index — разбор индикатора Элдера и бесплатный робот для OsEngine has already been recorded in the archive
+[download] S6ecZwrStDI: Скачиваем OsEngine как программист — запуск проекта и обновление NuGet пакетов has already been recorded in the archive
+[download] Wy3QoU9k0CY: BaseClasses-Dlls — базовые библиотеки для ваших кастомных роботов в OsEngine has already been recorded in the archive
+[download] tzu13vtILLM: Как правильно сохранять историю трейдов в OsEngine и не уронить ПК has already been recorded in the archive
+[download] xXrWPB4qO3o: Какой ПК выбрать для программирования торговых роботов на OsEngine? has already been recorded in the archive
+[download] bwlbNbPUDMA: Дополнительный способ создания индикаторов в OsEngine — CreateIndicator has already been recorded in the archive
+[download] Hc14mCl-7Ew: Индикатор Efficiency Ratio в OsEngine — стратегии, сигналы и роботы has already been recorded in the archive
+[download] DCDn8PYjWD0: Как легко выгрузить результаты оптимизации из OsEngine в Excel? has already been recorded in the archive
+[download] G6jPqb0pOXE: Индикатор EOM: история, сигналы и примеры роботов для OsEngine has already been recorded in the archive
+[download] -v49sXXyLsU: Неявные преобразования в OsEngine — теперь работать с классами проще has already been recorded in the archive
+[download] WG8fxRT3PQI: Еще более элегантный метод создания вкладок от Eipix has already been recorded in the archive
+[download] C_Flwnj4Co4: Полный разбор CMO индикатора + готовый бесплатный робот в OsEngine. has already been recorded in the archive
+[download] Oai-jtkQKf8: Новые атрибуты параметров от Eipix в OsEngine | Синтаксический сахар has already been recorded in the archive
+[download] DPOvwpPPFJE: Что такое Extended data в настройках крипто-коннекторов OsEngine has already been recorded in the archive
+[download] SsdMdqK6WEw: Индикатор Envelopes (конверты): алгоритм расчёта и пример для OsEngine has already been recorded in the archive
+[download] br1W3775wok: Зачем я популяризирую алготрейдинг? has already been recorded in the archive
+[download] -2kX524XXK8: Удобное скачивание исторических данных с OKX Data Server для тестирования торговых роботов has already been recorded in the archive
+[download] 0Niagrocn7c: Как прислать улучшения в проект OsEngine - полный гайд на практическом примере has already been recorded in the archive
+[download] kwVCpjf9hTE: Индикатор Chaikin Oscillator: подробный разбор + бесплатные роботы с примерами has already been recorded in the archive
+[download] LJIuF7oOB1E: Скринеры акций. Стартовый набор роботов. Лекции от OsEngine и Т-Банк. has already been recorded in the archive
+[download] Wh5ut7uYp_M: Как работает индикатор CCI (Commodity Channel Index). Видеоразбор с бесплатными роботами has already been recorded in the archive
+[download] 1aRfCUil7VA: Как ускоренно скачать ленту сделок и свечи с Bybit через FTP-сервер has already been recorded in the archive
+[download] EfTFiZLbWk8: Полный разбор индикатора Bollinger + бесплатные роботы для торговли has already been recorded in the archive
+[download] ZEfvvT2Hnl4: Индикатор Bears Power: разбор, сигналы и примеры бесплатных торговых роботов has already been recorded in the archive
+[download] RZi7vzPAEWM: Разбор индикатора ATR (Average True Range) с примерами бесплатных роботов. has already been recorded in the archive
+[download] fL27FWKHabI: Разбор индикатора AO (Awesome Oscillator) с примерами бесплатных роботов. has already been recorded in the archive
+[download] XQP3EtPrfYU: Разбор индикатора ADX (Average Directional Index) с примерами бесплатных роботов. has already been recorded in the archive
+[download] _KMgEuszNRw: Разбор индикатора Alligator Билла Вильямса с примерами бесплатных роботов. has already been recorded in the archive
+[download] 8GWMrtnFf-k: Разбор индикатора Adaptive Look Back с примерами бесплатных роботов. has already been recorded in the archive
+[download] qPm1AxSgK_M: BotTabSimple - источник данных для одного инструмента. Введение. has already been recorded in the archive
+[download] OZAHXFxnaZE: ОИ - как кэшировать открытый интерес в коннекторе has already been recorded in the archive
+[download] jd99NpgwtS0: Разбор индикатора AD с примерами бесплатных роботов. has already been recorded in the archive
+[download] kxD07183Ui0: Как пробросить открытый интерес в коннектор has already been recorded in the archive
+[download] G1WfZtHHceM: Гайд Открытый интерес в OsEngine  Где искать в проекте has already been recorded in the archive
+[download] LigFJ9Q0wXc: Поддержка торговли опционами в коннекторе Bybit has already been recorded in the archive
+[download] NtcqomGQ2tw: Более элегантный способ создания новых вкладок в роботах has already been recorded in the archive
+[download] z4L8VWS1izo: Модуль силового освобождения свободной памяти у CLR в .NET 9 для OsEngine. has already been recorded in the archive
+[download] 5Ano9If3My4: Робот для торговли по новостям при помощи ИИ. Исходники + инструкции. Алго по новостям. has already been recorded in the archive
+[download] 9XsCuSqlBNY: Анализируем рынок и торгуем автоматически. Концепция has already been recorded in the archive
+[download] cys1ZPQEmd4: Событие запуска тестера. Сброс переменных внутри робота в тестере. has already been recorded in the archive
+[download] 5YygjMe28Xo: Чтение и компиляция скриптов из файловой системы в OsEngine has already been recorded in the archive
+[download] Dx5aLGCzq3w: Как скачать и обновлять терминал OsEngine при помощи Git has already been recorded in the archive
+[download] Itjd5tjUyC8: Модуль просмотра нагрузки на систему. has already been recorded in the archive
+[download] 97o1p_0bSmI: Механика открытия позиции через Stop приказы. has already been recorded in the archive
+[download] QmfRod0dOYA: Binance Data Server. Ускоренное скачивание данных для крипты. has already been recorded in the archive
+[download] aLJ0-0UY0KU: Стандартный сервер общения с Telegram через ЛОГ и из Роботов для Os Engine. has already been recorded in the archive
+[download] 11ePGCjW5Rk: Механика работы Stop и Profit приказов для открытых позиций в OsEngine. has already been recorded in the archive
+[download] Ot7utOtD6Hc: Копитрейдинг с OsEngine. Настраиваем трансляцию нетто позиции роботов без разнонаправленных позиций. has already been recorded in the archive
+[download] 4Yh2V2Dn7so: Копитрейдинг с OsEngine. Настраиваем сетап АЛОР VS T Инвестиции. has already been recorded in the archive
+[download] FdrRmUBYRvc: Копитрейдинг с OsEngine. Настраиваем сетап Т Инвестиции VS T Инвестиции. has already been recorded in the archive
+[download] x526iMs7Ka0: Подгружаем произвольное количество свечей при первом запуске по api. has already been recorded in the archive
+[download] anhIvmugGEc: Как отправлять сообщения в Telegram из робота OsEngine. has already been recorded in the archive
+[download] nn8o7Oq8XHw: Прокси при Мультиконнекте в OsEngine. Торговля на десятках счетов. has already been recorded in the archive
+[download] h63myMzWbZw: Мультиконнект. Торговля многими счетами из одного терминала OsEngine. has already been recorded in the archive
+[download] tnMrQBKC1vc: Собираем релизную версию OsEngine для ускорения на 10 и более процентов. has already been recorded in the archive
+[download] 95_tkdOmVf4: Автосравнение позиций у роботов и на бирже при торговле в реале. has already been recorded in the archive
+[download] 9iQTPapwLKk: BaseClasses - как использовать код многократно в папке Custom. has already been recorded in the archive
+[download] sAu_lsfzZeg: Новости из Телеграм каналов прямо в роботов на OsEngine. has already been recorded in the archive
+[download] ejnvp0B3W08: 300 бесплатных роботов для GateIo. has already been recorded in the archive
+[download] aAkliZ2aUyE: 300 бесплатных роботов для Pionex. has already been recorded in the archive
+[download] DCnjV8ZXT0s: 300 бесплатных роботов для HTX. has already been recorded in the archive
+[download] 15cDGmRjfco: 300 бесплатных роботов для WOO Api. has already been recorded in the archive
+[download] jGlaeFGrND0: Редакторы кода для работы с OsEngine - VS Code. has already been recorded in the archive
+[download] hzfJnjskbL0: 300 бесплатных роботов для BloFin. has already been recorded in the archive
+[download] TU41LnWBfYg: Обновление OsEngine до .NET9 +100% к скорости оптимизатора! has already been recorded in the archive
+[download] JaFPfNfZGcU: 300 бесплатных роботов для BingX Api. has already been recorded in the archive
+[download] ocV2OtGCmco: 300 бесплатных роботов для OKX Api. has already been recorded in the archive
+[download] 8ApCWpV2Y7s: 300 бесплатных роботов для KuCoin Api has already been recorded in the archive
+[download] UGTw2LwiUhQ: 300 бесплатных роботов для ByBit Api с открытым кодом. has already been recorded in the archive
+[download] 3lHVYs1BCPo: Книга "Механизм трейдинга" Тимофея Мартынова has already been recorded in the archive
+[download] ca7AnxZlPGk: ATPlatform API. Китай! + 300 бесплатных роботов с открытым исходным кодом. has already been recorded in the archive
+[download] Z-PLmxd2oRM: 260 бесплатных роботов для Quik с открытым кодом. has already been recorded in the archive
+[download] jcJxQK1QKTE: TraderNet API. + 300 бесплатных роботов с открытым кодом. has already been recorded in the archive
+[download] R4g_kJtcGYs: Утилита Ping Monitor для удаленного сервера. has already been recorded in the archive
+[download] Uw4bdnfpvxI: Kite Connect Api. Zerodha брокер. Индия! + 300 бесплатных роботов с открытым исходным кодом. has already been recorded in the archive
+[download] EmLYT8RUBZc: Качаем данные из Алгопак. has already been recorded in the archive
+[download] if_AHoddPsE: 300 бесплатных роботов для Interactive Brokers с открытым кодом. has already been recorded in the archive
+[download] ZtsgScVwcnk: MOEX ISS дата сервер. Автоматическое скачивание данных с MOEX. has already been recorded in the archive
+[download] LhGDgnLnW2s: Конференция СмартЛаб. 28 июня 2025. Присоединяйтесь. has already been recorded in the archive
+[download] 8F-kQXvl8v0: 300 бесплатных роботов для Transaq Connector с открытым кодом. has already been recorded in the archive
+[download] xIbbpl9izEk: 300 бесплатных роботов для Бинанс. has already been recorded in the archive
+[download] Kwq3I0Y3kqQ: 300 бесплатных роботов для Т-Bank Invest API. has already been recorded in the archive
+[download] NGxQ7qERo3w: 300 бесплатных роботов для АЛОР has already been recorded in the archive
+[download] Y_VxFVYuB38: SmartLab новости у Вас в роботах. RSS коннектор к SmartLab. has already been recorded in the archive
+[download] tzyHJiwacrg: RSS лента новостей в Вашем роботе на OsEngine. has already been recorded in the archive
+[download] YhOtGbsGYCc: Polygon.io дата сервер в OsEngine. has already been recorded in the archive
+[download] rol2-5GO8yI: Yahoo Finance дата сервер в OsEngine. has already been recorded in the archive
+[download] 4XCscCKAGQc: ООП и паттерны проектирования. has already been recorded in the archive
+[download] 2m9sV9g70Vs: Робот Парковщик ликвидности. has already been recorded in the archive
+[download] QLbcxs_3uow: Разработка Os Engine. Отчет за июль 2023г. has already been recorded in the archive
+[download] sR_8B4kYpW4: Разработка Os Engine. Отчет за июнь 2023г. has already been recorded in the archive
+[download] ItFxmDWuwHQ: Connector support table in Os Engine. has already been recorded in the archive
+[download] m3ssYMxmnPo: OsData 2. Окно просмотра кеш данных. has already been recorded in the archive
+[download] bxmkfYgIN5M: Окна открытия и закрытия позиций. has already been recorded in the archive
+[download] o2hB4RPaF7E: Optimizer Update has already been recorded in the archive
+[download] N6nTq6xjj_E: Как биржа задонатила мне на разработку коннектора. has already been recorded in the archive
+[download] dQGGOee_nDg: How to stay calm during prolonged equity drawdowns? has already been recorded in the archive
+[download] qofvWZC_ci8: Разработка OsEngine. Отчет за май 2023. has already been recorded in the archive
+[download] TnKhmlNNYyk: Отпуск с пользой. Войти в IT 20. has already been recorded in the archive
+[download] GpmWDMo1XmM: Ответы на вопросы. 1 мая 2023 год. has already been recorded in the archive
+[download] GAW3HLv8jHQ: Численный показатель робастности при Walk-Forward оптимизации. has already been recorded in the archive
+[download] ZXqxjpT64N0: OsData 2.0. Презентация и обзор. has already been recorded in the archive
+[download] slN7Q4ID4Cw: Types of P/L in Trading Platform Journals. Understanding Profit and Loss Differences. has already been recorded in the archive
+[download] UK42sqo6ouY: Разработка OsEngine. Отчет за апрель 2023. has already been recorded in the archive
+[download] 4MQQGbzg2z0: Сравнение трендовости рынков. MOEX VS Крипта. Результаты исследования на основе 10 различных ботов. has already been recorded in the archive
+[download] -ufPPLAp48I: Робот на основе Volatility Patterns. Сравнительные тесты на Московской бирже и на Крипте. has already been recorded in the archive
+[download] qBrw5fEhUEA: Робот на основе Impulse Two Sma. Сравнительные тесты на Московской бирже и на Крипте. has already been recorded in the archive
+[download] yR0CbWIdeWQ: Робот на основе Parabolic Adaptive Envelope. Сравнительные тесты на Московской бирже и на Крипте. has already been recorded in the archive
+[download] VG1ZmAcNwQQ: Робот на основе Keltner Channel. Сравнительные тесты на Московской бирже и на Крипте. has already been recorded in the archive
+[download] aIUdRYG2HFY: Внимание! Ссылки на наши официальные каналы. И отказ от ответственности за действия третьих лиц. has already been recorded in the archive
+[download] 2m2_-ucWxD0: Робот на основе Reverse Adaptive Price Channel. Сравнительные тесты на Московской бирже и на Крипте. has already been recorded in the archive
+[download] Cr4K4dBFvL0: Робот на основе Impulse Hma. Сравнительные тесты на Московской бирже и на Крипте. has already been recorded in the archive
+[download] TZHuA0fFLbE: Робот на основе Parabolic Sar. Сравнительные тесты на Московской бирже и на Крипте. has already been recorded in the archive
+[download] OZqpPPV7jvQ: Bollinger Band. Сравнительные тесты на Московской бирже и на Крипте. has already been recorded in the archive
+[download] 3akWz9SRT_E: Канал линейной регрессии. Сравнительные тесты на Московской бирже и на Крипте. has already been recorded in the archive
+[download] L8oqMLjzUdw: ZigZag Channel. Сравнительные тесты на Московской бирже и на Крипте одних и тех же стратегий. has already been recorded in the archive
+[download] NiHqQoUjNpk: Разработка OsEngine. Отчет за март 2023. has already been recorded in the archive
+[download] VQDFy6NuPpI: Научный трейдинг. Обзор плейлистов. has already been recorded in the archive
+[download] -DXaPixHbKI: Разработка OsEngine. Отчет за февраль 2023. has already been recorded in the archive
+[download] CsQ0KGOcwxY: Алерты. has already been recorded in the archive
+[download] DHgjNBxcXA4: Индекс, взвешенный по объёму. Арбитраж часть 12. has already been recorded in the archive
+[download] QY3uP0ZDz4c: Ответы на вопросы. 31 января 2023 г. has already been recorded in the archive
+[download] dFP0H3lSGy4: Как запустить скриптовый индикатор в режиме дебаггинга в OsEngine. has already been recorded in the archive
+[download] mff7E2jUGLE: How to Create Binance API Keys has already been recorded in the archive
+[download] contIgz3yRo: Ответы на вопросы. 11 января 2023 год. has already been recorded in the archive
+[download] rLPfu6jyy0k: Обзор Os Data has already been recorded in the archive
+[download] zNnquMR6h14: Итоги года 2022 has already been recorded in the archive
+[download] 05pD6zO9swI: Ответы на вопросы. 25 декабря 2022 г. has already been recorded in the archive
+[download] gK6Mkvk71Iw: Обзор OsEngine. has already been recorded in the archive
+[download] HVnNys73MxM: Карта прибыльных стратегий для алготрейдера. Конференция Smart-Lab 2022. has already been recorded in the archive
+[download] rDVMkpAM-Mc: How to download OsEngine from GitHub. How to run the program? has already been recorded in the archive
+[download] gOs4hlpaUps: Ответы на вопросы. 7 декабря 2022 г. has already been recorded in the archive
+[download] uyFU67W8AeU: Ответы на вопросы. 21 ноября 2022г. has already been recorded in the archive
+[download] YGfjSDy-kAE: On Drugs and Programmers. Breaking Into IT 19 has already been recorded in the archive
+[download] PpRtat_TeoA: Суета – враг программиста и алготрейдера. Войти в IT 18. has already been recorded in the archive
+[download] 7wqadGRbmaY: Ответы на вопросы. 12 ноября 2022г. has already been recorded in the archive
+[download] BI1OhVOynmU: Ответы на вопросы. 8 ноября 2022г. has already been recorded in the archive
+[download] mtcU9hnLvyw: Конференция SMART-LAB. Мои впечатления. has already been recorded in the archive
+[download] SpYUJeMSNxs: Arbitrage Playlist Review. Arbitrage Part 10. has already been recorded in the archive
+[download] YU_DQ_HYrsI: Back-Forwards и арбитраж. Арбитраж часть 9. has already been recorded in the archive
+[download] EYyeglGLKYg: Should you trade trend and arbitrage simultaneously? Arbitrage Part 8. has already been recorded in the archive
+[download] YpfDdcNOX2o: Single-Leg Index Arbitrage. Arbitrage Part 7. has already been recorded in the archive
+[download] emZ4mYrrdBg: Market-Neutral and Statistical Arbitrage. Arbitrage Part 6. has already been recorded in the archive
+[download] KAgrDMEegHw: Одноногий арбитраж. Арбитраж часть 5. has already been recorded in the archive
+[download] fslYNvUc054: Ответы на вопросы. 16 октября 2022г. has already been recorded in the archive
+[download] lkChGSDUroY: Тройной Арбитраж. Арбитраж часть 4. has already been recorded in the archive
+[download] 8hBueIUevVY: Inter-exchange Arbitrage. Arbitrage Part 3. has already been recorded in the archive
+[download] UW3ofMZxd3M: Pairs Arbitration. Arbitration Part 2. has already been recorded in the archive
+[download] WmFwIH02iaI: Матрица компетенции. Войти в IT 17. has already been recorded in the archive
+[download] _MXqUR7wXZI: вопрос ответ 13 has already been recorded in the archive
+[download] 3LemrV6WzZk: Types of Arbitrage. Arbitrage Part 1. has already been recorded in the archive
+[download] x6XEbBxHJiQ: Стратегическое планирование. Войти в IT 16. has already been recorded in the archive
+[download] biYst99e0wM: Ответы на вопросы. 2 октября 2022г. has already been recorded in the archive
+[download] xoqMjRN9Cx8: Планирование дня. Войти в IT 15 has already been recorded in the archive
+[download] TUGvDWDqws0: Робот. Fractal pattern break. has already been recorded in the archive
+[download] 7WpXy5kMSmo: Ответы на вопросы 22 сентября 2022г. has already been recorded in the archive
+[download] LEvtr_kCImc: Ответы на вопросы 10 сентября 2022г. has already been recorded in the archive
+[download] SeukNU-c570: Ответы на вопросы. 6 сентября 2022г has already been recorded in the archive
+[download] o1lSCQaP_dA: Прокрастинация и как с ней бороться, чтобы войти в IT? has already been recorded in the archive
+[download] Qcss2Q-fFGw: PNL в % в плюс, абсолют в минус. Почему так происходит? has already been recorded in the archive
+[download] Kr48nxbjjw4: Проскальзывания в трендовой торговле. Просадки, и как их минимизировать. has already been recorded in the archive
+[download] l19x5cYlFQc: Reducing Drawdowns has already been recorded in the archive
+[download] WGkxzZor7nI: Вопрос. Ответ. 30 июля 2022 has already been recorded in the archive
+[download] LbHSgI6dHPE: Журнал сделок 2.0 has already been recorded in the archive
+[download] 7P4reTTLXIg: OsEngin пример. Отключение индикаторов has already been recorded in the archive
+[download] fMitNHjp1bs: Торговый робот. Candle Patterns Boost has already been recorded in the archive
+[download] Kk7R2kOeCOg: Выученная беспомощность has already been recorded in the archive
+[download] lVBv7FzReT8: Вопрос. Ответ. 16 июля 2022 has already been recorded in the archive
+[download] khN8m7AmPwE: Робастность стратегии has already been recorded in the archive
+[download] YT_jCCbEK9o: Пример работы с элементами на чарте has already been recorded in the archive
+[download] vdJsIBqJBa4: Личный блог программиста has already been recorded in the archive
+[download] Z42QjMy5zRU: Trading Bot Example with Multiple Entries and Exits has already been recorded in the archive
+[download] cZ49833cVDI: Реверсные роботы has already been recorded in the archive
+[download] hjHx8edbqgY: Работа СиШарп программистом в Back-End и Desktop. has already been recorded in the archive
+[download] SxcXukWKAig: Вопрос. Ответ. 2 июля 2022 has already been recorded in the archive
+[download] TNVf-gfdPek: Торговый робот. Reverse AlmaChannel has already been recorded in the archive
+[download] K-kibOl4PlI: Вопрос. Ответ. 25 июня 2022 has already been recorded in the archive
+[download] ebGBUNbPWHQ: Язык C# в алготрейдинге. Разработка роботов на заказ и фриланс. Сколько можно заработать? has already been recorded in the archive
+[download] DPob5FnW87M: Торговый робот. Reverse Adaptive Envelope has already been recorded in the archive
+[download] LJ2sAjcy9pw: Импульсные роботы has already been recorded in the archive
+[download] Zr5OBs_muB0: Язык C# в создании игр. Как долго надо учиться до прохождения собеседования? Личный опыт has already been recorded in the archive
+[download] qtQjyolIxnk: Вопрос. Ответ. 18 июня 2022 has already been recorded in the archive
+[download] QCDufyEz3O8: Введение в научный трейдинг has already been recorded in the archive
+[download] XIYmmiR-QHM: Торговый робот. Impulse Two Sma has already been recorded in the archive
+[download] wVlSnzx25ew: Лучший язык программирования has already been recorded in the archive
+[download] nEqSSmIFcho: Вопрос. Ответ. 11 июня 2022 has already been recorded in the archive
+[download] TWc9UyKreYE: Фриланс. Запускаем бесплатную площадку has already been recorded in the archive
+[download] rj6GZVLInZc: Фриланс. Работа в офисе. Что выбрать? has already been recorded in the archive
+[download] Esr1cmKT-XM: o-s-a.net. Платформа Os Engine. Наш прогресс за 2021 - 2022 годы has already been recorded in the archive
+[download] uvikFMhc8Wc: Вопрос. Ответ. 4 июня 2022 has already been recorded in the archive
+[download] 2NheXB_xlxg: Trading Profits: Compound Interest has already been recorded in the archive
+[download] Qkm7UHdaQPc: Торговый робот. Impulse HMA has already been recorded in the archive
+[download] RRyPEVQ0pHM: Импульсный робот. Impulse Sma LR has already been recorded in the archive
+[download] v4IMsBvJUMs: Нужно ли высшее образование, чтобы стать программистом has already been recorded in the archive
+[download] wNItxkneQF4: Пробойные роботы has already been recorded in the archive
+[download] fOlY9UlYbNU: Торговый робот. Break ATR has already been recorded in the archive
+[download] R0PukvLnMLE: Кто может стать программистом has already been recorded in the archive
+[download] 8_2A-_lFjEw: Торговый робот. Break BB has already been recorded in the archive
+[download] OcOQmXv_S_M: Торговый робот Break Linear RegressionChannel has already been recorded in the archive
+[download] QMCFFZ5Nigg: Как заработать на падении рынка has already been recorded in the archive
+[download] 03QYLVF-nFc: Престижные профессии. Вчера. Сегодня. Завтра has already been recorded in the archive
+[download] B9aaNUQZTfg: Роботы. Параболики has already been recorded in the archive
+[download] ngUYKZzZJ9c: Робот. Parabolic Sar Classic Trade has already been recorded in the archive
+[download] DdAxVlUnNNw: Зарплата программиста. Вчера. Сегодня. Завтра. has already been recorded in the archive
+[download] MSGruHZ2DCo: Робот. Parabolic Bollinger has already been recorded in the archive
+[download] 2AXkGnn6APs: Trading Strategies: An Overview has already been recorded in the archive
+[download] M7dS-sMj9_o: Робот. Parabolic Envelope has already been recorded in the archive
+[download] 4KGuOxnF-AA: Robot. Reverse Adaptive Price Channel has already been recorded in the archive
+[download] C_SG1nLg3fo: Trend Speed has already been recorded in the archive
+[download] Vo59ss5-8tY: Ivashov Indicator as a Gift for February 23rd has already been recorded in the archive
+[download] hCEMmOXhPPU: Скринеры и пробои has already been recorded in the archive
+[download] YJREaj17UWE: Индикатор Ван-Герчик has already been recorded in the archive
+[download] BjWbwJYjmME: Торговый робот Pump Detector has already been recorded in the archive
+[download] PEKJVviDKNA: ZZ Channel Indicator has already been recorded in the archive
+[download] 4saRKtp_fHk: Choosing a Trading Server has already been recorded in the archive
+[download] 7BsQcUyPmSU: Запуск торговых роботов при помощи саб-стратегий has already been recorded in the archive
+[download] ywqefQ9tjT0: Ансамблирование объемов has already been recorded in the archive
+[download] LlZSaWcms74: Распределение объемов - портфельное тестирование has already been recorded in the archive
+[download] rMlf60GYpz4: How to save your deposit? has already been recorded in the archive
+[download] CY6oqUyB6i4: Тестируем торговых роботов. По волатильности has already been recorded in the archive
+[download] M2kusnvWzHQ: Тестируем торговых роботов. Walk-forwards has already been recorded in the archive
+[download] W6AmBlk5Tmg: Тестируем торговых роботов. Классика has already been recorded in the archive
+[download] 7v_vU1PkV24: Роботы. Стратегии. Фильтры has already been recorded in the archive
+[download] zyOsN5yAx6U: Роботы. Стратегии. Точки выхода has already been recorded in the archive
+[download] tL_ceWza5x8: Роботы. Стратегии. Точки входа. has already been recorded in the archive
+[download] 5TwwmR92OVU: Что нужно, чтобы торговать миллионами? has already been recorded in the archive
+[download] U9W7SSVLkWE: Мотивирующий фильм. Рекомендую has already been recorded in the archive
+[download] VPhnbDe14MU: Почему так много слитых депозитов? Ошибки трейдеров. Нехватка знаний has already been recorded in the archive
+[download] oT2Rq_W2x6w: Why are so many deposits lost? Trader errors. Machine learning. has already been recorded in the archive
+[download] _Gen3xE30nI: Почему так много слитых депозитов? Ошибки трейдеров. Плечи и избыточный риск. has already been recorded in the archive
+[download] -UPWhA-Uldo: нас 10000 has already been recorded in the archive
+[download] kRObxYM10j8: Богатое окно параметров для робота на OsEngine has already been recorded in the archive
+[download] Nr0-awvuM-w: A True Story About Algo Traders has already been recorded in the archive
+[download] 7pmEkQ3_Yww: Питер. Конференция СмартЛаба. Про тренд. Часть 2 has already been recorded in the archive
+[download] EejzaGsJC8A: St. Petersburg. SmartLab Conference. About the trend. Part 1 has already been recorded in the archive
+[download] z0oev9hgrE4: Питер. Конференция СмартЛаба. Июнь 2021. Отзыв has already been recorded in the archive
+[download] ruOZxqTSSb0: Automatic position tracking in OsEngine has already been recorded in the archive
+[download] Nm5zahYlYEk: Юридический отдел o-s-a.net. Интро has already been recorded in the archive
+[download] 6EVFFBJqSNY: OsEngine Optimizer. Ver 3 has already been recorded in the archive
+[download] NoykrRaMf2I: Who Are Programmers? How to Start Learning C# has already been recorded in the archive
+[download] SnACZ0KkOnI: Открытие и сопровождение нескольких позиций по разным сигналам одновременно в OsEngine has already been recorded in the archive
+[download] vsR73cpUsuw: Почему следует выбрать язык СиШарп если охота заниматься алготрейдингом has already been recorded in the archive
+[download] -yVWvNiTbMM: Об ордерах и позициях в алготрейдинге has already been recorded in the archive
+[download] OIVGkO7GiBs: Проблемы тестирования торговых роботов has already been recorded in the archive
+[download] YgOCnYXfhe8: String Parameters for Robots and Loading Third-Party Libraries into Robots and Indicators in Scripts has already been recorded in the archive
+[download] JK1vxklFO_k: Бесплатный новый робот в OsEngine на параметре TimeOfDay has already been recorded in the archive
+[download] rcy0VgR3KOM: Оптимизатор нового поколения в OsEngine has already been recorded in the archive
+[download] WDfb58WmrgQ: Using multithreading in trading robots has already been recorded in the archive
+[download] NNrhStjDvKw: Automated Data Download from the Moscow Exchange has already been recorded in the archive
+[download] zDf7fqR7_Dg: Прибыльный контр-тренд для бессмертных. Ежеквартальная ребалансировка портфелей фондов has already been recorded in the archive
+[download] 3OT0eHyD2Rc: Загрузка свечных данных за длительный период для OsEngine has already been recorded in the archive
+[download] 07kgSk8ewzw: Снижаем нагрузку на оперативную память от OsEngine has already been recorded in the archive
+[download] 7X1iLTil0IQ: Работа с новыми индикаторами из робота и расположение роботов подгружаемых из файла has already been recorded in the archive
+[download] wn3HquclZNk: Делаем индикатор в OsEngine has already been recorded in the archive
+[download] kt4qEfDFZts: advice department intro. o-s-a.net has already been recorded in the archive
+[download] ySqiCTPWgU0: The place of algo trading and o-s-a.net on the exchange has already been recorded in the archive
+[download] TbGyoJoKQk4: OsEngine Risk has already been recorded in the archive
+[download] zpp77y6-kl4: OsEngine Trend has already been recorded in the archive
+[download] DIKgPGEwmPE: Создание ликвидности для биржи криптовалют has already been recorded in the archive
+[download] klRpVK3LG8U: HFT Intro has already been recorded in the archive
+[download] tA5SNMlcBkM: Arbitrage Intro has already been recorded in the archive
+[download] 1w76WKMVPnk: OsEngine Brut Force - Intro has already been recorded in the archive
+[download] QsQqqIjs3zE: OsEngine Base - Intro has already been recorded in the archive
+[download] 1ODor91kyeo: C# Starter - Intro has already been recorded in the archive
+[download] -YYfCMNm-jM: Quik Lua Base Presentation has already been recorded in the archive
+[download] 9EsqqcuzHpg: Создание ликвидности на бирже has already been recorded in the archive
+[download] mXGvqRKau5Y: OsEngine intro. O-S-A.net has already been recorded in the archive
+[download] 714vY2bgJNk: Intro для отдела обучения. O-S-A.net has already been recorded in the archive
+[download] 6f9CAtwfCgU: Арбитражный робот для Binance, Bitfinex, BitStapm, Bitmex, Kraken, Quik, Plaza 2, SmartCom, Transaq has already been recorded in the archive
+[download] RhDe3NIxv3Y: Running Robots in OsEngine. Trading. Alerts. Volume Profile has already been recorded in the archive
+[download] 4niRyKY1Ho8: Майним прибыльные паттерны (свечные, индикаторые) и запускаем в торговлю has already been recorded in the archive
+[download] 2A_hXKNr3G4: Optimizing robots in OsEngine has already been recorded in the archive
+[download] xl7_4RxBEBg: Testing Trading Robots in the OsEngine Platform has already been recorded in the archive
+[download] j5asX3TqEqw: Downloading Historical Data from Finam Using OsEngine has already been recorded in the archive
+[download] Lrpp9H199Bw: Скачивание исторических данных с биржи Binance при помощи OsEngine has already been recorded in the archive
+[download] JvVM9MDKANU: Торговые роботы для TWS от interactive Brokers has already been recorded in the archive
+[download] V1Oa--wmXXI: Trading Robots for Binance: Connection Setup has already been recorded in the archive
+[download] o1ir_R4nHF0: Вступление к курсу по обучению создания роботов на языке QLUA has already been recorded in the archive
+[download] q0rTLFcPr-c: OsMiner Запуск найденных паттернов в торговлю has already been recorded in the archive
+[download] 4ttYZriLCBw: Знакомьтесь Os.Miner has already been recorded in the archive
+[download] aajxKncRr4w: Trading robots for NinjaTrader using OsEngine has already been recorded in the archive
+[download] kXKNUh9KIqA: Обзор Оптимизатора в OsEngine has already been recorded in the archive
+[download] 4oVSeJOV8Nk: Creating a robot in OsEngine with parameters has already been recorded in the archive
+[download] P3SywvPXtRU: Торгуем наклонные уровни и тренды с помощью OsEngine has already been recorded in the archive
+[download] bInNPjChvEg: Connecting OsEngine to Quik using the LUA connector has already been recorded in the archive
+[download] PI96l83WMS0: Connecting OsEngine to Quick starting with version 7 via DDE has already been recorded in the archive
+[download] jCDg081ayJY: Trailing Stop в OsEngine has already been recorded in the archive
+[download] GMS8-1VlFhk: Качаем свечные данные через OsData, для тестера has already been recorded in the archive
+[download] TE_F4UWIpb0: Loading extensive candlestick history for trading via OsEngine has already been recorded in the archive
+[download] DxmIz3dYluE: Обзор архитектуры  OsEngine has already been recorded in the archive
+[download] 16yX1wIyJ2A: Interactive Brokers. Quick start has already been recorded in the archive
+[download] 8kZeZ0Zdq3E: Создание Арбитражного робота has already been recorded in the archive
+[download] K-SXlotzFh0: Структура OS Engine has already been recorded in the archive
+[download] 9YeWQhJJ5lc: Building a Trading Bot with the Os.Engine Library has already been recorded in the archive
+[download] 4EwjJoYpAAU: Установка VS и запуск проекта OS Engine has already been recorded in the archive
+[download] 9QhzGQoKquM: First Launch of OS Engine has already been recorded in the archive
+[download] cFKqVDpqHL4: Режим тестирования. Создание панелей. has already been recorded in the archive
+[download] pLhJsObm-IU: Connecting to QUIK has already been recorded in the archive
+[download] gOECJTwxnDg: Alerts has already been recorded in the archive
+[download] LjbR7Rk6cuk: Автоматический Take-Profit, Stop-Loss. has already been recorded in the archive
+[download] wCPTgDF11rs: Логирование. Настройка оповещения. has already been recorded in the archive
+[download] wGQG6VJFG2I: Create a trading robot in 30 minutes. has already been recorded in the archive
+[download] M_hKzS74WXs: R Урок шестой has already been recorded in the archive
+[download] VnTmladK2Fg: R Урок пятый has already been recorded in the archive
+[download] YdtP3QPOU1Q: R Урок четвёртый has already been recorded in the archive
+[download] vnAHzDCD8sg: R. Урок третий has already been recorded in the archive
+[download] YY8mZCOAoyI: R. Урок второй has already been recorded in the archive
+[download] _1lU1PjKsOY: R. Урок Первый has already been recorded in the archive
+[download] Finished downloading playlist: Научный трейдинг (o-s-a.net) - Videos
+Читаю плейлисты и курсы канала...
+  найдено плейлистов/курсов: 21
+  [ 1/21] Кросс-тестирование через Скринеры: 5 видео
+  [ 2/21] Свечи и преобразование ленты сделок: 7 видео
+  [ 3/21] Ротация бумаг между алгоритмами по стадиям волатильности: 5 видео
+  [ 4/21] Тренд через Walk Forwards: 5 видео
+  [ 5/21] Введение в алготрейдинг: 3 видео
+  [ 6/21] С# для алготрейдера: 9 видео
+  [ 7/21] Определения и термины: 2 видео
+  [ 8/21] Крипта VS MOEX: 11 видео
+  [ 9/21] Разработка OsEngine: 7 видео
+  [10/21] Арбитраж: 12 видео
+  [11/21] Отдел обучения o-s-a.net: 10 видео
+  [12/21] Войти в IT: 21 видео
+  [13/21] Стратегии: 23 видео
+  [14/21] Торгуя сотни миллионов: 21 видео
+  [15/21] Ошибки в трейдинге: 6 видео
+  [16/21] О трейдинге в дороге: 4 видео
+  [17/21] Юридический отдел: 1 видео
+  [18/21] Новичку в алготрейдинге и программировании: 5 видео
+  [19/21] Тестирование идей: 1 видео
+  [20/21] Os.Engine Tutorial: 56 видео
+  [21/21] R для каждого: 6 видео
+Карта сохранена: /mnt/DiskD/Downloads/MediaDownloader/.playlist_map.json
+
+Файлов в корне: 0
+  ——————  всего к раскладке: 0
+
+Перемещено файлов: 0

@@ -1,0 +1,10 @@
+date,time,config,instrument,symbol,strategy,price,signal,target,contracts,equity_before,action,position_after,note
+2026-11-19,13:50,p-base,CNY,CNYRUBF@RTSX,prostushka,12.253,-1,-32,32,200000,решение,-32,"close 12.253 vs MA40 12.2701; лот 32, equity 200000"
+2026-11-19,13:40,p-fast,CNY,CNYRUBF@RTSX,prostushka,12.249,-1,-32,32,200000,решение,-32,"close 12.249 vs MA50 12.2726; лот 32, equity 200000"
+2026-11-19,12:00,p-h1,CNY,CNYRUBF@RTSX,prostushka,12.256,-1,-32,32,200000,решение,-32,"close 12.256 vs MA7 12.2926; лот 32, equity 200000"
+2026-11-19,13:50,p-friday,CNY,CNYRUBF@RTSX,prostushka,12.253,-1,-32,32,200000,решение,-32,"close 12.253 vs MA40 12.2701; лот 32, equity 200000"
+2026-11-19,13:30,u-base,CNY,CNYRUBF@RTSX,universal,12.257,0,0,0,200000,решение,0,"репер 12.261, close 12.257, порог +0.4%/-0.2%; лот 0, equity 200000"
+2026-11-19,13:30,u-wide,CNY,CNYRUBF@RTSX,universal,12.257,0,0,0,200000,решение,0,"репер 12.261, close 12.257, порог +0.1%/-0.1%; лот 0, equity 200000"
+2026-11-19,13:30,u-morning,CNY,CNYRUBF@RTSX,universal,12.257,0,0,0,200000,решение,0,"репер 12.261, close 12.257, порог +0.4%/-0.2%; лот 0, equity 200000"
+2026-11-19,13:50,p-rts,RTS,RIZ6@RTSX,prostushka,93290,-1,-1,1,260000,решение,-1,"close 93290.000 vs MA40 93613.5000; лот 1, equity 260000"
+2026-11-19,13:50,p-gold,GOLD,GDZ6@RTSX,prostushka,3777.5,1,1,1,450000,решение,1,"close 3777.500 vs MA40 3775.1925; лот 1, equity 450000"
