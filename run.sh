@@ -12,6 +12,7 @@ fi
 case "${1:-help}" in
   test)   for f in tests/test_*.py; do "$PY" "$f" || exit 1; done ;;
   check)  "$PY" scripts/01_data_check.py "${2:-CNYRUBF.txt}" ;;
+  data-qa) "$PY" scripts/47_data_qa.py ;;
   update) "$PY" scripts/10_append_iss.py ;;
   update-live) "$PY" scripts/10b_append_finam.py ;;
   signal) "$PY" scripts/20_mvp_signal.py ;;
@@ -56,6 +57,7 @@ usage: ./run.sh <команда>
 
   test     юнит-тесты движка, хранилища, брокера и бумажного контура
   check    качество данных (по умолчанию CNYRUBF.txt)
+  data-qa  дубли, стык месяцев, ISS против архива и живого фида
   update       добрать свежие бары с MOEX ISS (независимый архив)
   update-live  дописать M5-бары Финама на диск (как раз решает робот)
   signal   сигнал Простушки на сегодня
