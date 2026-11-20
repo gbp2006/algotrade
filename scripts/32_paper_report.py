@@ -67,7 +67,7 @@ def ledger(rows: list[dict], mult: float) -> tuple[int, float, int]:
 
 
 def expected(cfg, m5: pd.DataFrame, start: str, end: str,
-             mult: float, capital: float) -> tuple[int, float]:
+             mult: float, capital: float, tick: float = 0.0) -> tuple[int, float]:
     """Что та же конфигурация дала бы на архиве за тот же период."""
     days = sorted({d for d in m5.index.date
                    if str(d) >= start and str(d) <= end and d.weekday() < 5})
@@ -97,7 +97,8 @@ def expected(cfg, m5: pd.DataFrame, start: str, end: str,
             today = m5[m5.index.date == day]
             closed = today[(today.index.hour * 60 + today.index.minute) <= 18 * 60 + 45]
             if not closed.empty:
-                exit_price = float(closed["close"].iloc[-1])
+                # живое закрытие берёт котировку минус 1 тик проскальзывания
+                exit_price = float(closed["close"].iloc[-1]) - tick * (1 if pos > 0 else -1)
                 pnl += (exit_price - entry) * mult * pos
                 trades += 1
                 entry, pos = 0.0, 0
@@ -176,7 +177,8 @@ def build_rows() -> tuple[list[dict], str, str]:
             cache[inst.code] = expected_bars(inst)
         e_pnl = None
         if cache[inst.code] is not None:
-            e_trades, e_pnl = expected(cfg, cache[inst.code], start, end, mult, capital)
+            e_trades, e_pnl = expected(cfg, cache[inst.code], start, end,
+                                       mult, capital, tick=inst.tick)
         dd = _dd_stats(mine, mult, capital)
         out.append({"config": cfg.id, "instrument": inst.code, "days": days,
                     "trades": trades, "pnl": pnl, "expected": e_pnl,

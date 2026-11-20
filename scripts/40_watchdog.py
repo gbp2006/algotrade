@@ -28,6 +28,8 @@ TIMERS = ["algotrading-daily.timer", "algotrading-morning.timer",
           "algotrading-shadow.timer",
           "algotrading-web.service"]
 MAX_LOOKBACK = 5  # сколько последних торговых дней проверять
+# песочница и WSL видят котировку в разные моменты: 1–2 тика на исходе не ошибка
+TRACKING_TOLERANCE = 200  # ₽
 
 
 def systemd_active(name: str) -> bool:
@@ -91,7 +93,8 @@ def tracking_errors() -> list[str]:
         spec.loader.exec_module(mod)
         rows, _, _ = mod.build_rows()
         return [f"{r['config']}: факт−ожидание {r['error']:+.0f} ₽"
-                for r in rows if r["error"] is not None and abs(r["error"]) > 1]
+                for r in rows if r["error"] is not None
+                and abs(r["error"]) > TRACKING_TOLERANCE]
     except Exception as exc:  # noqa: BLE001 — отчёт не обязан быть доступен сторожу
         return [f"не удалось проверить tracking error: {str(exc)[:80]}"]
 

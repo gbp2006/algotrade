@@ -40,6 +40,9 @@ class TestFridayExpectation(unittest.TestCase):
         self.assertIsNotNone(base[1])
         self.assertIsNotNone(friday[1])
         self.assertGreater(friday[0], base[0], "ожидание должно включать закрытие в 18:45")
+        with_tick = report.expected(BY_ID["p-friday"], bars, "2026-11-16", "2026-11-20",
+                                    1000.0, 200_000, tick=0.001)
+        self.assertLess(with_tick[1], friday[1], "проскальзывание на выходе должно учитываться")
 
 
 if __name__ == "__main__":
