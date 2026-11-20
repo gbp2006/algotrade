@@ -54,6 +54,14 @@ ROBOT_CONFIGS: list[Config] = [
         "RTS 1.04; контроль «просто лонг» убыточен — край есть",
         "Пробой канала · day риск",
     ),
+    Config(
+        "cb-day-si", "channel_break",
+        dict(start="01:00", switch="13:00", mode="day", direction="long",
+             sl=1000.0, boundary="first_bar", tick=1.0, risk_vol=True),
+        "пробой дневного канала на Si: train PF 1.44 / OOS 2.06 (+4 869 ₽), "
+        "DD −1 157 ₽; тот же режим day/long, стоп 1000 п. + ATR-резка",
+        "Пробой канала · Si риск", instrument="Si",
+    ),
 ]
 
 ROBOT_BY_ID = {c.id: c for c in ROBOT_CONFIGS}

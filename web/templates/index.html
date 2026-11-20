@@ -228,6 +228,7 @@
         <div class="kv"><span>Цена входа</span><b id="t-entry">—</b></div>
         <div class="kv"><span>Время входа</span><b id="t-time">—</b></div>
         <div class="kv"><span>Последняя сделка</span><b id="t-last">—</b></div>
+        <div class="kv"><span>Инструмент</span><b id="t-inst">—</b></div>
         <div class="kv"><span>Котировка</span><b id="t-quote">—</b></div>
       </section>
     </div>
@@ -236,7 +237,7 @@
       <section class="card">
         <h3>Все конфигурации</h3>
         <table>
-          <thead><tr><th>конфигурация</th><th>позиция</th><th>P&L</th><th>сделок</th><th>последний сигнал</th><th></th></tr></thead>
+          <thead><tr><th>конфигурация / инструмент</th><th>позиция</th><th>P&L</th><th>сделок</th><th>последний сигнал</th><th></th></tr></thead>
           <tbody id="tbody"></tbody>
         </table>
       </section>
@@ -260,7 +261,7 @@
 <div class="detail-overlay" id="detail">
   <div class="detail">
     <header>
-      <div><h2 id="d-title">—</h2><p id="d-desc"></p></div>
+      <div><h2 id="d-title">—</h2><p id="d-desc"></p><p id="d-inst" style="color:var(--muted);font-size:12px;margin:4px 0 0"></p></div>
       <button class="btn" onclick="closeDetail()">Закрыть ✕</button>
     </header>
     <div class="dstats" id="d-stats"></div>
@@ -521,10 +522,13 @@ function render(){
   document.getElementById("t-entry").textContent = s.entry_price ? px(s.entry_price) : "—";
   document.getElementById("t-time").textContent = s.entry_time || "—";
   document.getElementById("t-last").textContent = s.last ? `${s.last.date} ${s.last.action}` : "—";
+  const symForCard = (s.quote && s.quote.symbol) || "";
+  document.getElementById("t-inst").textContent =
+    (s.instrument_label || s.instrument || "—") + (symForCard ? " · " + symForCard : "");
 
   document.getElementById("tbody").innerHTML = DATA.strategies.map(x => `
     <tr onclick="select('${x.id}')">
-        <td>${x.title}</td>
+        <td>${x.title}<div style="color:var(--muted);font-size:11px;margin-top:2px">${x.instrument_label || x.instrument || "—"}</div></td>
         <td class="${x.position>0?"pos":x.position<0?"neg":""}">${x.position>0?"+"+x.position:x.position<0?"−"+Math.abs(x.position):"0"}</td>
         <td class="${x.pnl + (x.unrealized||0) >=0?"pos":"neg"}">${fmt(x.pnl + (x.unrealized||0))}</td>
         <td>${x.trades}</td>
@@ -634,6 +638,8 @@ async function openDetail(id){
   if(d.error){ openModal("Ошибка", d.error); return; }
   document.getElementById("d-title").textContent = d.title;
   document.getElementById("d-desc").textContent = d.desc;
+  document.getElementById("d-inst").textContent =
+    "Инструмент: " + (d.instrument_label || d.instrument || "—");
   const st = d.stats;
   const dig = d.digits != null ? d.digits : 3;
   const pxf = v => Number(v).toFixed(dig);

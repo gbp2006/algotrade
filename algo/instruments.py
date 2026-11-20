@@ -36,6 +36,8 @@ class Instrument:
 INSTRUMENTS: dict[str, Instrument] = {
     "CNY": Instrument("CNY", "CNY/RUB том", 1000.0, 0.001, 3,
                       symbol=f"CNYRUBF@{MIC}", file="2026-11/CNYRUBF.txt"),
+    "Si": Instrument("Si", "USD/RUB фьючерс", 1.0, 1.0, 0,
+                     asset="Si", file="2026-11/Si.txt"),
     "RTS": Instrument("RTS", "индекс РТС", 1.644562, 10.0, 0,
                       asset="RTS", file="2025.12/RTS.txt"),
     "GOLD": Instrument("GOLD", "золото", 82.2281, 0.1, 1,

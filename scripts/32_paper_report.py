@@ -190,7 +190,8 @@ def build_rows() -> tuple[list[dict], str, str]:
 
 COMPARE_IDS = [
     ("p-ma50", "p-base"), ("p-fast2", "p-base"),
-    ("u-1340", "u-base"), ("p-train", "p-base"), ("cb-day", "p-base"),
+    ("u-1340", "u-base"), ("p-train", "p-base"),
+    ("cb-day", "p-base"), ("cb-day-si", "p-base"),
 ]
 
 

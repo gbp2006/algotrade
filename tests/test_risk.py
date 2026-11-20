@@ -94,7 +94,7 @@ class TestRisk(unittest.TestCase):
 
     def test_robots_have_risk_and_unique_ids(self):
         ids = [c.id for c in ROBOT_CONFIGS]
-        self.assertEqual(len(ids), 5)
+        self.assertEqual(len(ids), 6)
         self.assertEqual(len(ids), len(set(ids)))
         self.assertFalse(set(ids) & {c.id for c in CONFIGS})
         idx = pd.date_range("2026-11-18 09:00", "2026-11-20 14:00", freq="5min")
