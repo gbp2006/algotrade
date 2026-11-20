@@ -20,11 +20,14 @@ class FakeBroker:
         self.calls: list[tuple] = []
         self.fail = fail
 
-    def place_limit(self, symbol, side, qty, price, account=None):
-        self.calls.append((symbol, side, qty, price, account))
+    def place_limit(self, symbol, side, qty, price, account=None, client_order_id=None):
+        self.calls.append((symbol, side, qty, price, account, client_order_id))
         if self.fail:
             raise RuntimeError("API 500")
-        return {"orderId": "42"}
+        return {"order_id": "42"}
+
+    def find_order(self, client_order_id, account=None):
+        return None
 
 
 def order(**kw):
@@ -54,8 +57,11 @@ class TestGateway(unittest.TestCase):
         with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):
             res = self.gw.submit(order(), account="2102993")
         self.assertTrue(res.sent)
+        cid = ex.client_order_id(order().client_id)
         self.assertEqual(self.broker.calls,
-                         [("CNYRUBF@RTSX", "buy", 32, 12.29, "2102993")])
+                         [("CNYRUBF@RTSX", "buy", 32, 12.29, "2102993", cid)])
+        self.assertEqual(len(cid), 20)
+        self.assertEqual(self.gw._rows()[0]["order_id"], "42")
         self.assertFalse(self.lock.exists())
 
     def test_duplicate_not_sent_twice(self):
@@ -74,6 +80,7 @@ class TestGateway(unittest.TestCase):
             (ex.Limits(), {"qty": 0}),
             (ex.Limits(), {"price": -1}),
             (ex.Limits(), {"side": "hold"}),
+            (ex.Limits(), {"min_step": 0.001, "price": 12.2905}),
         ]
         with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):
             for i, (limits, kw) in enumerate(cases):
@@ -98,6 +105,32 @@ class TestGateway(unittest.TestCase):
         self.assertIn("API 500", res.reason)
         self.assertFalse(self.lock.exists())
         self.assertEqual(gw._rows()[0]["status"], "error")
+
+
+    def test_lost_response_found_on_server_is_uncertain(self):
+        class LostBroker(FakeBroker):
+            def place_limit(self, *a, **k):
+                raise RuntimeError("connection lost")
+
+            def find_order(self, client_order_id, account=None):
+                return {"order_id": "77", "status": "ORDER_STATUS_NEW",
+                        "executed_quantity": {"value": "0"}}
+
+        gw = ex.OrderGateway(LostBroker(), journal=self.journal, lock=self.lock)
+        with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):
+            res = gw.submit(order())
+        self.assertEqual(res.status, "uncertain")
+        self.assertEqual(res.order_id, "77")
+        self.assertEqual(gw._rows()[0]["status"], "uncertain")
+
+    def test_order_state_parsing(self):
+        state = ex.order_state({
+            "status": "ORDER_STATUS_PARTIALLY_FILLED",
+            "executed_quantity": {"value": "3"},
+            "remaining_quantity": {"value": "7"},
+        })
+        self.assertEqual(state, {"status": "ORDER_STATUS_PARTIALLY_FILLED",
+                                 "executed": 3, "remaining": 7})
 
 
 class TestReconcile(unittest.TestCase):

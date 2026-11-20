@@ -59,14 +59,24 @@ class TestBrokerGuard(unittest.TestCase):
     def test_place_limit_payload(self):
         b = broker()
         with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}), \
-             mock.patch.object(b, "_call", return_value={"orderId": "43"}) as call:
-            b.place_limit("X@RTSX", "buy", 2, 12.345)
+             mock.patch.object(b, "_call", return_value={"order_id": "43"}) as call:
+            b.place_limit("X@RTSX", "buy", 2, 12.345, client_order_id="abcdef01234567890123")
         method, path = call.call_args.args
         body = call.call_args.kwargs["body"]
         self.assertEqual((method, path), ("POST", "/v1/accounts/123/orders"))
         self.assertEqual(body["type"], "ORDER_TYPE_LIMIT")
-        self.assertEqual(body["price"], {"value": "12.345"})
+        self.assertEqual(body["limit_price"], {"value": "12.345"})
+        self.assertNotIn("price", body)
         self.assertEqual(body["side"], "SIDE_BUY")
+        self.assertEqual(body["client_order_id"], "abcdef01234567890123")
+
+    def test_client_order_id_too_long(self):
+        b = broker()
+        with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}), \
+             mock.patch.object(b, "_call") as call:
+            with self.assertRaisesRegex(fb.FinamError, "20 символов"):
+                b.place_limit("X@RTSX", "buy", 1, 12.3, client_order_id="x" * 21)
+            call.assert_not_called()
 
 
 class TestTransport(unittest.TestCase):
@@ -87,6 +97,14 @@ class TestTransport(unittest.TestCase):
                                side_effect=[Resp(401), Resp(200, {})]):
             b._call("GET", "/p")
         self.assertEqual(auth.call_count, 2, "после 401 токен должен обновиться")
+
+    def test_find_order_by_client_id(self):
+        b = broker()
+        with mock.patch.object(b, "orders", return_value=[
+                {"order_id": "1", "order": {"client_order_id": "abc"}},
+                {"order_id": "2", "order": {"client_order_id": "def"}}]):
+            self.assertEqual(b.find_order("abc")["order_id"], "1")
+            self.assertIsNone(b.find_order("zzz"))
 
     def test_quote_parsing(self):
         b = broker()

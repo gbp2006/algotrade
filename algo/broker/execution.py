@@ -11,6 +11,7 @@ Finam (поле clientOrderId) и провести 10 дней репетици�
 from __future__ import annotations
 
 import csv
+import hashlib
 import os
 from dataclasses import dataclass
 from datetime import datetime
@@ -21,8 +22,8 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 JOURNAL = ROOT / "results" / "live.csv"
 LOCK = ROOT / "results" / "live.lock"
 
-FIELDS = ["ts", "client_id", "config", "symbol", "side", "qty", "price",
-          "multiplier", "status", "reason", "response"]
+FIELDS = ["ts", "client_id", "client_order_id", "order_id", "config", "symbol",
+          "side", "qty", "price", "multiplier", "status", "reason", "response"]
 
 
 class ExecutionError(RuntimeError):
@@ -39,6 +40,7 @@ class Order:
     price: float
     multiplier: float = 1.0
     daily_pnl: float = 0.0  # уже реализованный P&L счёта за день, ₽
+    min_step: float = 0.0   # шаг цены инструмента; 0 = проверка кратности выключена
 
 
 @dataclass(frozen=True)
@@ -51,9 +53,11 @@ class Limits:
 
 @dataclass(frozen=True)
 class Result:
-    status: str             # blocked / rejected / duplicate / sent / error
+    status: str             # blocked / rejected / duplicate / sent / error / uncertain
     reason: str = ""
     response: Any = None
+    client_order_id: str = ""
+    order_id: str = ""
 
     @property
     def sent(self) -> bool:
@@ -85,7 +89,9 @@ class OrderGateway:
                 w.writeheader()
             w.writerow({
                 "ts": datetime.now().isoformat(timespec="seconds"),
-                "client_id": order.client_id, "config": order.config,
+                "client_id": order.client_id,
+                "client_order_id": result.client_order_id, "order_id": result.order_id,
+                "config": order.config,
                 "symbol": order.symbol, "side": order.side, "qty": order.qty,
                 "price": f"{order.price:.6f}", "multiplier": order.multiplier,
                 "status": result.status, "reason": result.reason[:200],
@@ -98,6 +104,10 @@ class OrderGateway:
             return "количество должно быть положительным"
         if order.price <= 0:
             return "цена должна быть положительной"
+        if order.min_step > 0:
+            steps = order.price / order.min_step
+            if abs(steps - round(steps)) > 1e-6:
+                return f"цена {order.price} не кратна шагу {order.min_step}"
         if order.side.lower() not in ("buy", "sell"):
             return f"неизвестная сторона: {order.side}"
         lim = self.limits
@@ -113,29 +123,47 @@ class OrderGateway:
         return ""
 
     def submit(self, order: Order, account: str | None = None) -> Result:
+        cid = client_order_id(order.client_id)
         if os.environ.get("FINAM_ALLOW_TRADING") != "1":
-            return self._write(order, Result("blocked", "FINAM_ALLOW_TRADING != 1"))
+            return self._write(order, Result("blocked", "FINAM_ALLOW_TRADING != 1",
+                                             client_order_id=cid))
 
         self.lock.parent.mkdir(parents=True, exist_ok=True)
         try:
             fd = os.open(self.lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
         except FileExistsError:
-            return self._write(order, Result("rejected", "уже выполняется другая заявка"))
+            return self._write(order, Result("rejected", "уже выполняется другая заявка",
+                                             client_order_id=cid))
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(order.client_id)
 
         try:
             if any(r["client_id"] == order.client_id for r in self._rows()):
-                return self._write(order, Result("duplicate", "client_id уже в журнале"))
+                return self._write(order, Result("duplicate", "client_id уже в журнале",
+                                                 client_order_id=cid))
             reason = self._validate(order)
             if reason:
-                return self._write(order, Result("rejected", reason))
+                return self._write(order, Result("rejected", reason,
+                                                 client_order_id=cid))
             try:
                 response = self.broker.place_limit(
-                    order.symbol, order.side, order.qty, order.price, account)
-            except Exception as exc:  # noqa: BLE001 — ошибка транспорта не теряется
-                return self._write(order, Result("error", f"{type(exc).__name__}: {exc}"[:200]))
-            return self._write(order, Result("sent", "", response))
+                    order.symbol, order.side, order.qty, order.price, account, cid)
+            except Exception as exc:  # noqa: BLE001 — ответ мог потеряться после отправки
+                found = None
+                finder = getattr(self.broker, "find_order", None)
+                if finder is not None:
+                    try:
+                        found = finder(cid, account)
+                    except Exception:  # noqa: BLE001 — сверка не должна маскировать ошибку
+                        found = None
+                if found is not None:
+                    return self._write(order, Result(
+                        "uncertain", "ответ потерян, заявка найдена на сервере",
+                        found, cid, order_id_from(found)))
+                return self._write(order, Result(
+                    "error", f"{type(exc).__name__}: {exc}"[:200], client_order_id=cid))
+            return self._write(order, Result(
+                "sent", "", response, cid, order_id_from(response)))
         finally:
             self.lock.unlink(missing_ok=True)
 
@@ -144,6 +172,35 @@ def _scalar(value: Any) -> float:
     if isinstance(value, dict):
         value = value.get("value", 0)
     return float(value)
+
+
+def client_order_id(client_id: str) -> str:
+    """Детерминированный ID ≤20 символов (требование Finam)."""
+    return hashlib.sha1(client_id.encode("utf-8")).hexdigest()[:20]
+
+
+def order_id_from(response: Any) -> str:
+    if not isinstance(response, dict):
+        return ""
+    for key in ("order_id", "orderId", "id"):
+        if response.get(key):
+            return str(response[key])
+    order = response.get("order")
+    if isinstance(order, dict):
+        return str(order.get("order_id", order.get("orderId", "")))
+    return ""
+
+
+def order_state(item: dict) -> dict:
+    """Статус и доли исполнения из ответа брокера (не только один enum)."""
+    order = item.get("order", item) if isinstance(item, dict) else {}
+    return {
+        "status": str(item.get("status") or order.get("status", "")),
+        "executed": int(_scalar(item.get("executed_quantity",
+                                       order.get("executed_quantity", 0)))),
+        "remaining": int(_scalar(item.get("remaining_quantity",
+                                        order.get("remaining_quantity", 0)))),
+    }
 
 
 def positions_from_response(response: Any) -> dict[str, int]:

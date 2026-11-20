@@ -1,6 +1,12 @@
 {
   "$schema": "https://opencode.ai/config.json",
 
+  // Встроенный веб-поиск OpenCode: ключ TAVILY_API_KEY берётся из окружения
+  // сервиса (systemd user environment), в конфиг секрет не пишем.
+  "websearch": {
+    "provider": "tavily"
+  },
+
 // ==== SYNCED PROVIDERS BEGIN (генерируется infra/bin/sync-providers.py, править в hub) ====
   "providers": {
     "g4f": {
@@ -340,64 +346,6 @@
           }
         }
       }
-    },
-    "gweb": {
-      "name": "Gemini Web (подписка AI Pro)",
-      "env": [
-        "GWEB_KEY"
-      ],
-      "package": "@opencode/ai/providers/openai-compatible",
-      "settings": {
-        "baseURL": "http://127.0.0.1:8017/v1",
-        "headerTimeout": 300000,
-        "chunkTimeout": 900000
-      },
-      "models": {
-        "gemini-4-carbon": {
-          "name": "Gemini 4 Carbon (web, код)",
-          "limit": {
-            "context": 48000,
-            "output": 8192
-          },
-          "cost": {
-            "input": 0,
-            "output": 0
-          }
-        },
-        "gemini-4-neon": {
-          "name": "Gemini 4 Neon (web, анализ)",
-          "limit": {
-            "context": 48000,
-            "output": 8192
-          },
-          "cost": {
-            "input": 0,
-            "output": 0
-          }
-        },
-        "gemini-4-hydrogen": {
-          "name": "Gemini 4 Hydrogen (web, быстрая)",
-          "limit": {
-            "context": 48000,
-            "output": 8192
-          },
-          "cost": {
-            "input": 0,
-            "output": 0
-          }
-        },
-        "gemini-auto": {
-          "name": "Gemini Auto (web, авто-выбор)",
-          "limit": {
-            "context": 48000,
-            "output": 8192
-          },
-          "cost": {
-            "input": 0,
-            "output": 0
-          }
-        }
-      }
     }
   },
   // ==== SYNCED PROVIDERS END ====
@@ -416,9 +364,20 @@
           "OC_MEMORY_SESSIONS": "sessions"
         }
       },
-      "websearch": {
+      // Локальный поиск без ключей (Bing/Google News RSS) — то же имя, что
+      // в хабе, чтобы инструменты назывались одинаково в обеих песочницах.
+      "websearch-local": {
         "type": "local",
         "command": ["node", "/mnt/DiskD/opencode-algo/infra/mcp/websearch/server.js"]
+      },
+      // Exa: семантический поиск и чтение страниц (web_search_exa,
+      // web_fetch_exa, agent_run). Ключ подставляется из окружения.
+      "exa": {
+        "type": "remote",
+        "url": "https://mcp.exa.ai/mcp",
+        "headers": {
+          "x-api-key": "{env:EXA_API_KEY}"
+        }
       },
       // Брокер Финам: котировки, портфель, заявки. Только в алго-песочнице.
       "finam-mcp": {

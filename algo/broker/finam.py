@@ -137,21 +137,43 @@ class FinamBroker:
         return self._call("POST", f"/v1/accounts/{acc}/orders", body=body)
 
     def place_limit(self, symbol: str, side: str, qty: int, price: float,
-                    account: str | None = None) -> dict:
-        """Лимитная заявка. Поля clientOrderId нужно сверить с API перед G3.
+                    account: str | None = None,
+                    client_order_id: str | None = None) -> dict:
+        """Лимитная заявка по схеме Finam Trade API (поле `limit_price`).
 
-        Пока шлюз `execution.OrderGateway` не подключён к живым роботам,
-        идемпотентность обеспечивается локальным журналом `results/live.csv`.
+        `client_order_id` — уникальная строка не длиннее 20 символов. Цена
+        обязана быть кратна шагу инструмента — это проверяет шлюз, когда
+        ему передан `min_step`.
         """
         if os.environ.get("FINAM_ALLOW_TRADING") != "1":
             raise FinamError("торговля выключена: не выставлен FINAM_ALLOW_TRADING=1")
+        if client_order_id and len(client_order_id) > 20:
+            raise FinamError("client_order_id длиннее 20 символов")
         acc = account or self.account_id
         body = {
             "symbol": symbol,
             "quantity": {"value": str(qty)},
             "side": "SIDE_BUY" if side.lower() in ("buy", "long", "1") else "SIDE_SELL",
             "type": "ORDER_TYPE_LIMIT",
-            "price": {"value": f"{price:.6f}".rstrip("0").rstrip(".")},
             "time_in_force": "TIME_IN_FORCE_DAY",
+            "limit_price": {"value": f"{price:.6f}".rstrip("0").rstrip(".")},
         }
+        if client_order_id:
+            body["client_order_id"] = client_order_id
         return self._call("POST", f"/v1/accounts/{acc}/orders", body=body)
+
+    def order(self, order_id: str, account: str | None = None) -> dict:
+        return self._call("GET", f"/v1/accounts/{account or self.account_id}/orders/{order_id}")
+
+    def cancel_order(self, order_id: str, account: str | None = None) -> dict:
+        if os.environ.get("FINAM_ALLOW_TRADING") != "1":
+            raise FinamError("торговля выключена: не выставлен FINAM_ALLOW_TRADING=1")
+        return self._call("DELETE", f"/v1/accounts/{account or self.account_id}/orders/{order_id}")
+
+    def find_order(self, client_order_id: str, account: str | None = None) -> dict | None:
+        """Найти заявку на сервере по client_order_id (сверка после потери ответа)."""
+        for item in self.orders(account):
+            order = item.get("order", item)
+            if order.get("client_order_id") == client_order_id:
+                return item
+        return None
