@@ -289,7 +289,7 @@
 </div>
 
 <script>
-let DATA = null, CUR = null, CANDLES = [], PTS = null;
+let DATA = null, CUR = null, CANDLES = [], PTS = null, MARKS = {trades:[], open:null};
 const SEEN_KEY = "algo.alerts.seen";   // локальная копия отметки «прочитано»
 let ACKED = null;                      // отметка в памяти: работает, даже если storage запрещён
 
@@ -339,6 +339,7 @@ async function loadState(){
   QUOTE = DATA.quote;
   render();
   loadCompare();
+  loadMarks();
 }
 
 async function loadCandles(){
@@ -346,6 +347,14 @@ async function loadCandles(){
     const r = await fetch(`/api/candles?tf=${TF}&days=${TF === "D" ? 90 : (TF === "H1" ? 10 : 3)}${CUR ? "&config=" + CUR : ""}`, {cache:"no-store"});
     const j = await r.json();
     CANDLES = (j.candles || []).slice(-170);
+    draw();
+  }catch(e){}
+}
+
+async function loadMarks(){
+  try{
+    MARKS = await (await fetch(`/api/trades${CUR ? "?config=" + CUR : ""}`,
+      {cache:"no-store"})).json();
     draw();
   }catch(e){}
 }
@@ -368,7 +377,7 @@ async function tickQuote(){
   }catch(e){}
 }
 
-function select(id){ CUR = id; render(); loadCandles(); tickQuote(); }
+function select(id){ CUR = id; render(); loadCandles(); loadMarks(); tickQuote(); }
 
 function renderSidebar(){
   document.getElementById("list").innerHTML = DATA.strategies.map(s => `
@@ -439,8 +448,51 @@ function draw(){
     out = `<path d="${d}" fill="none" stroke="${col}" stroke-width="2"/>` + out;
   }
 
+  // --- сделки: вход ▲ зелёный / выход ▼ красный; открытая — живая рамка ---
+  const byLabel = {};
+  CANDLES.forEach((c,i) => { byLabel[c[0]] = P + step*i + step/2; });
+  const markAt = (label) => {
+    if(byLabel[label] !== undefined) return byLabel[label];
+    // ближайшая метка по времени, если свеча не попала в окно
+    const t = label && label.indexOf(" ") > 0 ? label.split(" ")[1] : null;
+    if(!t) return null;
+    for(const c of CANDLES){ if(c[0].split(" ")[1] === t) return byLabel[c[0]]; }
+    return null;
+  };
+  function marker(x, label, color, up, pnl){
+    if(x === null || x === undefined) return "";
+    const yy = H - P - 14;
+    const tri = up ? `${x},${yy-9} ${x-5},${yy} ${x+5},${yy}`
+                   : `${x},${yy+9} ${x-5},${yy} ${x+5},${yy}`;
+    return `<polygon points="${tri}" fill="${color}" stroke="#0c0f17" stroke-width="1"/>
+            <title>${label}</title>`;
+  }
+  (MARKS.trades || []).forEach(t => {
+    const xin = markAt(t["in"]), xout = markAt(t["out"]);
+    const col = t.dir === "LONG" ? "#2fd07b" : "#ff4d5e";
+    if(xin !== null && xin !== undefined)
+      out += marker(xin, `ВХОД ${t.dir} ${t.in_px}`, col, true);
+    if(xout !== null && xout !== undefined)
+      out += marker(xout, `ВЫХОД ${t.dir} ${t.out_px} · ${t.pnl>0?"+":""}${t.pnl} ₽`,
+                    t.pnl >= 0 ? "#2fd07b" : "#ff8a5e", false);
+    if(xin !== null && xin !== undefined && xout !== null && xout !== undefined)
+      out += `<line x1="${xin.toFixed(1)}" y1="${H-P}" x2="${xout.toFixed(1)}" y2="${H-P}"
+                stroke="${col}" stroke-width="2" opacity=".55"/>`;
+  });
+  if(MARKS.open){
+    const xo = markAt(MARKS.open["in"]);
+    if(xo !== null && xo !== undefined){
+      out += `<rect x="${(xo-7).toFixed(1)}" y="${P}" width="14" height="${H-2*P}"
+                fill="none" stroke="${MARKS.open.dir === "LONG" ? "#2fd07b" : "#ff4d5e"}"
+                stroke-width="1.5" stroke-dasharray="4 3" opacity=".9"/>
+              <title>ОТКРЫТАЯ ${MARKS.open.dir} от ${MARKS.open.in_px}</title>`;
+    }
+  }
+
   out += `<text x="${P}" y="14" fill="#6f7789" font-size="10">${hi.toFixed(3)}</text>
           <text x="${P}" y="${H-4}" fill="#6f7789" font-size="10">${lo.toFixed(3)}</text>
+          <text x="${W-P}" y="14" fill="#6f7789" font-size="10" text-anchor="end"
+            >${s ? (s.instrument_label || s.instrument || "") : ""}</text>
           <line id="cursor" x1="0" y1="0" x2="0" y2="${H-P}" stroke="#4a5163" stroke-dasharray="3 3" opacity="0"/>`;
   svg.innerHTML = out;
 }

@@ -418,6 +418,10 @@ def config_detail(cfg_id: str) -> dict:
             "params": dict(cfg.params), "instrument": inst.code,
             "instrument_label": inst.label, "digits": inst.digits,
             "stats": stats, "trades": trades,
+            "open_trade": ({"dir": "LONG" if pos > 0 else "SHORT",
+                            "entry": round(entry, inst.digits),
+                            "opened": opened[0] + " " + opened[1] if opened else "",
+                            "tip": ""} if pos != 0 and opened else None),
             "equity": equity, "expected": expected}
 
 
@@ -473,6 +477,41 @@ def api_robot_compare():
     rows, start, end = mod.build_rows()
     return JSONResponse({"start": start, "end": end,
                          "comparison": mod.robot_compare(rows)})
+
+
+@app.get("/api/trades")
+def api_trades(config: str | None = None):
+    """Сделки для mark-ов на графике (вход/выход/открытая позиция)."""
+    cfg = ALL_BY_ID.get(config) if config else ALL_CONFIGS[0]
+    if cfg is None:
+        return JSONResponse({"error": "нет конфигурации"})
+    rows = [r for r in read_paper() if r["config"] == cfg.id]
+    inst = instrument_of(cfg)
+    mult = inst.mult
+    trades = []
+    pos, entry, opened = 0, 0.0, None
+    for r in rows:
+        target = int(r["target"])
+        price = float(r["price"])
+        if target == pos:
+            continue
+        if pos != 0 and opened:
+            trades.append({
+                "dir": "LONG" if pos > 0 else "SHORT",
+                "in": opened[0][5:] + " " + opened[1], "in_px": round(entry, inst.digits),
+                "out": r["date"][5:] + " " + r["time"], "out_px": round(price, inst.digits),
+                "pnl": round((price - entry) * mult * pos, 0),
+            })
+        if target != 0:
+            entry, opened = price, (r["date"], r["time"])
+        pos = target
+    open_trade = None
+    if pos != 0 and opened:
+        open_trade = {
+            "dir": "LONG" if pos > 0 else "SHORT",
+            "in": opened[0][5:] + " " + opened[1], "in_px": round(entry, inst.digits),
+        }
+    return JSONResponse({"config": cfg.id, "trades": trades, "open": open_trade})
 
 
 @app.get("/api/health")
