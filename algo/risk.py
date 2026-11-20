@@ -14,7 +14,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from .portfolio import size_contracts
+from .portfolio import exposure_of, ledger, size_contracts
 
 
 @dataclass(frozen=True)
@@ -76,3 +76,35 @@ def size_with_risk(equity: float, price: float, mult: float,
     """Лот с учётом резки по волатильности и потолка контрактов."""
     exp = min(float(base_exposure), exposure_for(ratio, limits))
     return min(size_contracts(equity, price, mult, exp), limits.max_qty)
+
+
+def day_start_equity(rows: list[dict], config_id: str, day,
+                     mult: float, capital: float) -> float:
+    """Equity счёта на начало дня по журналу (закрытый P&L предыдущих дней)."""
+    before = [r for r in rows
+              if r.get("config") == config_id and str(r.get("date", "")) < str(day)]
+    if not before:
+        return float(capital)
+    return float(ledger(before, config_id, mult, capital)["equity"])
+
+
+def contracts_for_config(cfg, equity: float, price: float, mult: float,
+                         m5, rows: list[dict], day, capital: float) -> tuple[int, str]:
+    """Лот для конфигурации с её риск-надстройками.
+
+    Без флагов `risk_vol`/`risk_daily_loss` повторяет прежний расчёт
+    (`exposure_of` × `size_contracts`), поэтому 기존 конфигурации не меняются.
+    Возвращает (контракты, пояснение для журнала).
+    """
+    notes = []
+    ratio = None
+    if cfg.params.get("risk_vol") and m5 is not None and len(m5) >= DEFAULT_LIMITS.atr_baseline:
+        ratio = vol_ratio(m5)
+        notes.append(f"ATR×{ratio:.2f}" if ratio is not None else "ATR: мало данных")
+    if cfg.params.get("risk_daily_loss"):
+        start = day_start_equity(rows, cfg.id, day, mult, capital)
+        if not daily_loss_allowed(equity, start):
+            return 0, f"дневной лимит {DEFAULT_LIMITS.max_daily_loss_pct * 100:.0f}%: вход запрещён"
+        notes.append(f"старт дня {start:.0f}")
+    n = size_with_risk(equity, price, mult, exposure_of(cfg), ratio)
+    return n, "; ".join(notes)

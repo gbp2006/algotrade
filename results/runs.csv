@@ -64,3 +64,110 @@ ts,strategy,instrument,period,params,trades,net,pf,avg,dd,in_market,note
 2026-11-19 14:09,author-fit,CR,2026-03-25..2026-11-18,model=daily-trend;tf=60;n=12;adds=1;trend=10;stop=99.0,80,8146,2.17,,-674,,sign_agree=0.86; ev_open=0.71
 2026-11-19 14:09,author-fit,Si,2026-03-25..2026-11-18,model=daily-trend;tf=60;n=12;adds=3;trend=5;stop=99.0,159,135764,3.32,,-5907,,sign_agree=0.77; ev_open=0.86
 2026-11-19 14:09,author-fit,GL,2026-03-25..2026-11-18,model=breakout;tf=60;n=12;adds=5;trend=0;stop=0.0,392,1126,1.03,,-6533,,sign_agree=0.73; ev_open=0.78
+2026-11-20 19:34,samurai_author,CNYRUBF,2026 OOS,ma=continuous;sections=6;friday=off,23036,-730080.92,0.02,-31.69,-730093.37,56.5,прежний клон
+2026-11-20 19:35,samurai_author,CNYRUBF,2026 OOS,ma=session;sections=6;friday=off,23487,-764835.16,0.02,-32.56,-764835.71,53.5,docx 2019 windows
+2026-11-20 19:35,samurai_author,CNYRUBF,2026 OOS,ma=session;sections=6;friday=18:00,23062,-751339.91,0.02,-32.58,-751340.46,46.3,docx 2019 windows
+2026-11-20 19:35,samurai_author,CNYRUBF,2023–2025,ma=continuous;sections=6;friday=off,68766,-2368077.5,0.04,-34.44,-2368093.22,54.4,прежний клон
+2026-11-20 19:35,samurai_author,CNYRUBF,2023–2025,ma=session;sections=6;friday=off,72001,-2473447.68,0.04,-34.35,-2473458.25,53.8,docx 2019 windows
+2026-11-20 19:35,samurai_author,Si,2026 OOS,ma=session;sections=2;friday=off,4493,-116073.46,0.48,-25.83,-116836.63,47.7,docx 2019 windows
+2026-11-20 19:35,samurai_author,Si,2023–2025,ma=session;sections=2;friday=off,15385,-492125.46,0.45,-31.99,-492856.67,43.9,docx 2019 windows
+2026-11-20 19:36,samurai_author_cost,CNYRUBF,2026 OOS,ma=session;slippage_ticks=0.0;commission_pct=0.0,23487,5428.0,1.03,0.23,-2515.0,53.5,"чувствительность к издержкам, авторская вариация"
+2026-11-20 19:36,samurai_author_cost,CNYRUBF,2026 OOS,ma=session;slippage_ticks=0.0;commission_pct=0.0001,23487,-165961.16,0.36,-7.07,-166008.49,53.5,"чувствительность к издержкам, авторская вариация"
+2026-11-20 19:36,samurai_author_cost,CNYRUBF,2026 OOS,ma=session;slippage_ticks=0.5;commission_pct=0.0001,23487,-465398.16,0.06,-19.82,-465399.71,53.5,"чувствительность к издержкам, авторская вариация"
+2026-11-20 19:36,samurai_author_cost,CNYRUBF,2026 OOS,ma=session;slippage_ticks=1.0;commission_pct=0.0,23487,-593446.0,0.04,-25.27,-593450.0,53.5,"чувствительность к издержкам, авторская вариация"
+2026-11-20 19:36,samurai_author_diag,CNYRUBF,2026 OOS,ma=session;offsets=flip,21767,-728942.39,0.02,-33.49,-728946.48,68.7,диагностика интерпретации offset_out
+2026-11-20 19:36,samurai_author_diag,CNYRUBF,2026 OOS,ma=session;offsets=x3,10086,-276362.2,0.04,-27.4,-276370.24,25.2,диагностика интерпретации offset_out
+2026-11-20 19:37,samurai_author_diag,CNYRUBF,2026 OOS,ma=session;offsets=x5,4381,-110494.57,0.08,-25.22,-110524.77,12.0,диагностика интерпретации offset_out
+2026-11-20 19:37,samurai_author_cost,Si,2026 OOS,ma=session;cost=std,4493,-116073.46,0.48,-25.83,-116836.63,47.7,чувствительность docx-секций к издержкам
+2026-11-20 19:37,samurai_author_cost,Si,2026 OOS,ma=session;cost=no-cost,4493,798.0,1.0,0.18,-11114.0,47.7,чувствительность docx-секций к издержкам
+2026-11-20 20:30,samurai_research,CNYRUBF,2023–2025,template=docx;offset_mult=1.0;sections=2,2569,-17338.71,0.55,-6.75,-17559.78,11.5,train
+2026-11-20 20:30,samurai_research,CNYRUBF,2023–2025,template=ini;offset_mult=1.0;sections=2,28523,-222997.56,0.21,-7.82,-223000.73,36.7,train
+2026-11-20 20:30,samurai_research,Si,2023–2025,template=docx;offset_mult=1.0;sections=2,15385,-492125.46,0.45,-31.99,-492856.67,43.9,train
+2026-11-20 20:30,samurai_research,Si,2023–2025,template=ini;offset_mult=1.0;sections=2,43994,-1346347.43,0.34,-30.6,-1346504.61,53.8,train
+2026-11-20 20:30,samurai_research,Eu,2023–2025,template=docx;offset_mult=1.0;sections=2,15953,-587400.03,0.46,-36.82,-588976.68,48.6,train
+2026-11-20 20:30,samurai_research,Eu,2023–2025,template=ini;offset_mult=1.0;sections=2,43147,-1509344.15,0.35,-34.98,-1510631.54,56.5,train
+2026-11-20 20:31,samurai_research,ED,2023–2025,template=docx;offset_mult=1.0;sections=2,366,-15177.7,0.44,-41.47,-15221.37,2.8,train
+2026-11-20 20:31,samurai_research,ED,2023–2025,template=ini;offset_mult=1.0;sections=2,15589,-936376.75,0.04,-60.07,-936481.61,26.6,train
+2026-11-20 20:31,samurai_research,RTS,2023–2025,template=docx;offset_mult=1.0;sections=2,5022,-469794.68,0.63,-93.55,-476177.21,19.9,train
+2026-11-20 20:31,samurai_research,RTS,2023–2025,template=ini;offset_mult=1.0;sections=2,36787,-4163695.41,0.29,-113.18,-4164683.24,43.5,train
+2026-11-20 20:31,samurai_research,MIX,2023–2025,template=docx;offset_mult=1.0;sections=2,4251,-432654.58,0.7,-101.78,-436600.74,16.4,train
+2026-11-20 20:31,samurai_research,MIX,2023–2025,template=ini;offset_mult=1.0;sections=2,34511,-6064856.16,0.27,-175.74,-6065615.61,43.0,train
+2026-11-20 20:32,samurai_research,BR,2023–2025,template=docx;offset_mult=1.0;sections=2,3192,-74502.89,0.76,-23.34,-85156.73,18.4,train
+2026-11-20 20:32,samurai_research,BR,2023–2025,template=ini;offset_mult=1.0;sections=2,32547,-1623319.84,0.26,-49.88,-1623444.85,45.0,train
+2026-11-20 20:32,samurai_research,GOLD,2023–2025,template=docx;offset_mult=1.0;sections=2,6907,-448189.15,0.61,-64.89,-455651.21,25.2,train
+2026-11-20 20:32,samurai_research,GOLD,2023–2025,template=ini;offset_mult=1.0;sections=2,35883,-3359722.29,0.25,-93.63,-3361637.17,46.9,train
+2026-11-20 20:32,samurai_research,SILV,2023–2025,template=docx;offset_mult=1.0;sections=2,547,-10751.95,0.71,-19.66,-16364.01,3.6,train
+2026-11-20 20:33,samurai_research,SILV,2023–2025,template=ini;offset_mult=1.0;sections=2,15421,-627547.98,0.14,-40.69,-627925.51,23.8,train
+2026-11-20 20:33,samurai_research,NG,2023–2025,template=docx;offset_mult=1.0;sections=2,1942,-52560.95,0.71,-27.07,-54493.46,11.5,train
+2026-11-20 20:33,samurai_research,NG,2023–2025,template=ini;offset_mult=1.0;sections=2,25944,-1037595.89,0.3,-39.99,-1039792.8,37.4,train
+2026-11-20 20:33,samurai_research,SBRF,2023–2025,template=docx;offset_mult=1.0;sections=2,12220,-88427.91,0.72,-7.24,-88941.95,36.6,train
+2026-11-20 20:33,samurai_research,SBRF,2023–2025,template=ini;offset_mult=1.0;sections=2,42435,-483969.43,0.43,-11.4,-484061.99,53.7,train
+2026-11-20 20:34,samurai_research,GAZR,2023–2025,template=docx;offset_mult=1.0;sections=2,8754,-29278.97,0.82,-3.34,-29665.87,28.9,train
+2026-11-20 20:34,samurai_research,GAZR,2023–2025,template=ini;offset_mult=1.0;sections=2,40360,-307399.24,0.43,-7.62,-307537.22,51.1,train
+2026-11-20 20:34,samurai_research,CNYRUBF,2023–2025,template=ini×1;offset_mult=1;sections=2,28523,-222997.56,0.21,-7.82,-223000.73,36.7,grid
+2026-11-20 20:34,samurai_research,CNYRUBF,2023–2025,template=ini×2;offset_mult=2;sections=2,17756,-136661.4,0.27,-7.7,-136663.57,23.7,grid
+2026-11-20 20:34,samurai_research,CNYRUBF,2023–2025,template=ini×3;offset_mult=3;sections=2,11099,-83860.86,0.32,-7.56,-83882.7,15.1,grid
+2026-11-20 20:34,samurai_research,CNYRUBF,2023–2025,template=ini×5;offset_mult=5;sections=2,4728,-34807.43,0.43,-7.36,-34924.77,6.8,grid
+2026-11-20 20:35,samurai_research,Si,2023–2025,template=ini×1;offset_mult=1;sections=2,43994,-1346347.43,0.34,-30.6,-1346504.61,53.8,grid
+2026-11-20 20:35,samurai_research,Si,2023–2025,template=ini×2;offset_mult=2;sections=2,40735,-1252116.3,0.35,-30.74,-1252292.51,51.2,grid
+2026-11-20 20:35,samurai_research,Si,2023–2025,template=ini×3;offset_mult=3;sections=2,37492,-1164242.54,0.36,-31.05,-1164384.46,48.6,grid
+2026-11-20 20:35,samurai_research,Si,2023–2025,template=ini×5;offset_mult=5;sections=2,32276,-1024547.66,0.38,-31.74,-1024658.74,43.0,grid
+2026-11-20 20:35,samurai_research,CNYRUBF,2026 OOS,template=ini×5;offset_mult=5;sections=2,1058,-6805.52,0.41,-6.43,-6815.34,5.0,oos
+2026-11-20 20:35,samurai_research,Si,2026 OOS,template=ini×5;offset_mult=5;sections=2,8953,-259893.46,0.36,-29.03,-259955.88,43.1,oos
+2026-11-20 20:36,samurai_research,CNYRUBF,2023–2025,template=ini×10;offset_mult=10;sections=2,946,-6897.22,0.58,-7.29,-7251.4,1.4,wide-grid
+2026-11-20 20:36,samurai_research,CNYRUBF,2023–2025,template=ini×20;offset_mult=20;sections=2,143,-729.55,0.81,-5.1,-1705.7,0.2,wide-grid
+2026-11-20 20:36,samurai_research,CNYRUBF,2023–2025,template=ini×40;offset_mult=40;sections=2,21,389.22,1.69,18.53,-359.09,0.0,wide-grid
+2026-11-20 20:37,samurai_research,Si,2023–2025,template=ini×10;offset_mult=10;sections=2,22902,-763500.26,0.42,-33.34,-764014.12,31.0,wide-grid
+2026-11-20 20:37,samurai_research,Si,2023–2025,template=ini×20;offset_mult=20;sections=2,12133,-417672.02,0.49,-34.42,-419055.65,16.5,wide-grid
+2026-11-20 20:37,samurai_research,Si,2023–2025,template=ini×40;offset_mult=40;sections=2,4010,-157181.12,0.56,-39.2,-158067.84,5.7,wide-grid
+2026-11-20 20:37,samurai_research,BR,2023–2025,template=docx×2;offset_mult=2;sections=2,702,-607.89,0.99,-0.87,-12651.0,5.8,wide-grid
+2026-11-20 20:37,samurai_research,BR,2023–2025,template=docx×4;offset_mult=4;sections=2,107,3247.38,1.3,30.35,-2586.43,0.7,wide-grid
+2026-11-20 20:37,samurai_research,GOLD,2023–2025,template=docx×2;offset_mult=2;sections=2,2643,-129254.22,0.77,-48.9,-140901.36,12.3,wide-grid
+2026-11-20 20:38,samurai_research,GOLD,2023–2025,template=docx×4;offset_mult=4;sections=2,682,-41118.6,0.8,-60.29,-50568.86,4.1,wide-grid
+2026-11-20 20:38,samurai_research,CNYRUBF,2026 OOS,template=ini×40;offset_mult=40;sections=2,1,101.76,inf,101.76,0.0,0.0,oos-wide
+2026-11-20 20:38,samurai_research,Si,2026 OOS,template=ini×40;offset_mult=40;sections=2,891,-27182.25,0.59,-30.51,-27313.25,4.2,oos-wide
+2026-11-20 20:41,samurai_robust,CNYRUBF,2023–2025,template=ini;offset_mult=30,49,79.08,1.05,1.61,-725.94,0.1,проверка устойчивости широких оффсетов
+2026-11-20 20:41,samurai_robust,CNYRUBF,2023–2025,template=ini;offset_mult=35,32,413.78,1.36,12.93,-479.35,0.0,проверка устойчивости широких оффсетов
+2026-11-20 20:41,samurai_robust,CNYRUBF,2023–2025,template=ini;offset_mult=40,21,389.22,1.69,18.53,-359.09,0.0,проверка устойчивости широких оффсетов
+2026-11-20 20:41,samurai_robust,CNYRUBF,2023–2025,template=ini;offset_mult=45,14,234.42,1.62,16.74,-316.26,0.0,проверка устойчивости широких оффсетов
+2026-11-20 20:42,samurai_robust,CNYRUBF,2023–2025,template=ini;offset_mult=50,9,351.07,16.47,39.01,-272.0,0.0,проверка устойчивости широких оффсетов
+2026-11-20 20:42,samurai_robust,CNYRUBF,2023–2025,template=ini;offset_mult=60,4,308.53,inf,77.13,-28.92,0.0,проверка устойчивости широких оффсетов
+2026-11-20 20:42,samurai_robust,BR,2023–2025,template=docx;offset_mult=3,253,1054.1,1.04,4.17,-4831.0,1.8,проверка устойчивости широких оффсетов
+2026-11-20 20:42,samurai_robust,BR,2023–2025,template=docx;offset_mult=4,107,3247.38,1.3,30.35,-2586.43,0.7,проверка устойчивости широких оффсетов
+2026-11-20 20:42,samurai_robust,BR,2023–2025,template=docx;offset_mult=5,59,1611.18,1.22,27.31,-3072.1,0.3,проверка устойчивости широких оффсетов
+2026-11-20 20:42,samurai_robust,BR,2023–2025,template=docx;offset_mult=6,33,766.43,1.22,23.23,-2559.94,0.2,проверка устойчивости широких оффсетов
+2026-11-20 20:42,samurai_robust,CNYRUBF,2023,template=ini;offset_mult=40,5,-80.42,0.68,-16.08,-359.09,0.0,проверка устойчивости широких оффсетов
+2026-11-20 20:42,samurai_robust,CNYRUBF,2024,template=ini;offset_mult=40,16,469.64,2.47,29.35,-316.26,0.0,проверка устойчивости широких оффсетов
+2026-11-20 20:43,samurai_robust,CNYRUBF,2025,template=ini;offset_mult=40,0,,,,,,проверка устойчивости широких оффсетов
+2026-11-20 20:43,samurai_robust,BR,2023,template=docx;offset_mult=4,51,204.37,1.04,4.01,-2473.45,0.9,проверка устойчивости широких оффсетов
+2026-11-20 20:43,samurai_robust,BR,2024,template=docx;offset_mult=4,30,-605.94,0.81,-20.2,-1770.26,0.6,проверка устойчивости широких оффсетов
+2026-11-20 20:43,samurai_robust,BR,2025,template=docx;offset_mult=4,26,3648.96,2.26,140.34,-1656.85,0.5,проверка устойчивости широких оффсетов
+2026-11-20 22:45,prostushka,CNYRUBF,2026 OOS,ma_period=50;entry_time=13:40;filter_bars=1;use_filter_long=True;allow_short_friday=False,113,2025.57,1.47,,-778.48,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,prostushka,CNYRUBF,2026 OOS,ma_period=50;entry_time=13:40;filter_bars=3;use_filter_long=False;allow_short_friday=False,113,2025.57,1.47,,-778.48,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,prostushka,CNYRUBF,2026 OOS,ma_period=50;entry_time=13:40;filter_bars=3;use_filter_long=False;allow_short_friday=True,110,2337.91,1.48,,-785.95,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,prostushka,CNYRUBF,2026 OOS,ma_period=50;entry_time=13:40;filter_bars=1;use_filter_long=True;allow_short_friday=True,110,2337.91,1.48,,-785.95,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,prostushka,CNYRUBF,2026 OOS,ma_period=50;entry_time=13:40;filter_bars=6;use_filter_long=True;allow_short_friday=True,112,2714.71,1.61,,-646.53,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,prostushka,CNYRUBF,2026 OOS,ma_period=50;entry_time=13:40;filter_bars=6;use_filter_long=True;allow_short_friday=False,115,2402.38,1.62,,-761.98,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,prostushka,CNYRUBF,2026 OOS,ma_period=50;entry_time=13:40;filter_bars=9;use_filter_long=True;allow_short_friday=True,111,2805.09,1.67,,-620.53,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,prostushka,CNYRUBF,2026 OOS,ma_period=50;entry_time=13:40;filter_bars=9;use_filter_long=True;allow_short_friday=False,114,2492.75,1.69,,-590.83,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,prostushka,CNYRUBF,2026 OOS,ma_period=50;entry_time=13:40;filter_bars=4;use_filter_long=True;allow_short_friday=True,110,2760.38,1.62,,-646.53,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,prostushka,CNYRUBF,2026 OOS,ma_period=50;entry_time=13:40;filter_bars=4;use_filter_long=True;allow_short_friday=False,113,2448.05,1.62,,-761.98,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,prostushka,CNYRUBF,2026 OOS,ma_period=48;entry_time=13:40;filter_bars=3;use_filter_long=False;allow_short_friday=True,111,1897.81,1.37,,-785.95,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,prostushka,CNYRUBF,2026 OOS,ma_period=48;entry_time=13:40;filter_bars=3;use_filter_long=False;allow_short_friday=False,112,1478.41,1.32,,-778.48,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,universal,CNYRUBF,2026 OOS,long_offset=0.002;short_offset=0.002;hold=daily;avg_window=0,101,2300.94,1.73,,-774.7,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,universal,CNYRUBF,2026 OOS,long_offset=0.002;short_offset=0.004;hold=daily;avg_window=0,86,2017.63,1.73,,-619.73,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,universal,CNYRUBF,2026 OOS,long_offset=0.003;short_offset=0.002;hold=daily;avg_window=0,95,2179.77,1.79,,-701.53,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,universal,CNYRUBF,2026 OOS,long_offset=0.003;short_offset=0.004;hold=daily;avg_window=0,80,1896.45,1.8,,-762.95,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,universal,CNYRUBF,2026 OOS,long_offset=0.002;short_offset=0.002;hold=daily;avg_window=5,98,2772.52,2.03,,-543.53,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,universal,CNYRUBF,2026 OOS,long_offset=0.002;short_offset=0.003;hold=daily;avg_window=0,95,2409.2,1.84,,-592.44,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,universal,CNYRUBF,2026 OOS,long_offset=0.003;short_offset=0.004;hold=morning;avg_window=0,104,1839.95,1.9,,-381.2,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,universal,CNYRUBF,2026 OOS,long_offset=0.0005;short_offset=0.004;hold=morning;avg_window=0,136,2083.62,1.68,,-489.51,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,universal,CNYRUBF,2026 OOS,long_offset=0.0005;short_offset=0.002;hold=daily;avg_window=0,101,2999.32,2.0,,-824.9,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,universal,CNYRUBF,2026 OOS,long_offset=0.002;short_offset=0.001;hold=daily;avg_window=0,105,2706.86,1.83,,-508.72,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,universal,CNYRUBF,2026 OOS,long_offset=0.003;short_offset=0.004;hold=morning;avg_window=10,104,1928.03,1.93,,-378.16,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,universal,CNYRUBF,2026 OOS,long_offset=0.002;short_offset=0.004;hold=morning;avg_window=0,120,1683.04,1.63,,-483.06,,param-search train 2023-25 / OOS 2026
+2026-11-20 22:45,prostushka,CNYRUBF,2026 OOS,ma_period=40;entry_time=13:50;filter_bars=3;use_filter_long=True;allow_short_friday=False,105,2070.13,1.53,,-599.09,,baseline p-base
+2026-11-20 22:45,universal,CNYRUBF,2026 OOS,ref_time=10:05;entry_time=13:30;long_offset=0.004;short_offset=0.002;hold=daily;exit_time=10:20;allow_short_friday=False,87,2089.44,1.83,,-701.53,,baseline u-base
+2026-11-20 23:19,robot,p-ma50,train 2023-25 / OOS 2026,ma_window=250;entry=13:50;filter_bars=3;short_friday=False;risk_vol=True,390,-767.96,0.0,,-769.07,,"new robot, ATR risk enabled"
+2026-11-20 23:19,robot,p-fast2,train 2023-25 / OOS 2026,ma_window=250;entry=13:40;filter_bars=3;short_friday=True;risk_vol=True,365,-716.87,0.0,,-717.98,,"new robot, ATR risk enabled"
+2026-11-20 23:19,robot,u-1340,train 2023-25 / OOS 2026,ref=10:05;entry=13:40;long_off=0.004;short_off=0.002;hold=daily;short_friday=False;risk_vol=True,254,6896.96,1.81,,-1319.92,,"new robot, ATR risk enabled"

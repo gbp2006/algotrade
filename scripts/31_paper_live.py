@@ -26,13 +26,13 @@ try:
 except Exception:
     pass
 
-from algo import store  # noqa: E402
+from algo import risk, store  # noqa: E402
 from algo.broker.finam import FinamBroker  # noqa: E402
 from algo.configs import CONFIGS  # noqa: E402
+from algo.robot_configs import ROBOT_CONFIGS  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS, margin, symbol  # noqa: E402
 from algo.live import decision, decision_configs, morning_exit_price  # noqa: E402
-from algo.portfolio import (CAPITAL, exposure_of, ledger,  # noqa: E402
-                            size_contracts)
+from algo.portfolio import CAPITAL, ledger  # noqa: E402
 
 PAPER = Path(__file__).resolve().parent.parent / "results" / "paper.csv"
 STOP = Path(__file__).resolve().parent.parent / "results" / "STOP"
@@ -41,6 +41,7 @@ FIELDS = ["date", "time", "config", "instrument", "symbol", "strategy", "price",
           "position_after", "note"]
 MSK = timezone(timedelta(hours=3))
 ENTRY_MIN = 13 * 60 + 50
+ALL_CONFIGS = CONFIGS + ROBOT_CONFIGS
 
 
 def now_msk() -> datetime:
@@ -169,7 +170,7 @@ def main() -> int:
         phase = "decision"
 
     # символы и бары — по одному разу на инструмент
-    symbols = {cfg.id: symbol(instrument_of(cfg), day) for cfg in CONFIGS}
+    symbols = {cfg.id: symbol(instrument_of(cfg), day) for cfg in ALL_CONFIGS}
     start = (datetime.combine(day, datetime.min.time(), MSK) - timedelta(days=10)
              ).strftime("%Y-%m-%dT00:00:00Z")
     m5_by: dict[str, object] = {}
@@ -193,7 +194,7 @@ def main() -> int:
 
     if phase == "friday":
         closed = 0
-        for cfg in CONFIGS:
+        for cfg in ALL_CONFIGS:
             if not cfg.params.get("close_friday"):
                 continue
             inst = instrument_of(cfg)
@@ -214,7 +215,7 @@ def main() -> int:
 
     if phase == "morning":
         closed = 0
-        for cfg in CONFIGS:
+        for cfg in ALL_CONFIGS:
             if cfg.params.get("hold") != "morning":
                 continue
             inst = instrument_of(cfg)
@@ -241,7 +242,7 @@ def main() -> int:
         return 0
 
     written = 0
-    for cfg in decision_configs(CONFIGS):
+    for cfg in decision_configs(ALL_CONFIGS):
         # hold="morning" решает здесь же (вход 13:30), а выходит своей фазой в 10:25
         inst = instrument_of(cfg)
         sym = symbols[cfg.id]
@@ -277,13 +278,18 @@ def main() -> int:
 
         pos = position_of(rows, cfg.id)
         equity = equity_of(rows, cfg)
-        contracts = (size_contracts(equity, dec.price, inst.mult, exposure_of(cfg))
-                     if dec.target != 0 else 0)
+        if dec.target != 0:
+            contracts, risk_note = risk.contracts_for_config(
+                cfg, equity, dec.price, inst.mult, m5, rows, day, capital_of(cfg))
+        else:
+            contracts, risk_note = 0, ""
         target = dec.target * contracts
         action = "держать" if target == pos else (
             "закрыть" if target == 0 else ("купить" if target > 0 else "продать"))
         msg = (f"{cfg.id:9} {sym:13} {dec.ts:%H:%M} сигнал {dec.target:+d} -> "
                f"{target:+d} контр. (лот {contracts}, equity {equity:.0f}) {action}")
+        if risk_note:
+            msg += f" [{risk_note}]"
         if args.dry_run:
             print(msg + "  [dry-run]")
             continue
@@ -293,13 +299,14 @@ def main() -> int:
                 "signal": dec.target, "target": target, "contracts": contracts,
                 "equity_before": f"{equity:.0f}", "action": "решение",
                 "position_after": target,
-                "note": f"{dec.detail}; лот {contracts}, equity {equity:.0f}"}, rows)
+                "note": f"{dec.detail}; лот {contracts}, equity {equity:.0f}"
+                        + (f"; {risk_note}" if risk_note else "")}, rows)
         written += 1
         print(msg)
 
     spreads = []
     sym_inst: dict[str, object] = {}
-    for cfg in CONFIGS:
+    for cfg in ALL_CONFIGS:
         sym_inst[symbols[cfg.id]] = instrument_of(cfg)
     for sym, inst in sym_inst.items():
         try:

@@ -16,6 +16,6 @@ CNY 2022-04-26…20.11 (784k M1), Si 2009…2026 (3.6M), GL/MIX с ISS. Живо
 Песочница → git push → `scripts/deploy_wsl.sh` (whitelist, без `--delete`, сверка md5) → WSL 192.168.0.230:8080. Таймеры: daily 13:55, morning 10:25, friday 18:45, update-live 10 мин, shadow 13:57. `FINAM_ALLOW_TRADING=0`.
 
 ## Ворота и вопросы
-Подробности — `docs/live-gates.md`, `docs/live-execution.md`, `docs/strategies/risk.md`. Открыто: Самурай (издержки убивают микроскальпинг), активация ATR-сайзинга, шорт по пятницам на Si, набор 30 дней бумаги и 10 дней тени.
+Подробности — `docs/live-gates.md`, `docs/live-execution.md`, `docs/strategies/risk.md`. Открыто: Самурай (широкие оффсеты PF 1.05–1.69 на 2023–25, но OOS не подтверждён — `reports/samurai-research.md`), активация ATR-сайзинга, шорт по пятницам на Si, набор 30 дней бумаги и 10 дней тени. Поиск параметров 2025–2026 (`reports/param-search-2025-2026.md`, `reports/entry-time-validation.md`): train-оптимумы на OOS не подтвердились; кандидаты — Простушка MA48–55 (CNY OOS PF 1.60–1.70, Si 1.57–1.65) и Универсалка с входом 13:40 (CNY OOS 2.15 против 1.83, но Si 2026 1.57 против 1.64). В `CONFIGS` и на WSL ничего не менялось.
 
 Архив прежних разделов: `reports/PROGRESS-archive-2026-11-20.md`.
