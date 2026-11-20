@@ -20,13 +20,23 @@ from algo.data import DATA_ROOT, load_txt  # noqa: E402
 from algo.instruments import INSTRUMENTS  # noqa: E402
 
 SECID = "CNYRUBF"
-path = DATA_ROOT / "2026-11" / f"{SECID}.txt"
+HEADER = "<TICKER>,<PER>,<DATE>,<TIME>,<OPEN>,<HIGH>,<LOW>,<CLOSE>,<VOL>\n"
+# Архив ведётся по месяцам; 1-го числа создаём новый файл, а не дописываем
+# декабрь в ноябрьский (прежний путь был захардкожен).
+path = DATA_ROOT / dt.date.today().strftime("%Y-%m") / f"{SECID}.txt"
 
-old = load_txt(path)
-last = old.index[-1]
-date_from = (last - pd.Timedelta(days=3)).date().isoformat()
+if path.exists():
+    old = load_txt(path)
+    last = old.index[-1]
+    date_from = (last - pd.Timedelta(days=3)).date().isoformat()
+    print(f"в файле до {last}, добираю с {date_from}")
+else:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(HEADER, encoding="utf-8")
+    old, last = None, None
+    date_from = dt.date.today().replace(day=1).isoformat()
+    print(f"новый архив {path.name}, добираю с {date_from}")
 till = (dt.date.today() + dt.timedelta(days=2)).isoformat()
-print(f"в файле до {last}, добираю с {date_from}")
 
 rows = iss.fetch(SECID, date_from, till)
 print(f"получено с ISS: {len(rows)}")
@@ -39,7 +49,7 @@ for r in rows:
     t = dt.datetime.strptime(begin, "%Y-%m-%d %H:%M:%S")
     if t.hour < 9:
         continue
-    if t <= last:            # уже в файле — не дублируем
+    if last is not None and t <= last:   # уже в файле — не дублируем
         continue
     key = (t.strftime("%Y%m%d"), t.strftime("%H%M%S"))
     if key in seen:
@@ -55,10 +65,11 @@ else:
     print("нечего дописывать")
 
 new = load_txt(path)
-print(f"теперь: {len(new):,} баров, до {new.index[-1]}, +{len(new) - len(old)}")
+added = len(new) if old is None else len(new) - len(old)
+print(f"теперь: {len(new):,} баров, до {new.index[-1]}, +{added}")
 
 # Та же порция свежих баров — в общее хранилище (независимый источник iss).
 store.init_db()
-fresh = new[new.index > last]
+fresh = new if last is None else new[new.index > last]
 changed = store.upsert(fresh, INSTRUMENTS["CNY"].symbol, "M1", "iss")
 print(f"в БД: iss/M1 изменено {changed}")

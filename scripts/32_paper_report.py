@@ -26,7 +26,7 @@ except ImportError:
 
 from algo.configs import CONFIGS  # noqa: E402
 from algo import store  # noqa: E402
-from algo.data import load_cached  # noqa: E402
+from algo.data import load_cached, to_timeframe  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS  # noqa: E402
 from algo.instruments import symbol as contract_symbol  # noqa: E402
 from algo.live import decision  # noqa: E402
@@ -125,9 +125,13 @@ def expected_bars(inst) -> pd.DataFrame | None:
     """Бары для ожидания: живые M5 из БД, потом CSV, потом архив."""
     if store.DB_PATH.exists():
         try:
-            df = store.read(_symbol_of(inst), "M5", source="finam_live")
+            sym = _symbol_of(inst)
+            df = store.read(sym, "M5", source="finam_live")
             if not df.empty:
                 return df
+            m1 = store.read(sym, "M1")
+            if not m1.empty:
+                return to_timeframe(m1, 5)
         except Exception:  # нет таблицы или прав — откатываемся к файлу
             pass
     live = ROOT / "results" / f"finam_m5_{inst.code}.csv"
