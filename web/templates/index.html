@@ -241,6 +241,13 @@
         </table>
       </section>
       <section class="card">
+        <h3>Новые роботы против базы</h3>
+        <table>
+          <thead><tr><th>робот</th><th>база</th><th>дней</th><th>дельта ₽</th><th>DD робот/база</th></tr></thead>
+          <tbody id="robot-cmp"><tr><td colspan="5">нет данных</td></tr></tbody>
+        </table>
+      </section>
+      <section class="card">
         <h3><span>Здоровье</span><span id="q-line" class="chip">—</span></h3>
         <div class="health" id="health"></div>
         <h3 style="margin-top:16px">Журнал · 20 строк</h3>
@@ -296,6 +303,21 @@ let QUOTE = null;
 
 const fmt = n => (n >= 0 ? "+" : "") + Math.round(n).toLocaleString("ru-RU") + " ₽";
 const digits = () => { const s = DATA && DATA.strategies.find(x => x.id === CUR); return s && s.digits != null ? s.digits : 3; };
+
+let CMP = null;
+async function loadCompare(){
+  try{
+    CMP = await (await fetch("/api/robot-compare", {cache:"no-store"})).json();
+    const el = document.getElementById("robot-cmp");
+    if(!el) return;
+    const rows = CMP.comparison || [];
+    el.innerHTML = rows.map(r => ("delta" in r)
+      ? `<tr><td>${r.robot}</td><td>${r.base}</td><td>${r.days}</td>
+         <td class="${r.delta>=0?"pos":"neg"}">${r.delta>0?"+":""}${Math.round(r.delta).toLocaleString("ru-RU")}</td>
+         <td>${Math.round(r.robot_dd)} / ${Math.round(r.base_dd)}</td></tr>`
+      : `<tr><td>${r.robot}</td><td>${r.base}</td><td colspan="3">ждём данных (${r.days} дн.)</td></tr>`).join("");
+  }catch(e){ /* панель должна работать и без сравнения */ }
+}
 const px = v => Number(v).toFixed(digits());
 
 function openModal(title, html){
@@ -315,6 +337,7 @@ async function loadState(){
   if(!CUR) CUR = DATA.strategies[0]?.id;
   QUOTE = DATA.quote;
   render();
+  loadCompare();
 }
 
 async function loadCandles(){

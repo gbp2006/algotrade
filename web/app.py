@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import importlib.util
 import json
 import os
 import subprocess
@@ -44,6 +45,7 @@ import sys  # noqa: E402
 sys.path.insert(0, str(ROOT))
 from algo.broker.finam import FinamBroker  # noqa: E402
 from algo.configs import BY_ID, CONFIGS  # noqa: E402
+from algo.robot_configs import ROBOT_BY_ID, ROBOT_CONFIGS  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS, margin, symbol as inst_symbol  # noqa: E402
 from algo.portfolio import (CAPITAL, account_card, drawdown_stats,  # noqa: E402
                             exposure_of, ledger)
@@ -148,9 +150,13 @@ def quote_for(inst, day=None) -> dict:
     return _cached(f"quote:{sym}", 10, fetch)
 
 
+ALL_CONFIGS = CONFIGS + ROBOT_CONFIGS
+ALL_BY_ID = {**BY_ID, **ROBOT_BY_ID}
+
+
 def quote(config_id: str | None = None) -> dict:
-    cfg = BY_ID.get(config_id) if config_id else CONFIGS[0]
-    return quote_for(instrument_of(cfg or CONFIGS[0]))
+    cfg = ALL_BY_ID.get(config_id) if config_id else ALL_CONFIGS[0]
+    return quote_for(instrument_of(cfg or ALL_CONFIGS[0]))
 
 
 def price_series(inst=None) -> list[list]:
@@ -176,8 +182,8 @@ TF_MAP = {
 
 def candles(tf: str = "M5", days: int = 2, config_id: str | None = None) -> list[list]:
     """Свечи [метка, open, high, low, close] по таймфрейму."""
-    cfg = BY_ID.get(config_id) if config_id else CONFIGS[0]
-    inst = instrument_of(cfg or CONFIGS[0])
+    cfg = ALL_BY_ID.get(config_id) if config_id else ALL_CONFIGS[0]
+    inst = instrument_of(cfg or ALL_CONFIGS[0])
 
     def fetch():
         b = FinamBroker()
@@ -286,7 +292,7 @@ def state():
 
     price = q.get("last") if q and "last" in q else None
     strategies = []
-    for cfg in CONFIGS:
+    for cfg in ALL_CONFIGS:
         try:
             qc = quote_for(instrument_of(cfg))
             px_c = qc.get("last")
@@ -340,7 +346,7 @@ def state():
 
 def config_detail(cfg_id: str) -> dict:
     """Сделки, эквити и сравнение с бэктестом по одной конфигурации."""
-    cfg = BY_ID.get(cfg_id)
+    cfg = ALL_BY_ID.get(cfg_id)
     if cfg is None:
         raise HTTPException(status_code=404, detail="нет такой конфигурации")
     rows = [r for r in read_paper() if r["config"] == cfg_id]
@@ -455,6 +461,18 @@ def api_config(cfg_id: str):
         raise
     except Exception as e:  # noqa: BLE001
         return JSONResponse({"error": str(e)[:200]})
+
+
+@app.get("/api/robot-compare")
+def api_robot_compare():
+    """Ежедневная сверка четырёх новых роботов с базовыми конфигурациями."""
+    spec = importlib.util.spec_from_file_location(
+        "paper_report", ROOT / "scripts" / "32_paper_report.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    rows, start, end = mod.build_rows()
+    return JSONResponse({"start": start, "end": end,
+                         "comparison": mod.robot_compare(rows)})
 
 
 @app.get("/api/health")

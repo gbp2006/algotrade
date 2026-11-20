@@ -3,6 +3,8 @@ __pycache__/
 venv/
 .venv/
 data
+materials/moex/
+materials/moex-artifacts/
 .cache/
 .env
 infra/db/*.db

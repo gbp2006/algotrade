@@ -63,9 +63,12 @@ class TestRisk(unittest.TestCase):
 
     def test_contracts_for_config_plain(self):
         cfg = Config("t-plain", "prostushka", dict(ma_window=200, entry="13:50"))
+        from algo import portfolio
         n, note = risk.contracts_for_config(cfg, 200_000, 12.29, 1000.0,
                                             daily(), [], "2025-01-01", 200_000)
-        self.assertEqual(n, 16)  # без флагов — базовый exposure 1.0, как в portfolio.EXPOSURE
+        # без флагов — базовый exposure из окружения (1.0 по умолчанию, 2.0 в .env)
+        self.assertEqual(n, portfolio.size_contracts(200_000, 12.29, 1000.0,
+                                                     portfolio.EXPOSURE))
         self.assertEqual(note, "")
 
     def test_contracts_for_config_vol_cut(self):

@@ -25,6 +25,7 @@ except ImportError:
     pass
 
 from algo.configs import CONFIGS  # noqa: E402
+from algo.robot_configs import ROBOT_CONFIGS  # noqa: E402
 from algo import store  # noqa: E402
 from algo.data import load_cached, to_timeframe  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS  # noqa: E402
@@ -166,7 +167,7 @@ def build_rows() -> tuple[list[dict], str, str]:
     start, end = rows[0]["date"], rows[-1]["date"]
     out: list[dict] = []
     cache: dict[str, pd.DataFrame] = {}
-    for cfg in CONFIGS:
+    for cfg in CONFIGS + ROBOT_CONFIGS:
         mine = [r for r in rows if r["config"] == cfg.id]
         if not mine:
             continue
@@ -187,6 +188,32 @@ def build_rows() -> tuple[list[dict], str, str]:
     return out, start, end
 
 
+COMPARE_IDS = [
+    ("p-ma50", "p-base"), ("p-fast2", "p-base"),
+    ("u-1340", "u-base"), ("p-train", "p-base"),
+]
+
+
+def robot_compare(rows: list[dict]) -> list[dict]:
+    """Новые роботы против базы на одном журнале и одном окне дат."""
+    by_id = {r["config"]: r for r in rows}
+    out = []
+    for robot, base in COMPARE_IDS:
+        a, b = by_id.get(robot), by_id.get(base)
+        if a and b and a["days"] >= 2:
+            out.append({
+                "robot": robot, "base": base, "days": a["days"],
+                "robot_pnl": round(a["pnl"], 0), "base_pnl": round(b["pnl"], 0),
+                "delta": round(a["pnl"] - b["pnl"], 0),
+                "robot_dd": round(a["max_dd"], 0), "base_dd": round(b["max_dd"], 0),
+                "robot_trades": a["trades"], "base_trades": b["trades"],
+            })
+        else:
+            out.append({"robot": robot, "base": base, "days": (a or {}).get("days", 0),
+                        "status": "нет данных"})
+    return out
+
+
 def main() -> int:
     rows, start, end = build_rows()
     if not rows:
@@ -200,6 +227,19 @@ def main() -> int:
                  if r["expected"] is not None else f"{'—':>9} {'—':>8}")
         print(f"{r['config']:11} {r['instrument']:6} {r['days']:>5} {r['trades']:>5} "
               f"{r['pnl']:>9.0f} {exp_s} {r['max_dd']:>8.0f} {r['max_dd_days']:>5}")
+    cmp = robot_compare(rows)
+    ready = [r for r in cmp if "delta" in r]
+    print(f"\n--- новые роботы против базы ({len(ready)}/{len(cmp)} с данными) ---")
+    for r in cmp:
+        if "delta" not in r:
+            print(f"{r['robot']:11} ждём данных ({r['days']} дней)")
+        else:
+            print(f"{r['robot']:11} vs {r['base']:7} {r['days']:>2} дн. "
+                  f"дельта {r['delta']:>+8.0f} ₽ "
+                  f"(робот {r['robot_pnl']:>+8.0f} / база {r['base_pnl']:>+8.0f}), "
+                  f"DD {r['robot_dd']:>7.0f}/{r['base_dd']:>7.0f}")
+    (ROOT / "results" / "robot_compare.csv").write_text(
+        pd.DataFrame(cmp).to_csv(index=False), encoding="utf-8")
     return 0
 
 

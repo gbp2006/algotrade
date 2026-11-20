@@ -7,5 +7,9 @@
 - `tg/` — выгрузки Telegram (ChatExport) и разборы.
 - `tg_messages.txt`, `tg_relevant.txt` — выборки сообщений для дайджеста.
 - `qq.mp4` — запись/материал для разбора (не коммитить).
+- `moex/` — весь архив `/mnt/DiskD/MOEX/` (~43 ГБ, 11 разделов), **физически
+  перемещён** сюда rename'ом; старый путь — compatibility-симлинк. Поиск через
+  `./infra/db/moex_catalog.py`, описание — `materials/moex/README.md`.
+  В `.gitignore`, не коммитить.
 
 Изменять содержимое только при обновлении источника; выводы — в `docs/sources/`.
