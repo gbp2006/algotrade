@@ -94,15 +94,19 @@ class TestRisk(unittest.TestCase):
 
     def test_robots_have_risk_and_unique_ids(self):
         ids = [c.id for c in ROBOT_CONFIGS]
-        self.assertEqual(len(ids), 4)
+        self.assertEqual(len(ids), 5)
         self.assertEqual(len(ids), len(set(ids)))
         self.assertFalse(set(ids) & {c.id for c in CONFIGS})
-        idx = pd.date_range("2026-11-20 09:00", "2026-11-20 14:00", freq="5min")
+        idx = pd.date_range("2026-11-18 09:00", "2026-11-20 14:00", freq="5min")
         m5 = pd.DataFrame({"open": 100.0, "high": 101.0, "low": 99.0,
                            "close": 100.0, "vol": 1.0}, index=idx)
         for cfg in ROBOT_CONFIGS:
             self.assertTrue(cfg.params.get("risk_vol"), cfg.id)
-            self.assertIsNotNone(decision(cfg, m5, idx[0].date()), cfg.id)
+            if cfg.strategy == "channel_break":
+                from algo.channel_live import channel_decision
+                self.assertIsNotNone(channel_decision(cfg.params, m5), cfg.id)
+            else:
+                self.assertIsNotNone(decision(cfg, m5, idx[0].date()), cfg.id)
         idx = pd.date_range("2026-11-20 10:00", "2026-11-20 14:00", freq="5min")
         close = pd.Series(np.linspace(12.20, 12.40, len(idx)), index=idx)
         m5 = pd.DataFrame({"open": close, "high": close, "low": close,
