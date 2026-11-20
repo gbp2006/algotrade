@@ -96,9 +96,11 @@ def main() -> int:
 
     if a.cmd == "import-csv":
         store.init_db()
-        df = pd.read_csv(a.file)
+        df = pd.read_csv(a.file, parse_dates=["dt"])
         n = 0
         for (sym, tf, src), part in df.groupby(["symbol", "tf", "source"]):
+            part = part.set_index("dt").rename(columns={
+                "o": "open", "h": "high", "l": "low", "c": "close", "v": "vol"})
             n += store.upsert(part, sym, tf, src)
         print(f"импорт: изменено {n} из {len(df)}")
         return 0
