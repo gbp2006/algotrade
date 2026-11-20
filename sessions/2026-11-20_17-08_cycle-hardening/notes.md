@@ -90,3 +90,16 @@
 - Проверен аварийный STOP на боевой панели: `POST /api/stop` → `paper-live`
   ничего не пишет, `/api/health` показывает `stop=true`, повторный POST снимает
   флаг, md5 `paper.csv` не изменился. Коммит QA: `c324b5f`.
+
+### 2026-11-20 17:35 — G3: каркас безопасного исполнения
+По выбору пользователя начаты третьи ворота. `algo/broker/execution.py`:
+`OrderGateway` проверяет флаг `FINAM_ALLOW_TRADING`, lock `results/live.lock`,
+дубли `client_id`, лимиты (количество/номинал/дневной убыток/символы), пишет
+каждую попытку в `results/live.csv`, при ошибке транспорта снимает lock.
+`FinamBroker.place_limit()` добавлен с defense-in-depth проверкой флага.
+`positions_from_response()` / `reconcile()` сверяют позиции с брокером.
+9 новых тестов шлюза + тест payload'а — **44 теста OK**. Реальный API не
+вызывается, `FINAM_ALLOW_TRADING` на WSL остаётся 0. Документация:
+`docs/live-execution.md`; в `live-gates.md` G3 отмечен как «каркас готов».
+Осталось: сверить схему Finam (clientOrderId), таймаут/отмена/частичное
+исполнение, 10 дней репетиции и только потом подключение к роботу.

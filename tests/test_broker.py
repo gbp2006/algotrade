@@ -56,6 +56,19 @@ class TestBrokerGuard(unittest.TestCase):
         self.assertEqual(body["type"], "ORDER_TYPE_MARKET")
 
 
+    def test_place_limit_payload(self):
+        b = broker()
+        with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}), \
+             mock.patch.object(b, "_call", return_value={"orderId": "43"}) as call:
+            b.place_limit("X@RTSX", "buy", 2, 12.345)
+        method, path = call.call_args.args
+        body = call.call_args.kwargs["body"]
+        self.assertEqual((method, path), ("POST", "/v1/accounts/123/orders"))
+        self.assertEqual(body["type"], "ORDER_TYPE_LIMIT")
+        self.assertEqual(body["price"], {"value": "12.345"})
+        self.assertEqual(body["side"], "SIDE_BUY")
+
+
 class TestTransport(unittest.TestCase):
     def test_retry_on_429(self):
         b = broker()

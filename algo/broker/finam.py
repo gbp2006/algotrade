@@ -135,3 +135,23 @@ class FinamBroker:
             "time_in_force": "TIME_IN_FORCE_DAY",
         }
         return self._call("POST", f"/v1/accounts/{acc}/orders", body=body)
+
+    def place_limit(self, symbol: str, side: str, qty: int, price: float,
+                    account: str | None = None) -> dict:
+        """Лимитная заявка. Поля clientOrderId нужно сверить с API перед G3.
+
+        Пока шлюз `execution.OrderGateway` не подключён к живым роботам,
+        идемпотентность обеспечивается локальным журналом `results/live.csv`.
+        """
+        if os.environ.get("FINAM_ALLOW_TRADING") != "1":
+            raise FinamError("торговля выключена: не выставлен FINAM_ALLOW_TRADING=1")
+        acc = account or self.account_id
+        body = {
+            "symbol": symbol,
+            "quantity": {"value": str(qty)},
+            "side": "SIDE_BUY" if side.lower() in ("buy", "long", "1") else "SIDE_SELL",
+            "type": "ORDER_TYPE_LIMIT",
+            "price": {"value": f"{price:.6f}".rstrip("0").rstrip(".")},
+            "time_in_force": "TIME_IN_FORCE_DAY",
+        }
+        return self._call("POST", f"/v1/accounts/{acc}/orders", body=body)
