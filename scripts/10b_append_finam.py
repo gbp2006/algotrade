@@ -22,6 +22,7 @@ try:
 except ImportError:
     pass
 
+from algo import store  # noqa: E402
 from algo.broker.finam import FinamBroker  # noqa: E402
 
 SYMBOL = "CNYRUBF@RTSX"
@@ -60,7 +61,12 @@ def main() -> int:
     out = out[~out.index.duplicated(keep="last")]
     OUT.parent.mkdir(parents=True, exist_ok=True)
     out.to_csv(OUT, index_label="dt")
-    print(f"финам M5: +{len(fresh)} баров, всего {len(out)}, до {out.index[-1]}")
+
+    # Тот же ряд сразу в БД: отчёт и сверка читают её, а не файл.
+    store.init_db()
+    changed = store.upsert(fresh, SYMBOL, "M5", "finam_live")
+    print(f"финам M5: +{len(fresh)} баров, всего {len(out)}, до {out.index[-1]}; "
+          f"в БД изменено {changed}")
     return 0
 
 
