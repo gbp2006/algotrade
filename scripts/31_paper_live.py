@@ -26,6 +26,7 @@ try:
 except Exception:
     pass
 
+from algo import store  # noqa: E402
 from algo.broker.finam import FinamBroker  # noqa: E402
 from algo.configs import CONFIGS  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS, margin, symbol  # noqa: E402
@@ -178,6 +179,9 @@ def main() -> int:
             print(f"нет данных от брокера по {sym}")
             continue
         m5_by[sym] = m5
+        # Те бары, по которым реально принимаются решения, — сразу в БД.
+        store.init_db()
+        store.upsert(m5, sym, "M5", "finam_live")
     if not m5_by:
         print("нет данных от брокера")
         return 2

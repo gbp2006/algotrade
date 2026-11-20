@@ -116,7 +116,9 @@ def read(symbol: str, tf: str = "M1", start=None, end=None,
         df = pd.read_sql_query(sql, con, params=args)
     if df.empty:
         return pd.DataFrame(columns=COLS)
-    df = df.sort_values("updated_at").drop_duplicates("dt", keep="last")
+    df = (df.sort_values("updated_at")
+            .drop_duplicates("dt", keep="last")
+            .sort_values("dt"))          # decision() берёт первый бар >= времени — порядок критичен
     df["dt"] = pd.to_datetime(df["dt"])
     df = df.rename(columns={"o": "open", "h": "high", "l": "low",
                             "c": "close", "v": "vol"})

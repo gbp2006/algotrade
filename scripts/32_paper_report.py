@@ -25,8 +25,10 @@ except ImportError:
     pass
 
 from algo.configs import CONFIGS  # noqa: E402
+from algo import store  # noqa: E402
 from algo.data import load_cached  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS  # noqa: E402
+from algo.instruments import symbol as contract_symbol  # noqa: E402
 from algo.live import decision  # noqa: E402
 from algo.portfolio import (CAPITAL, drawdown_stats,  # noqa: E402
                             exposure_of, size_contracts)
@@ -110,8 +112,24 @@ def _dd_stats(rows: list[dict], mult: float, capital: float) -> dict:
     return drawdown_stats(pts)
 
 
+def _symbol_of(inst) -> str:
+    if inst.symbol:
+        return inst.symbol
+    try:
+        return contract_symbol(inst)
+    except Exception:  # нет сети/кэша ISS — имя не критично, вернём код
+        return inst.code
+
+
 def expected_bars(inst) -> pd.DataFrame | None:
-    """Бары для ожидания: живые M5 Финама, иначе архив (ISS/daytradingschool)."""
+    """Бары для ожидания: живые M5 из БД, потом CSV, потом архив."""
+    if store.DB_PATH.exists():
+        try:
+            df = store.read(_symbol_of(inst), "M5", source="finam_live")
+            if not df.empty:
+                return df
+        except Exception:  # нет таблицы или прав — откатываемся к файлу
+            pass
     live = ROOT / "results" / f"finam_m5_{inst.code}.csv"
     if live.exists():
         df = pd.read_csv(live, parse_dates=["dt"]).set_index("dt")

@@ -15,8 +15,9 @@ import pandas as pd
 
 sys.path.insert(0, ".")
 
+from algo import iss, store  # noqa: E402
 from algo.data import DATA_ROOT, load_txt  # noqa: E402
-from algo import iss  # noqa: E402
+from algo.instruments import INSTRUMENTS  # noqa: E402
 
 SECID = "CNYRUBF"
 path = DATA_ROOT / "2026-11" / f"{SECID}.txt"
@@ -55,3 +56,9 @@ else:
 
 new = load_txt(path)
 print(f"теперь: {len(new):,} баров, до {new.index[-1]}, +{len(new) - len(old)}")
+
+# Та же порция свежих баров — в общее хранилище (независимый источник iss).
+store.init_db()
+fresh = new[new.index > last]
+changed = store.upsert(fresh, INSTRUMENTS["CNY"].symbol, "M1", "iss")
+print(f"в БД: iss/M1 изменено {changed}")
