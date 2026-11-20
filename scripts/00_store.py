@@ -65,6 +65,7 @@ def main() -> int:
         return 0
 
     if a.cmd == "stats":
+        store.init_db()  # свежая БД без таблиц — не ошибка, а пустая сводка
         df = store.stats()
         print(df.to_string(index=False) if not df.empty else "пусто")
         return 0

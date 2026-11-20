@@ -142,3 +142,9 @@ CNY 16.2%, RTS 50.6%, золото 43.5% (`reports/prostushka-multi-instrument.m
 - Проект: `/mnt/DiskD/opencode-algo` (сервер: `wsl-algo:~/algotrading`).
 - Журнал: `results/paper.csv`, лог `results/daily.log`.
 - Код разбора: `algo/live.py`, `algo/configs.py`, `scripts/10_append_iss.py`, `scripts/31_paper_live.py`.
+
+### 2026-11-20 17:12 — Конец: первый прогон бумажного контура
+Дефекты p-h1, u-morning, экспозиции и недобора ISS исправлены и закреплены
+тестами/ADR 19.11; бумажный тест продолжается в других сессиях. Оставленный
+вопрос про дубли на стыке ноябрьского ISS перенесён в `PROGRESS.md` (п. 5).
+Статус: **решено**.

@@ -10,7 +10,7 @@ if [ ! -x "$PY" ]; then
 fi
 
 case "${1:-help}" in
-  test)   "$PY" tests/test_engine.py ;;
+  test)   for f in tests/test_*.py; do "$PY" "$f" || exit 1; done ;;
   check)  "$PY" scripts/01_data_check.py "${2:-CNYRUBF.txt}" ;;
   update) "$PY" scripts/10_append_iss.py ;;
   update-live) "$PY" scripts/10b_append_finam.py ;;
@@ -54,7 +54,7 @@ case "${1:-help}" in
     cat <<'EOF'
 usage: ./run.sh <команда>
 
-  test     юнит-тесты движка
+  test     юнит-тесты движка, хранилища, брокера и бумажного контура
   check    качество данных (по умолчанию CNYRUBF.txt)
   update       добрать свежие бары с MOEX ISS (независимый архив)
   update-live  дописать M5-бары Финама на диск (как раз решает робот)

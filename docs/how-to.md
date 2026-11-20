@@ -97,17 +97,21 @@ ssh wsl-algo                 # порт 2222, ключ ~/.ssh/wsl_algotrading, �
 cd ~/algotrading
 ```
 
-Обновить код с локальной машины:
+Обновить код с локальной машины **только** whitelist-скриптом (секреты,
+`data/`, `results/`, `infra/db/` и прочее состояние сервера не трогает):
 
 ```bash
-rsync -az --delete --exclude data --exclude .venv --exclude .cache \
-  --exclude __pycache__ --exclude 'results/daily.log' --exclude 'results/paper.csv' \
-  -e "ssh -p 2222 -i ~/.ssh/wsl_algotrading" \
-  /mnt/DiskD/opencode-algo/ zt@192.168.0.230:~/algotrading/
+./scripts/deploy_wsl.sh              # dry-run: список изменений
+./scripts/deploy_wsl.sh --apply      # скопировать и сверить md5
+./scripts/deploy_wsl.sh --apply --restart  # ещё и перезапустить панель
 ```
 
-Расписание: системный таймер `algotrading-daily.timer`, будни 14:05 МСК,
-запускает `update && paper`, лог — `results/daily.log`.
+`--delete` **не применяется**: на WSL живут `.env`, архив, БД и журналы,
+которых нет в песочнице. Адрес задаётся `ALGO_WSL`/`ALGO_WSL_DIR`.
+
+Расписание: `algotrading-daily.timer` — будни **13:55 МСК** (`paper-live` +
+`update`), `algotrading-morning.timer` — 10:25, `algotrading-friday.timer` —
+пт 18:45, `algotrading-update-live.timer` — каждые 10 минут. Логи — в `results/`.
 Управлять можно только из root: `wsl -u root` на Windows (или через WinRM).
 
 Проверка после перезагрузки Windows: задача «WSL Algo Boot» поднимает WSL и sshd.
