@@ -32,7 +32,7 @@ CNY 2022-04-26…20.11 (784k M1), Si 2009…2026 (3.6M), GL/MIX с ISS. Живо
 
 OsEngine как источник идей и данных: локальный исходник есть в `materials/04_Софт_и_инструменты/OsEngine Софт/OsEngine-master`; сверка с ним как с эталоном по-прежнему исключена (ADR 18.11), поиск идей допустим. Обновлён с сервера обновлений до 2.0.2.0 (коммит a596fb2, 674 файла, бэкап в `Engine/Updater/Builds/Build_23-11-2026_18-50_github_update`); под Wine GUI глитчный и не используется, вместо него включён MCP V2 на `localhost:6500` и подключён к профилю OpenCode (181 инструмент, проверен `ping`/`terminal_get_status`). Только исследования, без выхода в контур.
 
-Поиск идей на РФ рынке (23.11): 7 кандидатов RU-01…RU-07 (`reports/russian-market-ideas-2026.md`). RU-01 не подтвердился (`reports/vol-sizing-ma48.md`: 15.54% CAGR / DD −50.1% против 20.36% / −49.3% у 2×). RU-03 отклонён (`reports/rezvyakov-prototype.md`: −2.86% CAGR, OOS PF 0.94–1.04, гейты 0/4). Оба research-only, контур не менялся.
+Поиск идей на РФ рынке (23.11): 7 кандидатов RU-01…RU-07 (`reports/russian-market-ideas-2026.md`). Проверены и отклонены RU-01 (`reports/vol-sizing-ma48.md`: 15.54% CAGR / DD −50.1% против 20.36% / −49.3% у 2×), RU-03 (`reports/rezvyakov-prototype.md`: −2.86% CAGR, гейты 0/4) и RU-02 (`reports/commodity-impulse.md`: CAGR −7…1% при базе 8.8% на OOS 2024–26, гейты 0/30). Все research-only, контур не менялся.
 
 План боя (23.11): `docs/battle-roadmap.md` — целевая картина, 6 блокирующих решений пользователя, ворота G2→G3→G4, конвейер идей из OsEngine через MCP (379 роботов в вики).
 

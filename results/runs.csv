@@ -408,3 +408,9 @@ ts,strategy,instrument,period,params,trades,net,pf,avg,dd,in_market,note
 2026-11-23 19:06,ru03_rez_ls,Si,oos 2026,source=smart-lab 1130044;entry=10:00;exit=20:40;trail=0.02,159,-1404.61,0.97,-8.83,-6251.39,47.4,RU-03 исследовательский прототип
 2026-11-23 19:06,ru03_rez_long,CNY,oos 2026,source=smart-lab 1130044;entry=10:00;exit=20:40;trail=0.02,87,140.25,1.04,1.61,-722.79,24.0,RU-03 исследовательский прототип
 2026-11-23 19:06,ru03_rez_long,Si,oos 2026,source=smart-lab 1130044;entry=10:00;exit=20:40;trail=0.02,79,-1114.49,0.95,-14.11,-4298.0,23.2,RU-03 исследовательский прототип
+2026-11-23 19:15,ru02_xs5,BASKET5,oos 2024-2026,"source=t-j.ru;universe=GOLD,SILV,BR,NG,CNY",503,71334.88,1.12,,-6.8,,"RU-02 исследовательский прототип, 1M на инструмент"
+2026-11-23 19:15,ru02_xs10,BASKET5,oos 2024-2026,"source=t-j.ru;universe=GOLD,SILV,BR,NG,CNY",381,-49642.86,0.76,,-10.9,,"RU-02 исследовательский прототип, 1M на инструмент"
+2026-11-23 19:15,ru02_xs20,BASKET5,oos 2024-2026,"source=t-j.ru;universe=GOLD,SILV,BR,NG,CNY",297,-56.4,0.93,,-9.7,,"RU-02 исследовательский прототип, 1M на инструмент"
+2026-11-23 19:15,ru02_ts10,BASKET5,oos 2024-2026,"source=t-j.ru;universe=GOLD,SILV,BR,NG,CNY",189,-2700.0,1.02,,-35.5,,"RU-02 исследовательский прототип, 1M на инструмент"
+2026-11-23 19:15,ru02_ts20,BASKET5,oos 2024-2026,"source=t-j.ru;universe=GOLD,SILV,BR,NG,CNY",141,35855.85,1.31,,-26.8,,"RU-02 исследовательский прототип, 1M на инструмент"
+2026-11-23 19:15,ru02_ts10v,BASKET5,oos 2024-2026,"source=t-j.ru;universe=GOLD,SILV,BR,NG,CNY",94,-15971.78,0.9,,-33.5,,"RU-02 исследовательский прототип, 1M на инструмент"
