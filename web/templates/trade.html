@@ -179,7 +179,7 @@
     <div class="card"><h3>Роботы в бою</h3>
       <table><thead><tr><th>Робот</th><th>Параметры</th><th>Счёт</th><th>Статус</th>
         <th>Позиция</th><th>Equity</th><th></th></tr></thead><tbody id="robots"></tbody></table></div>
-    <div class="card"><h3>Заявки</h3>
+    <div class="card"><h3 id="orders-title">Заявки</h3>
       <table><thead><tr><th>Время</th><th>Робот</th><th>Символ</th><th>Сторона</th>
         <th>Лот</th><th>Цена</th><th>Статус</th><th>Причина</th></tr></thead>
         <tbody id="orders"></tbody></table></div>
@@ -207,6 +207,26 @@
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let ORDERS = [], ALLOW = false, ORDERS_OPEN = false;
+// При выключенной торговле журнал — сухие прогоны, а не сделки: свёрнут по умолчанию.
+function renderOrders(){
+  const box = $('orders');
+  if(!ALLOW && !ORDERS_OPEN){
+    const last = ORDERS.length ? String(ORDERS[0].ts||'').slice(0,16).replace('T',' ') : '—';
+    box.innerHTML = `<tr><td colspan="8" class="muted">Торговля выключена: заявки брокеру не отправляются. `+
+      `В журнале ${ORDERS.length} сухих заявок (последняя ${esc(last)}) — это не сделки. `+
+      `<button onclick="toggleOrders()">показать журнал</button></td></tr>`;
+    return;
+  }
+  box.innerHTML = ORDERS.length ? ORDERS.map(o=>`<tr>
+    <td>${esc(o.ts||'')}</td><td>${esc(o.config||'')}</td><td>${esc(o.symbol||'')}</td>
+    <td>${esc(o.side||'')}</td><td>${esc(o.qty||'')}</td><td>${esc(o.price||'')}</td>
+    <td>${esc(o.status||'')}</td><td class="muted">${esc(o.reason||'')}</td></tr>`).join('')
+    : '<tr><td colspan="8" class="muted">заявок нет</td></tr>';
+  if(!ALLOW) box.insertAdjacentHTML('beforeend',
+    '<tr><td colspan="8"><button onclick="toggleOrders()">скрыть журнал</button></td></tr>');
+}
+function toggleOrders(){ ORDERS_OPEN = !ORDERS_OPEN; renderOrders(); }
 async function api(p, opts){
   const r = await fetch('/api'+p, Object.assign({headers:{'Content-Type':'application/json'}}, opts||{}));
   let d=null; try{d=await r.json();}catch(e){}
@@ -219,13 +239,15 @@ async function load(){
       api('/live-orders'), api('/accounts'), api('/brokers'),
       api('/scheduler/jobs'), api('/scheduler/runs?limit=20'), api('/scheduler/state')]);
     const run = Object.fromEntries(rt.map(x=>[x.instance_id,x]));
+    ORDERS = orders; ALLOW = !!st.allow_trading;
+    $('orders-title').textContent = ALLOW ? 'Заявки' : 'Заявки · dry-run, не сделки';
     $('kpi').innerHTML = `
       <div class="it"><span>Торговля</span><b>${st.allow_trading?'ВКЛ':'ВЫКЛ'}</b></div>
       <div class="it"><span>STOP боя</span><b>${st.stop_real?'УСТАНОВЛЕН':'снят'}</b></div>
       <div class="it"><span>Роботов в бою</span><b>${robots.filter(x=>x.status==='active').length}</b></div>
       <div class="it"><span>Дней бумаги</span><b>${st.paper_days}/30</b></div>
       <div class="it"><span>Дней тени</span><b>${st.shadow_days ?? 0}/10</b></div>
-      <div class="it"><span>Заявок в журнале</span><b>${orders.length}</b></div>`;
+      <div class="it"><span>${ALLOW?'Заявок в журнале':'Сухих заявок (не отправлялись)'}</span><b>${orders.length}</b></div>`;
     $('robots').innerHTML = robots.length ? robots.map(i=>{
       const s=run[i.id]||{};
       const params=Object.entries(i.params||{}).map(([k,v])=>k+'='+esc(v)).join(' ');
@@ -235,11 +257,7 @@ async function load(){
         <td>${s.equity?Number(s.equity).toLocaleString('ru'):'—'}</td>
         <td><button onclick="act('${esc(i.id)}','pause')">пауза</button></td></tr>`;
     }).join('') : '<tr><td colspan="7" class="muted">боевых роботов нет</td></tr>';
-    $('orders').innerHTML = orders.length ? orders.map(o=>`<tr>
-      <td>${esc(o.ts||'')}</td><td>${esc(o.config||'')}</td><td>${esc(o.symbol||'')}</td>
-      <td>${esc(o.side||'')}</td><td>${esc(o.qty||'')}</td><td>${esc(o.price||'')}</td>
-      <td>${esc(o.status||'')}</td><td class="muted">${esc(o.reason||'')}</td></tr>`).join('')
-      : '<tr><td colspan="8" class="muted">заявок нет</td></tr>';
+    renderOrders();
     $('accounts').innerHTML = acc.map(a=>`<span class="chip">${esc(a.id)}: ${Number(a.capital).toLocaleString('ru')} ₽</span>`).join('')||'нет счетов';
     $('brokers').innerHTML = br.map(b=>`<button onclick="check('${esc(b.name)}')">проверить ${esc(b.name)}</button>`).join('');
     const lastByJob = {};
