@@ -453,15 +453,34 @@ function draw(){
   }
 
   // --- сделки: вход ▲ зелёный / выход ▼ красный; открытая — живая рамка ---
-  const byLabel = {};
-  CANDLES.forEach((c,i) => { byLabel[c[0]] = P + step*i + step/2; });
+  // Метки сделок приходят как "11-20 13:50" (ММ-ДД), свечей — "20.11 13:50"
+  // (ДД.ММ), а у H1/D времени нет вообще. Приводим оба формата к минутам
+  // от начала года и ищем ближайшую свечу — так маркеры живут на всех TF.
+  const parseStamp = (lbl) => {
+    if(!lbl) return null;
+    const parts = String(lbl).trim().split(/\s+/);
+    const nums = (parts[0]||"").split(/[.\-\/]/).map(Number);
+    if(nums.length < 2 || !isFinite(nums[0]) || !isFinite(nums[1])) return null;
+    const dot = String(lbl).indexOf(".") > -1;
+    const mo = dot ? nums[1] : nums[0];
+    const day = dot ? nums[0] : nums[1];
+    const tm = parts[1] && parts[1].indexOf(":") > 0 ? parts[1].split(":").map(Number) : [0,0];
+    return { min: (mo*31 + day)*1440 + (tm[0]||0)*60 + (tm[1]||0),
+             hasTime: !!(parts[1] && parts[1].indexOf(":") > 0) };
+  };
+  const candlesMeta = CANDLES.map((c,i) => ({ x: P + step*i + step/2, p: parseStamp(c[0]) }));
   const markAt = (label) => {
-    if(byLabel[label] !== undefined) return byLabel[label];
-    // ближайшая метка по времени, если свеча не попала в окно
-    const t = label && label.indexOf(" ") > 0 ? label.split(" ")[1] : null;
-    if(!t) return null;
-    for(const c of CANDLES){ if(c[0].split(" ")[1] === t) return byLabel[c[0]]; }
-    return null;
+    const q = parseStamp(label); if(!q) return null;
+    let best = null, bestDiff = Infinity;
+    for(const c of candlesMeta){
+      if(!c.p) continue;
+      // у дневной свечи времени нет — сравниваем только календарный день
+      const diff = (!c.p.hasTime && q.hasTime)
+        ? Math.abs(Math.floor(c.p.min/1440) - Math.floor(q.min/1440)) * 1440
+        : Math.abs(c.p.min - q.min);
+      if(diff < bestDiff){ bestDiff = diff; best = c.x; }
+    }
+    return bestDiff <= 45*1440 ? best : null;
   };
   function marker(x, label, color, up, pnl){
     if(x === null || x === undefined) return "";
@@ -751,8 +770,14 @@ function closeDetail(){ document.getElementById("detail").classList.remove("show
 function drawDetail(eq){
   const svg = document.getElementById("d-chart");
   const W = 800, H = 220, P = 12;
-  if(eq.length < 2){
+  if(eq.length === 0){
     svg.innerHTML = `<text x="${W/2}" y="${H/2}" fill="#4a5163" font-size="13" text-anchor="middle">сделок пока нет</text>`;
+    return;
+  }
+  if(eq.length === 1){
+    const col = eq[0][1] >= 0 ? "#2fd07b" : "#ff4d5e";
+    svg.innerHTML = `<circle cx="${W/2}" cy="${H/2}" r="5" fill="${col}"/>
+      <text x="${W/2+12}" y="${H/2+4}" fill="#8b90a0" font-size="12">1 сделка · ${fmt(eq[0][1])} · ${eq[0][0]}</text>`;
     return;
   }
   const ys = eq.map(p => p[1]), min = Math.min(...ys), max = Math.max(...ys), span = (max-min)||1;
