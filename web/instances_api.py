@@ -256,11 +256,18 @@ def live_state_view() -> dict:
         with PAPER.open(encoding="utf-8") as f:
             days = {r.get("date", "") for r in csv.DictReader(f) if "config" in r}
     days.discard("")
+    shadow_days: set[str] = set()
+    if LIVE.exists():
+        with LIVE.open(encoding="utf-8") as f:
+            shadow_days = {str(r.get("ts", ""))[:10]
+                           for r in csv.DictReader(f)
+                           if r.get("status") == "planned" and r.get("ts")}
     return {
         "allow_trading": os.environ.get("FINAM_ALLOW_TRADING") == "1",
         "stop_paper": STOP.exists(),
         "stop_real": STOP_REAL.exists(),
         "paper_days": len(days),
+        "shadow_days": len(shadow_days),
         "health": _json_file(HEALTH),
         "shadow": _json_file(SHADOW),
         "rollover": _json_file(ROLLOVER),
