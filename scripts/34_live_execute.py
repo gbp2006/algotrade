@@ -69,7 +69,7 @@ def plan_targets(rows: list[dict], settings, day: date) -> dict:
             continue
         last = mine[-1]
         sym = last["symbol"]
-        plan = plans.setdefault(rs.account, {}).setdefault(sym, {
+        plan = plans.setdefault((rs.account, rs.key_ref), {}).setdefault(sym, {
             "target": 0, "price": float(last["price"]), "robots": [],
             "pricings": set(), "expiry": True,
         })
@@ -171,10 +171,11 @@ def main(argv: list[str] | None = None) -> int:
         notes: list[str] = []
         now = datetime.now().strftime("%H%M%S")
 
-        for acc_id, symbols in plans.items():
+        for (acc_id, key_ref), symbols in plans.items():
             acc = settings.accounts[acc_id]
             try:
-                broker = FinamBroker(secret=resolve_secret(acc.key_ref), account=acc_id)
+                broker = FinamBroker(secret=resolve_secret(key_ref or acc.key_ref),
+                                     account=acc_id)
             except Exception as exc:  # noqa: BLE001 — без ключа счёт не трогаем
                 print(f"{acc_id}: ключ счёта недоступен — {exc}")
                 return 2
@@ -261,7 +262,8 @@ def main(argv: list[str] | None = None) -> int:
         SUMMARY.parent.mkdir(parents=True, exist_ok=True)
         SUMMARY.write_text(json.dumps({
             "date": str(day), "armed": bool(args.arm), "counts": counts,
-            "robots": sorted(settings.robots), "accounts": sorted(plans),
+            "robots": sorted(settings.robots),
+            "accounts": sorted({acc for acc, _ in plans}),
             "notes": notes[:40],
         }, ensure_ascii=False, indent=1), encoding="utf-8")
         print(f"live {day}: {sum(counts.values())} решений, статусы {counts}, "

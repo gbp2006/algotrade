@@ -23,6 +23,9 @@ from .execution import ExecutionError
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 AUTH_PATH = Path(os.environ.get("ALGO_AUTH", str(ROOT / "auth.json")))
+# Зарезервированное имя ключа для сервисных операций (каталог, добор данных,
+# тень). Ключи счёта/робота лежат под своими именами и этим слотом не пользуются.
+SERVICE_KEY_REF = os.environ.get("ALGO_SERVICE_KEY_REF", "service")
 
 
 class SecretError(ExecutionError):
@@ -54,3 +57,15 @@ def resolve_secret(ref: str, *, auth_path: Path | None = None) -> str:
     if not value:
         raise SecretError(f"в {path.name} нет ключа с именем {key!r}")
     return str(value)
+
+
+def resolve_service_secret(*, auth_path: Path | None = None) -> str:
+    """Ключ для сервисных операций. Fallback на env — только для миграции."""
+    try:
+        return resolve_secret(SERVICE_KEY_REF, auth_path=auth_path)
+    except SecretError:
+        value = os.environ.get("FINAM_SECRET", "")
+        if not value:
+            raise SecretError(
+                f"нет сервисного ключа {SERVICE_KEY_REF!r} и FINAM_SECRET") from None
+        return value

@@ -87,10 +87,15 @@
       <input id="acc-id" placeholder="ID счёта (2102993)">
       <input id="acc-label" placeholder="Номер счёта (КлФ-2102993)">
       <input id="acc-code" placeholder="Торговый код (872635RN4O3)">
-      <input id="acc-keyref" placeholder="Имя ключа (КлФ-2102993)">
+      <input id="acc-keyref" placeholder="Секрет Finam для счёта" type="password">
       <input id="acc-cap" placeholder="капитал" type="number">
       <button onclick="addAccount()">Добавить счёт</button></div>
-    <div class="hint">Ключ хранится в <code>auth.json</code> с правами 600, в базу и ответы API не попадает. Сначала сохраните ключ, затем добавьте счёт с тем же именем <code>key_ref</code>.</div>
+    <div class="hint">Ключ счёта вставляется сюда один раз: он сохранится в <code>auth.json</code> с правами 600, а в карточке счёта останется только имя. Робот берёт ключ из выбранного счёта.</div>
+    <div class="row" style="margin-top:8px">
+      <input id="service-key" placeholder="Сервисный ключ Finam (каталог, данные, тень)" type="password">
+      <button onclick="saveServiceKey()">Сохранить сервисный ключ</button>
+      <span id="service-status" class="muted"></span>
+    </div>
     <div class="row" style="margin-top:8px">
       <input id="key-ref" placeholder="Имя ключа">
       <input id="key-secret" placeholder="Секрет Finam" type="password">
@@ -262,7 +267,7 @@ async function loadAll() {
     specs = sp; accounts = acc;
     $('key-names').textContent = keys.names.length
       ? 'ключи: ' + keys.names.join(', ') : 'ключей нет';
-    loadStats(); loadFavorites();
+    loadStats(); loadFavorites(); loadServiceKey();
     const modeFilter = new URLSearchParams(location.search).get('mode');
     if (modeFilter) {
       $('status').textContent = `фильтр: ${modeFilter}`;
@@ -385,6 +390,18 @@ async function saveKey() {
         key_ref:$('key-ref').value.trim(), secret:$('key-secret').value})});
         $('key-secret').value=''; $('status').textContent = 'ключ сохранён: ' + r.key_ref;
         await loadAll(); }
+  catch(e) { $('status').textContent = 'ошибка: ' + e.message; }
+}
+async function loadServiceKey() {
+  try { const r = await api('/service-key');
+        $('service-status').textContent = r.set ? 'сервисный ключ сохранён (' + r.ref + ')'
+          : (r.env_fallback ? 'в auth.json нет, используется FINAM_SECRET из .env' : 'сервисный ключ не задан'); }
+  catch(_) {}
+}
+async function saveServiceKey() {
+  try { await api('/service-key', {method:'POST', body:JSON.stringify({secret:$('service-key').value})});
+        $('service-key').value=''; $('status').textContent = 'сервисный ключ сохранён';
+        await loadServiceKey(); await loadAll(); }
   catch(e) { $('status').textContent = 'ошибка: ' + e.message; }
 }
 async function checkBroker(name) {

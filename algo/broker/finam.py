@@ -35,7 +35,15 @@ class FinamError(RuntimeError):
 class FinamBroker:
     def __init__(self, secret: str | None = None, account: str | None = None,
                  base: str = BASE, timeout: int = 20):
-        self.secret = secret or os.environ.get("FINAM_SECRET", "")
+        if secret:
+            self.secret = secret
+        else:
+            # по умолчанию сервисный ключ из auth.json; env — только fallback
+            from .secrets import resolve_service_secret
+            try:
+                self.secret = resolve_service_secret()
+            except Exception:  # noqa: BLE001 — сохраняем прежний текст ошибки
+                self.secret = os.environ.get("FINAM_SECRET", "")
         self.account_id = account or os.environ.get("FINAM_ACCOUNT", "")
         self.base = base.rstrip("/")
         self.timeout = timeout
@@ -75,6 +83,12 @@ class FinamBroker:
                 continue
             raise FinamError(f"{method} {path}: {r.status_code} {r.text[:200]}")
         raise FinamError(f"{method} {path}: не удалось ({last.status_code if last else '?'})")
+
+    @classmethod
+    def service(cls, account: str | None = None, **kwargs: Any) -> "FinamBroker":
+        """Брокер для сервисных операций: ключ из auth.json, не из .env."""
+        from .secrets import resolve_service_secret  # локальный импорт: без цикла
+        return cls(secret=resolve_service_secret(), account=account, **kwargs)
 
     # ---------- данные ----------
     def quote(self, symbol: str) -> Quote:

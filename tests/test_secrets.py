@@ -11,7 +11,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from algo.broker.secrets import SecretError, resolve_secret  # noqa: E402
+from algo.broker.secrets import (SecretError, resolve_secret,  # noqa: E402
+                                 resolve_service_secret)
 
 
 class TestResolveSecret(unittest.TestCase):
@@ -40,6 +41,24 @@ class TestResolveSecret(unittest.TestCase):
             path.write_text(json.dumps({"finam": {"other": "x"}}), encoding="utf-8")
             with self.assertRaises(SecretError):
                 resolve_secret("КлФ-2102993", auth_path=path)
+
+    def test_service_secret(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "auth.json"
+            path.write_text(json.dumps({"finam": {"service": "tapi_sk_service"}}),
+                            encoding="utf-8")
+            self.assertEqual(resolve_service_secret(auth_path=path), "tapi_sk_service")
+
+    def test_service_secret_env_fallback(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "auth.json"
+            path.write_text(json.dumps({"finam": {}}), encoding="utf-8")
+            os.environ["FINAM_SECRET"] = "tapi_sk_env_fallback"
+            try:
+                self.assertEqual(resolve_service_secret(auth_path=path),
+                                 "tapi_sk_env_fallback")
+            finally:
+                os.environ.pop("FINAM_SECRET", None)
 
     def test_error_does_not_leak_value(self):
         with tempfile.TemporaryDirectory() as tmp:

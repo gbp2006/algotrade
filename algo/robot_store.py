@@ -77,7 +77,7 @@ class RobotStore:
                   account TEXT, pricing TEXT, capital REAL, exposure REAL,
                   max_qty INTEGER, trade_on_expiry INTEGER NOT NULL DEFAULT 0,
                   version INTEGER NOT NULL DEFAULT 1, note TEXT DEFAULT '',
-                  created_at TEXT, updated_at TEXT);
+                  key_ref TEXT DEFAULT '', created_at TEXT, updated_at TEXT);
                 CREATE TABLE IF NOT EXISTS param_versions (
                   id INTEGER PRIMARY KEY AUTOINCREMENT, instance_id TEXT NOT NULL,
                   version INTEGER NOT NULL, params_json TEXT NOT NULL,
@@ -112,6 +112,9 @@ class RobotStore:
             for name in ("key_ref", "trading_code"):
                 if name not in cols:
                     c.execute(f"ALTER TABLE accounts ADD COLUMN {name} TEXT DEFAULT ''")
+            icols = {r[1] for r in c.execute("PRAGMA table_info(instances)")}
+            if "key_ref" not in icols:
+                c.execute("ALTER TABLE instances ADD COLUMN key_ref TEXT DEFAULT ''")
 
     # ---------- чтение ----------
     def list_instances(self, mode: str | None = None,
@@ -186,10 +189,14 @@ class RobotStore:
             mode, status, data.get("account"), data.get("pricing"),
             data.get("capital"), data.get("exposure"), data.get("max_qty"),
             int(bool(data.get("trade_on_expiry", False))), 1,
-            data.get("note", ""), now, now,
+            data.get("note", ""), str(data.get("key_ref") or ""), now, now,
         )
+        cols = ("id, spec_id, instrument, params_json, mode, status, account, "
+                "pricing, capital, exposure, max_qty, trade_on_expiry, version, "
+                "note, key_ref, created_at, updated_at")
         with self._conn() as c:
-            c.execute("INSERT INTO instances VALUES (" + ",".join("?" * len(row)) + ")", row)
+            c.execute("INSERT INTO instances (" + cols + ") VALUES (" +
+                      ",".join("?" * len(row)) + ")", row)
             c.execute(
                 "INSERT INTO param_versions(instance_id,version,params_json,reason,actor,created_at)"
                 " VALUES (?,?,?,?,?,?)",
@@ -222,6 +229,7 @@ class RobotStore:
             "max_qty": data.get("max_qty", old["max_qty"]),
             "trade_on_expiry": int(data.get("trade_on_expiry", old["trade_on_expiry"])),
             "note": data.get("note", old["note"]),
+            "key_ref": str(data.get("key_ref", old.get("key_ref") or "") or ""),
         }
         # правка активного робота автоматически ставит его на паузу
         status = "paused" if old["status"] == "active" else old["status"]
@@ -231,7 +239,7 @@ class RobotStore:
         with self._conn() as c:
             c.execute(
                 "UPDATE instances SET instrument=?,params_json=?,mode=?,account=?,pricing=?,"
-                "capital=?,exposure=?,max_qty=?,trade_on_expiry=?,note=?,status=?,"
+                "capital=?,exposure=?,max_qty=?,trade_on_expiry=?,note=?,key_ref=?,status=?,"
                 "version=?,updated_at=? WHERE id=? AND version=?",
                 (*fields.values(), status, version, now, iid, expected_version),
             )

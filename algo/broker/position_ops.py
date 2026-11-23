@@ -47,9 +47,8 @@ def _context(store: Any, iid: str) -> dict[str, Any]:
     row = next((a for a in store.list_accounts() if a["id"] == acc_id), None)
     if row is None:
         raise OpError(f"счёт {acc_id} не описан в store")
-    broker = FinamBroker(
-        secret=resolve_secret(row.get("key_ref") or "{env:FINAM_SECRET}"),
-        account=acc_id)
+    key_ref = inst.get("key_ref") or row.get("key_ref") or "{env:FINAM_SECRET}"
+    broker = FinamBroker(secret=resolve_secret(key_ref), account=acc_id)
     runtime = store.get_runtime(iid) or {}
     spec = INSTRUMENTS.get(inst.get("instrument"), DEFAULT)
     symbol = runtime.get("symbol") or spec.symbol or ""

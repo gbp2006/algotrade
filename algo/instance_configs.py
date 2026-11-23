@@ -152,5 +152,6 @@ def live_settings_from_store(store: RobotStore | None = None) -> LiveSettings:
             max_exposure=acc.max_exposure,
             max_daily_loss_pct=acc.max_daily_loss_pct,
             max_qty=acc.max_qty,
+            key_ref=row.get("key_ref") or "",
         )
     return LiveSettings(accounts=accounts, robots=robots)

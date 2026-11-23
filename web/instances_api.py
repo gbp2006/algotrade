@@ -131,6 +131,8 @@ def create_view(store: RobotStore, payload: dict) -> dict:
             str(data.get("instrument", "CNY")), store)
     if name:
         data["note"] = name
+    if "key_ref" in data:
+        data["key_ref"] = _robot_key(data, data["id"])
     try:
         return store.create_instance(data)
     except (StoreError, ValueError) as exc:
@@ -157,6 +159,8 @@ def update_view(store: RobotStore, iid: str, payload: dict) -> dict:
     except (KeyError, TypeError, ValueError) as exc:
         raise HTTPException(400, "нужна версия инстанса (version)") from exc
     reason = str(data.pop("reason", ""))
+    if "key_ref" in data:
+        data["key_ref"] = _robot_key(data, iid)
     try:
         return store.update_instance(iid, data, version, reason=reason)
     except (StoreError, ValueError) as exc:
@@ -251,8 +255,14 @@ def accounts(store: RobotStore = Depends(get_store)):
 
 @router.post("/accounts", status_code=201)
 def create_account(payload: dict, store: RobotStore = Depends(get_store)):
+    data = dict(payload)
     try:
-        return store.create_account(payload)
+        key = str(data.get("key_ref") or "").strip()
+        if key.startswith("tapi_sk_"):
+            ref = f"acc:{data.get('id', '')}"
+            _write_key(ref, key)  # секрет → auth.json, в счёте только имя
+            data["key_ref"] = ref
+        return store.create_account(data)
     except (StoreError, ValueError) as exc:
         _fail(exc)
 
@@ -277,15 +287,12 @@ def list_keys():
     return {"names": sorted((_read_auth().get("finam") or {}).keys())}
 
 
-@router.post("/keys", status_code=201)
-def save_key(payload: dict):
-    """Записать ключ счёта в auth.json (600). В ответе — только имя."""
-    ref = str(payload.get("key_ref") or "").strip()
-    secret = str(payload.get("secret") or "")
+def _write_key(ref: str, secret: str) -> str:
+    ref = str(ref or "").strip()
     if not ref or not re.fullmatch(r"[\w\-:. ]{1,64}", ref, re.UNICODE):
-        _fail(ValueError("неверное имя ключа"))
+        raise ValueError("неверное имя ключа")
     if not secret:
-        _fail(ValueError("ключ не задан"))
+        raise ValueError("ключ не задан")
     data = _read_auth()
     data.setdefault("finam", {})[ref] = secret
     path = _auth_path()
@@ -295,17 +302,56 @@ def save_key(payload: dict):
     os.chmod(tmp, 0o600)
     os.replace(tmp, path)
     os.chmod(path, 0o600)
-    return {"key_ref": ref, "saved": True}
+    return ref
+
+
+def _robot_key(payload: dict, iid: str) -> str:
+    """Поле ключа робота: секрет сохраняется в auth.json, наружу — только имя."""
+    value = str(payload.get("key_ref") or "").strip()
+    if value.startswith("tapi_sk_"):
+        ref = f"robot:{iid}"
+        _write_key(ref, value)
+        return ref
+    return value
+
+
+@router.post("/keys", status_code=201)
+def save_key(payload: dict):
+    """Записать именованный ключ в auth.json (600). В ответе — только имя."""
+    try:
+        return {"key_ref": _write_key(payload.get("key_ref"),
+                                      str(payload.get("secret") or "")),
+                "saved": True}
+    except ValueError as exc:
+        _fail(exc)
+
+
+@router.get("/service-key")
+def service_key_status():
+    from algo.broker.secrets import SERVICE_KEY_REF
+    names = (list(_read_auth().get("finam") or {}).keys())
+    return {"ref": SERVICE_KEY_REF, "set": SERVICE_KEY_REF in names,
+            "env_fallback": bool(os.environ.get("FINAM_SECRET"))}
+
+
+@router.post("/service-key")
+def service_key_save(payload: dict):
+    from algo.broker.secrets import SERVICE_KEY_REF
+    try:
+        return {"ref": _write_key(SERVICE_KEY_REF,
+                                  str(payload.get("secret") or "")), "saved": True}
+    except ValueError as exc:
+        _fail(exc)
 
 
 def _catalog_broker(store: RobotStore) -> FinamBroker:
+    """Сервисные операции идут под сервисным ключом, не под ключом счёта."""
+    from algo.broker.secrets import resolve_service_secret
     rows = store.list_accounts()
-    if not rows:
+    account = rows[0]["id"] if rows else os.environ.get("FINAM_ACCOUNT", "")
+    if not account:
         raise HTTPException(400, "нет счетов: нечем обновлять справочник")
-    acc = rows[0]
-    return FinamBroker(
-        secret=resolve_secret(acc.get("key_ref") or "{env:FINAM_SECRET}"),
-        account=acc["id"])
+    return FinamBroker(secret=resolve_service_secret(), account=account)
 
 
 @router.get("/instruments")
