@@ -11,7 +11,7 @@
 | Тесты (движок, брокер, хранилище, бумага, предохранители) | ✅ 79 зелёных | `./run.sh test` |
 | Свежесть данных WSL | ✅ 23.11, данные ≤15 мин | `results/health.json` |
 | Бумажный контур | ⏳ ~4/30 дней | `results/paper.csv` |
-| Теневой прогон | ⏳ ~3/10 дней, 4 planned | `results/shadow.json`, `results/live.csv` |
+| Теневой прогон | ⏳ 2/10 дней, 10 planned | `results/shadow.json`, `results/live.csv` |
 | Боевые лимиты из капитала | ✅ подготовлены, не подключены | `algo/broker/live_guard.py` |
 | STOP перед каждой заявкой | ✅ подготовлен, не подключён | `live_guard.assert_stop_clear`, `OrderGateway.submit(stop=…)` |
 | Уникальный `client_id` | ✅ подготовлен, не подключён | `live_guard.decision_client_id()` |

@@ -24,18 +24,29 @@ def enabled() -> bool:
 
 def volumes_for(broker: Any, symbols: list[str], day: dt.date,
                 lookback: int = 12) -> pd.DataFrame | None:
-    """Дневные объёмы контрактов за окно до дня решения."""
-    start = (day - dt.timedelta(days=lookback * 2)).isoformat() + "T00:00:00Z"
+    """Дневные объёмы контрактов за окно до дня решения.
+
+    Фinam не отдаёт D1-бары для квартальных контрактов, поэтому сначала
+    пробуем D1, а при пустом ответе Aggregate из M5 (он же используется
+    бумажным контуром). Без объёмов front_on молча упадёт к ближайшей
+    экспирации — это не то, что мы хотим проверять перед December roll.
+    """
     end = day.isoformat() + "T23:59:59Z"
     cols: dict[str, pd.Series] = {}
     for sym in symbols:
-        try:
-            df = broker.bars(sym, "TIME_FRAME_D1", start, end)
-        except Exception:  # noqa: BLE001 — нет баров → fallback по дате экспирации
-            continue
-        if df is None or df.empty or "vol" not in df:
-            continue
-        cols[sym] = df["vol"].resample("1D").sum()
+        for tf, span in (("TIME_FRAME_D1", lookback * 2),
+                         ("TIME_FRAME_M5", lookback)):
+            start = (day - dt.timedelta(days=span)).isoformat() + "T00:00:00Z"
+            try:
+                df = broker.bars(sym, tf, start, end)
+            except Exception:  # noqa: BLE001 — пробуем следующий таймфрейм
+                continue
+            if df is None or df.empty or "vol" not in df:
+                continue
+            series = df["vol"].resample("1D").sum()
+            if series.fillna(0).sum() > 0:
+                cols[sym] = series
+                break
     return pd.DataFrame(cols) if cols else None
 
 

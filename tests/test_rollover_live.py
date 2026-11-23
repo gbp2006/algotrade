@@ -80,6 +80,20 @@ class TestActiveContracts(unittest.TestCase):
         self.assertEqual(list(v.columns), ["RIZ6@RTSX", "RIH7@RTSX"])
         self.assertEqual(len(v), 3)
 
+    def test_volumes_fallback_to_m5(self):
+        idx = pd.to_datetime(["2026-11-21", "2026-11-22"])
+        frames = {"RIZ6@RTSX": pd.DataFrame({"vol": [100, 120]}, index=idx)}
+
+        class Broker:
+            def bars(self, symbol, timeframe, start, end):
+                if timeframe == "TIME_FRAME_D1":
+                    return pd.DataFrame()
+                return frames.get(symbol)
+
+        v = ri.volumes_for(Broker(), ["RIZ6@RTSX"], dt.date(2026, 11, 23))
+        self.assertIsNotNone(v)
+        self.assertEqual(int(v["RIZ6@RTSX"].sum()), 220)
+
 
 if __name__ == "__main__":
     unittest.main()
