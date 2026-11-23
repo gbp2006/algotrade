@@ -15,8 +15,11 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from algo import backtest_preview, robot_library as lib, scheduler
-from algo.broker import registry
+from algo import (backtest_preview, instruments_catalog as catalog,
+                  robot_library as lib, scheduler, trade_journal as tj)
+from algo.broker import position_ops as pos, registry
+from algo.broker.finam import FinamBroker
+from algo.broker.secrets import resolve_secret
 from algo.instance_configs import migrate_runtime_from_paper, seed_static_configs
 from algo.robot_store import ConflictError, RobotStore, StoreError
 
@@ -171,6 +174,12 @@ _ACTIONS = {"start": "active", "pause": "paused", "stop": "stopped",
 
 def action_view(store: RobotStore, iid: str, action: str,
                 payload: dict | None = None) -> dict:
+    if action == "close":
+        try:
+            return pos.close_instance(
+                store, iid, dry_run=os.environ.get("ALGO_CLOSE_ARMED") != "1")
+        except pos.OpError as exc:
+            raise HTTPException(400, str(exc))
     if action == "promote":
         data = dict(payload or {})
         data["mode"] = "live"
@@ -246,6 +255,135 @@ def create_account(payload: dict, store: RobotStore = Depends(get_store)):
         return store.create_account(payload)
     except (StoreError, ValueError) as exc:
         _fail(exc)
+
+
+def _auth_path() -> Path:
+    return Path(os.environ.get("ALGO_AUTH", str(ROOT / "auth.json")))
+
+
+def _read_auth() -> dict:
+    path = _auth_path()
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8")) or {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+@router.get("/keys")
+def list_keys():
+    """Только имена ключей — значения никогда не отдаются наружу."""
+    return {"names": sorted((_read_auth().get("finam") or {}).keys())}
+
+
+@router.post("/keys", status_code=201)
+def save_key(payload: dict):
+    """Записать ключ счёта в auth.json (600). В ответе — только имя."""
+    ref = str(payload.get("key_ref") or "").strip()
+    secret = str(payload.get("secret") or "")
+    if not ref or not re.fullmatch(r"[\w\-:. ]{1,64}", ref, re.UNICODE):
+        _fail(ValueError("неверное имя ключа"))
+    if not secret:
+        _fail(ValueError("ключ не задан"))
+    data = _read_auth()
+    data.setdefault("finam", {})[ref] = secret
+    path = _auth_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    os.chmod(tmp, 0o600)
+    os.replace(tmp, path)
+    os.chmod(path, 0o600)
+    return {"key_ref": ref, "saved": True}
+
+
+def _catalog_broker(store: RobotStore) -> FinamBroker:
+    rows = store.list_accounts()
+    if not rows:
+        raise HTTPException(400, "нет счетов: нечем обновлять справочник")
+    acc = rows[0]
+    return FinamBroker(
+        secret=resolve_secret(acc.get("key_ref") or "{env:FINAM_SECRET}"),
+        account=acc["id"])
+
+
+@router.get("/instruments")
+def instruments_search(search: str = "", limit: int = 30,
+                       scope: str = "liquid"):
+    return catalog.search(search, limit=min(max(limit, 1), 100), scope=scope)
+
+
+@router.get("/instruments/favorites")
+def instruments_favorites():
+    return catalog.favorites()
+
+
+@router.post("/instruments/{symbol}/favorite")
+def instrument_favorite(symbol: str, payload: dict | None = None):
+    return catalog.toggle_favorite(symbol, (payload or {}).get("note", ""))
+
+
+@router.post("/instruments/refresh-liquid")
+def instruments_refresh_liquid():
+    return catalog.refresh_liquid()
+
+
+@router.get("/instruments/stats")
+def instruments_stats():
+    return catalog.stats()
+
+
+@router.post("/instruments/refresh")
+def instruments_refresh(store: RobotStore = Depends(get_store)):
+    return catalog.refresh(_catalog_broker(store))
+
+
+@router.post("/instruments/{symbol}/params")
+def instruments_params(symbol: str, store: RobotStore = Depends(get_store)):
+    rows = store.list_accounts()
+    if not rows:
+        raise HTTPException(400, "нет счетов")
+    try:
+        return catalog.enrich(symbol, _catalog_broker(store), rows[0]["id"])
+    except Exception as exc:  # noqa: BLE001 — API может не знать символ
+        raise HTTPException(400, f"{type(exc).__name__}: {exc}"[:200])
+
+
+@router.post("/money-market/{iid}/rebalance")
+def mm_rebalance(iid: str, payload: dict | None = None,
+                 store: RobotStore = Depends(get_store)):
+    """Ребалансировка фонда денежного рынка (по образцу TmonRebalancer)."""
+    try:
+        return pos.mm_rebalance(
+            store, iid,
+            dry_run=os.environ.get("ALGO_MM_ARMED") != "1",
+            regime=(payload or {}).get("regime"))
+    except pos.OpError as exc:
+        raise HTTPException(400, str(exc))
+
+
+@router.post("/money-market/{iid}/close")
+def mm_close(iid: str, store: RobotStore = Depends(get_store)):
+    try:
+        fund = pos._context(store, iid)["params"].get("symbol")
+        return pos.close_instance(
+            store, iid, dry_run=os.environ.get("ALGO_MM_ARMED") != "1",
+            symbol=str(fund) if fund else None)
+    except pos.OpError as exc:
+        raise HTTPException(400, str(exc))
+
+
+@router.get("/journal")
+def journal(limit: int = 100, account: str | None = None):
+    """Последние записи журнала из SQLite (источник правды)."""
+    return tj.records(limit=min(max(limit, 1), 1000), account=account)
+
+
+@router.post("/journal/backup")
+def journal_backup():
+    path = tj.backup()
+    return {"backup": str(path.relative_to(ROOT)), "ok": True}
 
 
 @router.get("/brokers")

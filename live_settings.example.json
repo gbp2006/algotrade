@@ -11,7 +11,10 @@
   "accounts": {
     "A111111": {
       "capital": 200000,
-      "comment": "малый счёт для первого месяца G4"
+      "label": "КлФ-A111111",
+      "trading_code": "XXXXXXXXXX",
+      "key_ref": "КлФ-A111111",
+      "comment": "малый счёт для первого месяца G4; секрет — только в auth.json -> finam -> key_ref"
     }
   },
   "robots": {

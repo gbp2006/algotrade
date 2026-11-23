@@ -84,8 +84,31 @@
     <div class="row" id="accounts"></div>
     <div class="row" style="margin-top:12px" id="brokers"></div>
     <div class="row" style="margin-top:12px">
-      <input id="acc-id" placeholder="ID счёта"><input id="acc-cap" placeholder="капитал" type="number">
+      <input id="acc-id" placeholder="ID счёта (2102993)">
+      <input id="acc-label" placeholder="Номер счёта (КлФ-2102993)">
+      <input id="acc-code" placeholder="Торговый код (872635RN4O3)">
+      <input id="acc-keyref" placeholder="Имя ключа (КлФ-2102993)">
+      <input id="acc-cap" placeholder="капитал" type="number">
       <button onclick="addAccount()">Добавить счёт</button></div>
+    <div class="hint">Ключ хранится в <code>auth.json</code> с правами 600, в базу и ответы API не попадает. Сначала сохраните ключ, затем добавьте счёт с тем же именем <code>key_ref</code>.</div>
+    <div class="row" style="margin-top:8px">
+      <input id="key-ref" placeholder="Имя ключа">
+      <input id="key-secret" placeholder="Секрет Finam" type="password">
+      <button onclick="saveKey()">Сохранить ключ</button>
+      <span id="key-names" class="muted"></span>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button onclick="refreshInstruments()">Обновить справочник инструментов</button>
+      <button onclick="refreshLiquid()">Топ ликвидных с MOEX</button>
+      <span id="inst-stats" class="muted"></span>
+    </div>
+    <div class="hint">Избранное — инструменты для торговли; показываются первыми. Ликвидные — топ по обороту/открытому интересу с MOEX ISS.</div>
+    <div class="row" style="margin-top:8px">
+      <input id="fav-symbol" placeholder="CNYRUBF@RTSX">
+      <input id="fav-note" placeholder="примечание">
+      <button onclick="addFavorite()">В избранное</button>
+      <span id="fav-list" class="muted"></span>
+    </div>
   </div>
 </div>
 
@@ -95,7 +118,13 @@
   <div class="hint" id="f-spec-note"></div>
   <div class="field"><label>Имя</label><input id="f-name" placeholder="например: База на юане"></div>
   <div class="hint">ID создаётся автоматически из имени; имя попадёт в журнал как примечание.</div>
-  <div class="field"><label>Инструмент</label><select id="f-inst"></select></div>
+  <div class="field"><label>Инструмент</label>
+    <select id="f-scope" onchange="$('instrument-list').innerHTML=''">
+      <option value="liquid">избранное + ликвидные</option>
+      <option value="favorites">только избранное</option>
+      <option value="all">весь каталог (595 тыс.)</option></select>
+    <input id="f-inst" list="instrument-list" placeholder="CNYRUBF@RTSX">
+    <datalist id="instrument-list"></datalist></div>
   <div class="field"><label>Режим</label><select id="f-mode" onchange="modeChanged()">
       <option value="paper">бумага</option><option value="live">бой</option></select></div>
   <div class="hint" id="f-mode-note"></div>
@@ -174,11 +203,66 @@ async function api(path, opts) {
   return data;
 }
 
+$('f-inst').addEventListener('input', async e => {
+  const q = e.target.value.trim();
+  if (q.length < 2) return;
+  try { const rows = await api('/instruments?search=' + encodeURIComponent(q)
+          + '&scope=' + encodeURIComponent($('f-scope').value));
+        $('instrument-list').innerHTML = rows.map(r =>
+          `<option value="${esc(r.symbol)}">${esc(r.name||'')}</option>`).join(''); }
+  catch(_) {}
+});
+async function refreshInstruments() {
+  try { const r = await api('/instruments/refresh', {method:'POST'});
+        $('inst-stats').textContent = r.ok
+          ? `${r.total} строк, +${r.added}, страниц ${r.pages}` : ('ошибка: ' + r.error);
+        await loadStats(); }
+  catch(e) { $('inst-stats').textContent = 'ошибка: ' + e.message; }
+}
+async function loadStats() {
+  try { const s = await api('/instruments/stats');
+        $('inst-stats').textContent = `в справочнике ${s.total}, обогащено ${s.enriched}, обновление ${s.last_refresh||'—'}`; }
+  catch(_) {}
+}
+async function refreshLiquid() {
+  try { const r = await api('/instruments/refresh-liquid', {method:'POST'});
+        $('inst-stats').textContent = `ликвидных: ${r.selected} (${JSON.stringify(r.by_type)})`; }
+  catch(e) { $('inst-stats').textContent = 'ошибка: ' + e.message; }
+}
+async function addFavorite() {
+  try { await api('/instruments/' + encodeURIComponent($('fav-symbol').value.trim()) + '/favorite',
+        {method:'POST', body:JSON.stringify({note:$('fav-note').value.trim()})});
+        $('fav-symbol').value=''; $('fav-note').value=''; await loadFavorites(); }
+  catch(e) { $('status').textContent = 'ошибка: ' + e.message; }
+}
+async function removeFavorite(sym) {
+  try { await api('/instruments/' + encodeURIComponent(sym) + '/favorite', {method:'POST'});
+        await loadFavorites(); }
+  catch(e) { $('status').textContent = 'ошибка: ' + e.message; }
+}
+async function loadFavorites() {
+  try { const rows = await api('/instruments/favorites');
+        $('fav-list').innerHTML = rows.length
+          ? rows.map(r=>`<span class="badge">${esc(r.symbol)} <a href="#" onclick="removeFavorite('${esc(r.symbol)}');return false">×</a></span>`).join(' ')
+          : 'избранное пусто'; }
+  catch(_) {}
+}
+async function mmAction(id, action) {
+  try { const r = await api(`/money-market/${encodeURIComponent(id)}/${action}`, {method:'POST'});
+        $('status').textContent = `фонд ${r.status||'ok'}: ${r.reason||''} ${r.qty||''} ${r.symbol||''}`;
+        await loadAll(); }
+  catch(e) { $('status').textContent = 'ошибка: ' + e.message; }
+}
+
 async function loadAll() {
   try {
-    const [insts, sp, acc, br, rt] = await Promise.all([
-      api('/instances'), api('/specs'), api('/accounts'), api('/brokers'), api('/runtime')]);
+    const [insts, sp, acc, br, rt, keys] = await Promise.all([
+      api('/instances'), api('/specs'), api('/accounts'), api('/brokers'),
+      api('/runtime'), api('/keys')]);
     specs = sp; accounts = acc;
+    $('key-names').textContent = keys.names.length
+      ? 'ключи: ' + keys.names.join(', ') : 'ключей нет';
+    loadStats(); loadFavorites();
     const modeFilter = new URLSearchParams(location.search).get('mode');
     if (modeFilter) {
       $('status').textContent = `фильтр: ${modeFilter}`;
@@ -197,6 +281,12 @@ async function loadAll() {
       if (i.status !== 'archived') acts.push(`<button onclick="openEdit('${esc(i.id)}')">изменить</button>`);
       if (i.mode === 'paper' && i.status !== 'archived')
         acts.push(`<button onclick="openPromote('${esc(i.id)}')">в бой</button>`);
+      if (i.mode === 'live' && i.status === 'active')
+        acts.push(`<button onclick="closePositions('${esc(i.id)}')">закрыть позиции</button>`);
+      if (i.spec_id === 'money_market' && i.status !== 'archived') {
+        acts.push(`<button onclick="mmAction('${esc(i.id)}','rebalance')">ребаланс</button>`);
+        acts.push(`<button onclick="mmAction('${esc(i.id)}','close')">закрыть фонд</button>`);
+      }
       const params = Object.entries(i.params || {}).map(([k,v]) => `${k}=${esc(v)}`).join(' ');
       return `<tr><td><b>${esc(i.id)}</b><br><span class="muted">${esc(i.note||'')}</span></td>
         <td>${esc(i.spec_id)} / ${esc(i.instrument)}<br><code>${params}</code></td>
@@ -217,7 +307,7 @@ async function loadAll() {
 
 function specChanged() {
   const s = specs.find(x => x.id === $('f-spec').value); if (!s) return;
-  $('f-inst').innerHTML = s.instruments.map(x => `<option>${esc(x)}</option>`).join('');
+  if (!$('f-inst').value) $('f-inst').value = s.instruments[0] || '';
   $('f-spec-note').textContent = 'Описание: ' + (s.description || '—') +
     '. Дефолты: ' + Object.entries(s.defaults).map(([k,v]) => `${k}=${esc(v)}`).join(', ');
   $('f-params').innerHTML = Object.entries(s.defaults)
@@ -274,10 +364,27 @@ async function act(id, action) {
         await loadAll(); }
   catch(e) { $('status').textContent = 'ошибка: ' + e.message; }
 }
+async function closePositions(id) {
+  if (!confirm('Закрыть все открытые позиции робота ' + id + '?')) return;
+  try { const r = await api(`/instances/${encodeURIComponent(id)}/close`, {method:'POST'});
+        $('status').textContent = `закрытие ${id}: ${r.status||r.reason} ${r.qty||0} ${r.symbol||''} (dry_run=${r.dry_run})`;
+        await loadAll(); }
+  catch(e) { $('status').textContent = 'ошибка: ' + e.message; }
+}
 async function addAccount() {
   try { await api('/accounts', {method:'POST', body:JSON.stringify({
-        id:$('acc-id').value.trim(), capital:Number($('acc-cap').value)})});
-        $('acc-id').value=''; $('acc-cap').value=''; await loadAll(); }
+        id:$('acc-id').value.trim(), capital:Number($('acc-cap').value),
+        label:$('acc-label').value.trim(), trading_code:$('acc-code').value.trim(),
+        key_ref:$('acc-keyref').value.trim()})});
+        ['acc-id','acc-cap','acc-label','acc-code','acc-keyref'].forEach(k=>$(k).value='');
+        await loadAll(); }
+  catch(e) { $('status').textContent = 'ошибка: ' + e.message; }
+}
+async function saveKey() {
+  try { const r = await api('/keys', {method:'POST', body:JSON.stringify({
+        key_ref:$('key-ref').value.trim(), secret:$('key-secret').value})});
+        $('key-secret').value=''; $('status').textContent = 'ключ сохранён: ' + r.key_ref;
+        await loadAll(); }
   catch(e) { $('status').textContent = 'ошибка: ' + e.message; }
 }
 async function checkBroker(name) {

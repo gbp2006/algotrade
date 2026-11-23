@@ -135,6 +135,9 @@ def live_settings_from_store(store: RobotStore | None = None) -> LiveSettings:
             max_exposure=float(row["max_exposure"]),
             max_daily_loss_pct=float(row["max_daily_loss_pct"]),
             max_qty=int(row["max_qty"]),
+            key_ref=row.get("key_ref") or "{env:FINAM_SECRET}",
+            trading_code=row.get("trading_code") or "",
+            label=row.get("label") or "",
         )
     robots: dict[str, RobotSettings] = {}
     for row in st.list_instances(mode="live", status="active"):

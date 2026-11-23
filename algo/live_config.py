@@ -40,6 +40,9 @@ class AccountSettings:
     max_exposure: float = 1.0
     max_daily_loss_pct: float = 0.03
     max_qty: int = 100
+    key_ref: str = "{env:FINAM_SECRET}"  # ссылка на ключ, не сам секрет
+    trading_code: str = ""              # торговый код Финама (не секрет)
+    label: str = ""                     # номер счёта в интерфейсе Финама
 
 
 @dataclass(frozen=True)
@@ -111,6 +114,9 @@ def parse_settings(data: dict[str, Any]) -> LiveSettings:
                                        f"accounts.{acc_id}.max_daily_loss_pct", 0.001, 0.1),
             max_qty=int(_number(raw.get("max_qty", d_qty),
                                 f"accounts.{acc_id}.max_qty", 1, 10000)),
+            key_ref=str(raw.get("key_ref") or "{env:FINAM_SECRET}").strip(),
+            trading_code=str(raw.get("trading_code", "")).strip(),
+            label=str(raw.get("label", "")).strip(),
         )
 
     robots: dict[str, RobotSettings] = {}

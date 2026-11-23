@@ -69,7 +69,8 @@ class RobotStore:
                   max_exposure REAL NOT NULL DEFAULT 1.0,
                   max_daily_loss_pct REAL NOT NULL DEFAULT 0.03,
                   max_qty INTEGER NOT NULL DEFAULT 100,
-                  comment TEXT DEFAULT '', created_at TEXT, updated_at TEXT);
+                  comment TEXT DEFAULT '', key_ref TEXT DEFAULT '',
+                  trading_code TEXT DEFAULT '', created_at TEXT, updated_at TEXT);
                 CREATE TABLE IF NOT EXISTS instances (
                   id TEXT PRIMARY KEY, spec_id TEXT NOT NULL, instrument TEXT NOT NULL,
                   params_json TEXT NOT NULL, mode TEXT NOT NULL, status TEXT NOT NULL,
@@ -106,6 +107,11 @@ class RobotStore:
                   status TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0,
                   detail TEXT DEFAULT '', UNIQUE(job_id, slot));
             """)
+            # миграция существующих баз: ключ счёта и торговый код
+            cols = {r[1] for r in c.execute("PRAGMA table_info(accounts)")}
+            for name in ("key_ref", "trading_code"):
+                if name not in cols:
+                    c.execute(f"ALTER TABLE accounts ADD COLUMN {name} TEXT DEFAULT ''")
 
     # ---------- чтение ----------
     def list_instances(self, mode: str | None = None,
@@ -148,11 +154,14 @@ class RobotStore:
         now = _now()
         with self._conn() as c:
             c.execute(
-                "INSERT INTO accounts VALUES (?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO accounts (id, label, capital, max_exposure, "
+                "max_daily_loss_pct, max_qty, comment, key_ref, trading_code, "
+                "created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                 (acc_id, data.get("label", acc_id), capital,
                  float(data.get("max_exposure", 1.0)),
                  float(data.get("max_daily_loss_pct", 0.03)),
                  int(data.get("max_qty", 100)), data.get("comment", ""),
+                 str(data.get("key_ref") or ""), str(data.get("trading_code") or ""),
                  now, now),
             )
         return {"id": acc_id, "capital": capital}

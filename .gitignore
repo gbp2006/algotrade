@@ -25,6 +25,7 @@ results/rollover_run.json
 results/scheduler.log
 results/scheduler_state.json
 live_settings.json
+auth.json
 results/shadow.json
 results/shadow.log
 INDEX.md.bak-*

@@ -18,6 +18,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from .. import trade_journal as tj
+
 ROOT = Path(__file__).resolve().parent.parent.parent
 JOURNAL = ROOT / "results" / "live.csv"
 LOCK = ROOT / "results" / "live.lock"
@@ -72,11 +74,17 @@ class OrderGateway:
     """Шлюз с предохранителями. Транспорт внедряется — тесты не ходят в сеть."""
 
     def __init__(self, broker: Any, limits: Limits | None = None,
-                 journal: Path | None = None, lock: Path | None = None):
+                 journal: Path | None = None, lock: Path | None = None,
+                 journal_db: Path | None = None):
         self.broker = broker
         self.limits = limits or Limits()
         self.journal = journal or JOURNAL
         self.lock = lock or LOCK
+        # БД — источник правды; CSV — зеркало. В тестах БД рядом с временным журналом.
+        self.journal_db = Path(journal_db) if journal_db else (
+            tj.TRADES_DB if self.journal == JOURNAL else self.journal.with_suffix(".db"))
+        if self.journal == JOURNAL and not tj.records(limit=1):
+            tj.migrate_csv(self.journal)
 
     def _rows(self) -> list[dict]:
         if not self.journal.exists():
@@ -85,24 +93,26 @@ class OrderGateway:
             return [r for r in csv.DictReader(f) if "client_id" in r]
 
     def _write(self, order: Order, result: Result) -> Result:
+        row = {
+            "ts": datetime.now().isoformat(timespec="seconds"),
+            "client_id": order.client_id,
+            "client_order_id": result.client_order_id, "order_id": result.order_id,
+            "config": order.config,
+            "symbol": order.symbol, "side": order.side, "qty": order.qty,
+            "price": f"{order.price:.6f}", "multiplier": order.multiplier,
+            "status": result.status, "reason": result.reason[:200],
+            "response": str(result.response)[:300],
+            "account": order.account, "pricing": order.pricing,
+            "order_type": order.order_type,
+        }
+        tj.append(row, self.journal_db)  # источник правды, идемпотентно
         self.journal.parent.mkdir(parents=True, exist_ok=True)
         new = not self.journal.exists()
         with self.journal.open("a", newline="", encoding="utf-8") as f:
             w = csv.DictWriter(f, fieldnames=FIELDS)
             if new:
                 w.writeheader()
-            w.writerow({
-                "ts": datetime.now().isoformat(timespec="seconds"),
-                "client_id": order.client_id,
-                "client_order_id": result.client_order_id, "order_id": result.order_id,
-                "config": order.config,
-                "symbol": order.symbol, "side": order.side, "qty": order.qty,
-                "price": f"{order.price:.6f}", "multiplier": order.multiplier,
-                "status": result.status, "reason": result.reason[:200],
-                "response": str(result.response)[:300],
-                "account": order.account, "pricing": order.pricing,
-                "order_type": order.order_type,
-            })
+            w.writerow(row)
         return result
 
     def log_decision(self, order: Order, status: str, reason: str = "") -> Result:
@@ -161,7 +171,11 @@ class OrderGateway:
             f.write(order.client_id)
 
         try:
-            if any(r["client_id"] == order.client_id for r in self._rows()):
+            try:
+                duplicate = tj.exists(cid, self.journal_db)
+            except Exception:  # noqa: BLE001 — при недоступной БД не теряем страховку CSV
+                duplicate = any(r["client_id"] == order.client_id for r in self._rows())
+            if duplicate:
                 return self._write(order, Result("duplicate", "client_id уже в журнале",
                                                  client_order_id=cid))
             reason = self._validate(order)

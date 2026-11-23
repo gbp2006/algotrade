@@ -29,6 +29,7 @@ except Exception:
 
 from algo.broker.execution import Order, OrderGateway, positions_from_response  # noqa: E402
 from algo.broker.finam import FinamBroker  # noqa: E402
+from algo.broker.secrets import resolve_secret  # noqa: E402
 from algo.broker.live_guard import (  # noqa: E402
     STOP_REAL, assert_stop_clear, battle_limits, decision_client_id,
     expiry_allows, price_for, quote_age_sec, reconcile_guard,
@@ -166,13 +167,17 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{day}: решений для боевых роботов нет")
             return 0
 
-        broker = FinamBroker()
         counts: dict[str, int] = {}
         notes: list[str] = []
         now = datetime.now().strftime("%H%M%S")
 
         for acc_id, symbols in plans.items():
             acc = settings.accounts[acc_id]
+            try:
+                broker = FinamBroker(secret=resolve_secret(acc.key_ref), account=acc_id)
+            except Exception as exc:  # noqa: BLE001 — без ключа счёт не трогаем
+                print(f"{acc_id}: ключ счёта недоступен — {exc}")
+                return 2
             model, uncertain = journal_positions(acc_id)
             if uncertain:
                 note = f"{acc_id}: {uncertain} неопределённых заявок — ручная сверка"

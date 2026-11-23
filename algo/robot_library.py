@@ -63,6 +63,33 @@ def _build() -> dict[str, RobotSpec]:
             source=source,
             examples=tuple(cfg.id for cfg, _ in items[:5]),
         )
+    # Денежный рынок — сервисный робот, не производная от CONFIGS.
+    # Раннер появится отдельным ADR; spec нужен, чтобы создать инстанс из панели.
+    mm_defaults = {
+        "regime": "TwiceADay",          # Off / TwiceADay / OnceADay / OnlyClose
+        "symbol": "FMMM@MISX",
+        "min_balance": 5000.0,          # как у OsEngine TmonRebalancer
+        "allowed_spread_pct": 0.01,     # фильтр спреда, %
+        "time_buy": "23:00",
+        "time_sell": "10:05",
+        "trade_mon": True, "trade_tue": True, "trade_wed": True,
+        "trade_thu": True, "trade_fri": True,
+        "trade_sat": False, "trade_sun": False,
+        "reserve_pct": 0.2,
+        "reserve_abs": 20000.0,
+        "min_trade": 5000.0,
+        "max_units": 100000,
+        "pricing": "marketable",
+    }
+    specs["money_market"] = RobotSpec(
+        id="money_market", strategy="money_market",
+        defaults=mm_defaults,
+        schema={k: _type_name(v) for k, v in mm_defaults.items()},
+        instruments=("CASH",),
+        description="Парковка свободных средств в фонд денежного рынка (FMMM); "
+                    "пополнение кэша перед торгами, обратная покупка после",
+        source="service",
+    )
     return specs
 
 
