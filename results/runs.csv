@@ -394,3 +394,9 @@ ts,strategy,instrument,period,params,trades,net,pf,avg,dd,in_market,note
 2026-11-23 18:46,portfolio_by_deposit,PORTFOLIO,10 лет,deposit=2110000.0;windows=10 лет,,12613151.7,0,,0,,"доходность взвешена депозитами роботов, базовый контур"
 2026-11-23 18:46,portfolio_by_deposit,PORTFOLIO,5 лет,deposit=2110000.0;windows=5 лет,,12585185.61,0,,0,,"доходность взвешена депозитами роботов, базовый контур"
 2026-11-23 18:46,portfolio_by_deposit,PORTFOLIO,1 год,deposit=2110000.0;windows=1 год,,804342.92,0,,0,,"доходность взвешена депозитами роботов, базовый контур"
+2026-11-23 18:47,portfolio_by_deposit,PORTFOLIO,10 лет,deposit=2110000.0;windows=10 лет,,12613151.7,0,,0,,"доходность взвешена депозитами роботов, базовый контур"
+2026-11-23 18:47,portfolio_by_deposit,PORTFOLIO,5 лет,deposit=2110000.0;windows=5 лет,,12585185.61,0,,0,,"доходность взвешена депозитами роботов, базовый контур"
+2026-11-23 18:47,portfolio_by_deposit,PORTFOLIO,1 год,deposit=2110000.0;windows=1 год,,804342.92,0,,0,,"доходность взвешена депозитами роботов, базовый контур"
+2026-11-23 18:49,ma48_vol_sizing,CNY,oos 2026,base=MA48;sizing=ATR14/median252 ladder;modes=1x/2x/vol,111,183285.26,0,,0,,"RU-01: research-only, сигнал базы не менялся"
+2026-11-23 18:49,ma48_vol_sizing,Si,oos 2026,base=MA48;sizing=ATR14/median252 ladder;modes=1x/2x/vol,110,155576.35,0,,0,,"RU-01: research-only, сигнал базы не менялся"
+2026-11-23 18:49,ma48_vol_sizing,PORTFOLIO10,2016-2025,capital=1000000;modes=1x/2x/vol,12510,97648362,0,,0,,средний CAGR и DD по 10 инструментам — в отчёте
