@@ -30,11 +30,12 @@ except Exception:
 from algo import risk, store  # noqa: E402
 from algo.channel_live import channel_decision  # noqa: E402
 from algo.broker.finam import FinamBroker  # noqa: E402
-from algo.configs import CONFIGS  # noqa: E402
-from algo.robot_configs import ROBOT_CONFIGS  # noqa: E402
+from algo.configs import CONFIGS, Config  # noqa: E402 (CONFIGS оставлен для тестовых подмен)
+from algo.robot_configs import ROBOT_CONFIGS  # noqa: E402 (для тестовых подмен)
 from algo.instruments import DEFAULT, INSTRUMENTS, margin, symbol  # noqa: E402
 from algo.live import decision, decision_configs, morning_exit_price  # noqa: E402
 from algo.portfolio import CAPITAL, ledger  # noqa: E402
+from algo.instance_configs import active_configs, migrate_runtime_from_paper  # noqa: E402
 
 PAPER = Path(__file__).resolve().parent.parent / "results" / "paper.csv"
 STOP = Path(__file__).resolve().parent.parent / "results" / "STOP"
@@ -43,7 +44,7 @@ FIELDS = ["date", "time", "config", "instrument", "symbol", "strategy", "price",
           "position_after", "note"]
 MSK = timezone(timedelta(hours=3))
 ENTRY_MIN = 13 * 60 + 50
-ALL_CONFIGS = CONFIGS + ROBOT_CONFIGS
+ALL_CONFIGS: list[Config] = []  # заполняется в main() из активных инстансов store
 
 
 def now_msk() -> datetime:
@@ -146,6 +147,10 @@ def main() -> int:
                     help="фаза внутридневного пробоя канала (отдельный таймер)")
     ap.add_argument("--time", help="время реплея HH:MM (только с --date)")
     args = ap.parse_args()
+
+    global ALL_CONFIGS
+    if not ALL_CONFIGS:  # тесты подменяют список целиком — не перетираем его
+        ALL_CONFIGS = active_configs("paper")
 
     ensure_schema()
     if STOP.exists():
@@ -365,6 +370,11 @@ def main() -> int:
             spreads.append(f"{sym} {(q.ask - q.bid) / inst.tick:.0f} тик")
         except Exception:  # noqa: BLE001
             pass
+    if not args.dry_run:
+        try:
+            migrate_runtime_from_paper()
+        except Exception as exc:  # noqa: BLE001 — журнал важнее рантайм-зеркала
+            print(f"runtime state: {type(exc).__name__}: {exc}")
     print(f"{day}: записано конфигураций {written}; спреды: {', '.join(spreads)}")
     return 0
 

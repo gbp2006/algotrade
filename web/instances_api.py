@@ -12,11 +12,17 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from algo import robot_library as lib
 from algo.broker import registry
+from algo.instance_configs import migrate_runtime_from_paper, seed_static_configs
 from algo.robot_store import ConflictError, RobotStore, StoreError
 
 router = APIRouter(prefix="/api", tags=["instances"])
 _default_store = RobotStore()
 _default_store.init_db()   # идемпотентно; без этого /api/instances падал на пустой БД
+seed_static_configs(_default_store)  # статические конфиги становятся управляемыми инстансами
+try:
+    migrate_runtime_from_paper(_default_store)  # позиции запущенных роботов из paper.csv
+except Exception:  # noqa: BLE001 — журнал остаётся главным источником, панель должна подняться
+    pass
 
 
 def get_store() -> RobotStore:
@@ -151,6 +157,16 @@ def history(iid: str, store: RobotStore = Depends(get_store)):
 
 
 # ---------- счета и брокеры ----------
+@router.get("/runtime")
+def runtime(store: RobotStore = Depends(get_store)):
+    return store.list_runtime()
+
+
+@router.post("/runtime/migrate")
+def runtime_migrate(store: RobotStore = Depends(get_store)):
+    return {"migrated": migrate_runtime_from_paper(store)}
+
+
 @router.get("/accounts")
 def accounts(store: RobotStore = Depends(get_store)):
     return store.list_accounts()

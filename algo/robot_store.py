@@ -88,6 +88,10 @@ class RobotStore:
                 CREATE TABLE IF NOT EXISTS broker_links (
                   name TEXT PRIMARY KEY, account TEXT, status TEXT,
                   detail TEXT, last_check TEXT);
+                CREATE TABLE IF NOT EXISTS runtime_state (
+                  instance_id TEXT PRIMARY KEY, symbol TEXT, position INTEGER,
+                  equity REAL, last_price REAL, last_decision TEXT,
+                  updated_at TEXT, note TEXT);
             """)
 
     # ---------- чтение ----------
@@ -243,6 +247,33 @@ class RobotStore:
         if old and old["status"] != "archived":
             return self.set_status(iid, "archived", reason, actor)
         return old  # type: ignore[return-value]
+
+    # ---------- рантайм-состояние ----------
+    def set_runtime(self, instance_id: str, data: dict) -> dict:
+        now = _now()
+        row = (
+            instance_id, data.get("symbol", ""), int(data.get("position", 0)),
+            float(data.get("equity", 0) or 0), float(data.get("last_price", 0) or 0),
+            data.get("last_decision", ""), now, data.get("note", ""),
+        )
+        with self._conn() as c:
+            c.execute(
+                "INSERT INTO runtime_state VALUES (?,?,?,?,?,?,?,?) "
+                "ON CONFLICT(instance_id) DO UPDATE SET symbol=excluded.symbol,"
+                "position=excluded.position,equity=excluded.equity,"
+                "last_price=excluded.last_price,last_decision=excluded.last_decision,"
+                "updated_at=excluded.updated_at,note=excluded.note", row)
+        return self.get_runtime(instance_id)  # type: ignore[return-value]
+
+    def get_runtime(self, instance_id: str) -> dict | None:
+        with self._conn() as c:
+            row = c.execute("SELECT * FROM runtime_state WHERE instance_id=?",
+                            (instance_id,)).fetchone()
+        return dict(row) if row else None
+
+    def list_runtime(self) -> list[dict]:
+        with self._conn() as c:
+            return [dict(r) for r in c.execute("SELECT * FROM runtime_state")]
 
     # ---------- внутреннее ----------
     def _check_live(self, mode: str, status: str, data: dict) -> None:

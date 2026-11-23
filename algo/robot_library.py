@@ -46,11 +46,18 @@ def _build() -> dict[str, RobotSpec]:
     for strategy, items in grouped.items():
         first, source = items[0]
         defaults = dict(first.params)
+        schema = {k: _type_name(v) for k, v in defaults.items()}
+        # spec описывает ВСЕ параметры стратегии, а не только первого конфига:
+        # иначе p-h1 с timeframe=60 не пройдёт валидацию при переносе в store
+        for cfg, _ in items[1:]:
+            for key, value in cfg.params.items():
+                defaults.setdefault(key, value)
+                schema[key] = _type_name(value)
         specs[strategy] = RobotSpec(
             id=strategy,
             strategy=strategy,
             defaults=defaults,
-            schema={k: _type_name(v) for k, v in defaults.items()},
+            schema=schema,
             instruments=tuple(sorted({cfg.instrument for cfg, _ in items})),
             description=first.comment or first.display,
             source=source,

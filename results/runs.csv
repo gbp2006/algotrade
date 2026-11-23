@@ -391,3 +391,6 @@ ts,strategy,instrument,period,params,trades,net,pf,avg,dd,in_market,note
 2026-11-23 18:18,kzparam_day_ma20_k0.1_bb14,Si,oos 2026,source=truetrading_ru;mode=day;ma=20;koef=0.1;bb=14,20,8717.15,1.97,435.86,-5398.01,42.1,параметры выбраны на 2016–2025; research-only
 2026-11-23 18:18,kzparam_intra_ma20_k0.1_bb14,CNY,oos 2026,source=truetrading_ru;mode=intra;ma=20;koef=0.1;bb=14,26,2027.23,3.05,77.97,-544.11,34.0,параметры выбраны на 2016–2025; research-only
 2026-11-23 18:18,kzparam_intra_ma20_k0.1_bb14,Si,oos 2026,source=truetrading_ru;mode=intra;ma=20;koef=0.1;bb=14,22,10555.34,2.47,479.79,-3348.45,31.2,параметры выбраны на 2016–2025; research-only
+2026-11-23 18:46,portfolio_by_deposit,PORTFOLIO,10 лет,deposit=2110000.0;windows=10 лет,,12613151.7,0,,0,,"доходность взвешена депозитами роботов, базовый контур"
+2026-11-23 18:46,portfolio_by_deposit,PORTFOLIO,5 лет,deposit=2110000.0;windows=5 лет,,12585185.61,0,,0,,"доходность взвешена депозитами роботов, базовый контур"
+2026-11-23 18:46,portfolio_by_deposit,PORTFOLIO,1 год,deposit=2110000.0;windows=1 год,,804342.92,0,,0,,"доходность взвешена депозитами роботов, базовый контур"

@@ -61,8 +61,8 @@
       <button onclick="loadAll()">Обновить</button></div>
     <p class="muted">Робот без инстанса не торгует. Новый инстанс создаётся в черновике и запускается вручную.</p>
     <table><thead><tr><th>id</th><th>тип / инструмент</th><th>режим</th><th>статус</th>
-      <th>счёт / цена</th><th>версия</th><th>действия</th></tr></thead>
-      <tbody id="instances"><tr><td colspan="7" class="muted">загрузка…</td></tr></tbody></table>
+      <th>счёт / цена</th><th>позиция / equity</th><th>версия</th><th>действия</th></tr></thead>
+      <tbody id="instances"><tr><td colspan="8" class="muted">загрузка…</td></tr></tbody></table>
   </div>
   <div class="card"><h2>Счета и брокеры</h2>
     <div class="row" id="accounts"></div>
@@ -106,10 +106,12 @@ async function api(path, opts) {
 
 async function loadAll() {
   try {
-    const [insts, sp, acc, br] = await Promise.all([
-      api('/instances'), api('/specs'), api('/accounts'), api('/brokers')]);
+    const [insts, sp, acc, br, rt] = await Promise.all([
+      api('/instances'), api('/specs'), api('/accounts'), api('/brokers'), api('/runtime')]);
     specs = sp; accounts = acc;
+    const runtime = Object.fromEntries(rt.map(x => [x.instance_id, x]));
     $('instances').innerHTML = insts.length ? insts.map(i => {
+      const st = runtime[i.id] || {};
       const acts = [];
       if (i.status === 'draft' || i.status === 'paused' || i.status === 'stopped')
         acts.push(`<button onclick="act('${esc(i.id)}','start')">старт</button>`);
@@ -122,6 +124,8 @@ async function loadAll() {
         <td>${i.mode==='live'?'<span class="badge live">бой</span>':'бумага'}</td>
         <td><span class="badge ${esc(i.status)}">${esc(i.status)}</span></td>
         <td>${esc(i.account||'—')}<br><span class="muted">${esc(i.pricing||'—')}</span></td>
+        <td>${st.position ?? '—'} / ${st.equity ? Number(st.equity).toLocaleString('ru') : '—'}
+          <br><code>${esc(st.last_decision||'')}</code></td>
         <td>v${i.version}</td><td><div class="row">${acts.join('')}</div></td></tr>`;
     }).join('') : '<tr><td colspan="7" class="muted">инстансов нет</td></tr>';
     $('accounts').innerHTML = accounts.map(a =>

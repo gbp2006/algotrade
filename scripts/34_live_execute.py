@@ -34,6 +34,7 @@ from algo.broker.live_guard import (  # noqa: E402
     expiry_allows, price_for, quote_age_sec, reconcile_guard,
 )
 from algo.configs import CONFIGS  # noqa: E402
+from algo.instance_configs import live_settings_from_store  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS  # noqa: E402
 from algo.live_config import SettingsError, load_settings  # noqa: E402
 from algo.robot_configs import ROBOT_CONFIGS  # noqa: E402
@@ -149,7 +150,9 @@ def main(argv: list[str] | None = None) -> int:
             print("STOP установлен: заявки не отправляются")
             return 0
         try:
-            settings = load_settings()
+            settings = live_settings_from_store()
+            if settings.empty:
+                settings = load_settings()  # миграционный fallback на live_settings.json
         except SettingsError as exc:
             print(f"настройки не прошли проверку: {exc}")
             return 2
