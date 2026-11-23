@@ -96,6 +96,19 @@
     <button onclick="closeModal()">Отмена</button></div>
 </div></div>
 
+<div class="modal" id="promote-modal"><div class="box">
+  <h2>Перевод в бой</h2>
+  <p class="muted">Инстанс получит mode=live и статус active. Реальная заявка не уйдёт: нужны ещё `--arm` и `FINAM_ALLOW_TRADING=1`.</p>
+  <div class="field"><label>Счёт</label><select id="p-account"></select></div>
+  <div class="field"><label>Режим цены</label><select id="p-pricing">
+    <option value="marketable">маркет-лимит</option><option value="signal">цена сигнала</option>
+    <option value="market">рыночная</option></select></div>
+  <div class="field"><label>Капитал счёта</label><input id="p-capital" type="number" placeholder="200000"></div>
+  <div class="err" id="p-err"></div>
+  <div class="row"><button class="primary" onclick="submitPromote()">Перевести</button>
+    <button onclick="closePromote()">Отмена</button></div>
+</div></div>
+
 <div class="modal" id="edit-modal"><div class="box">
   <h2 id="edit-title">Параметры робота</h2>
   <p class="muted">Активный робот при сохранении уйдёт на паузу; создаётся новая версия параметров.</p>
@@ -141,6 +154,8 @@ async function loadAll() {
       acts.push(`<button onclick="act('${esc(i.id)}','stop')">стоп</button>`);
       acts.push(`<button onclick="act('${esc(i.id)}','archive')">убрать</button>`);
       if (i.status !== 'archived') acts.push(`<button onclick="openEdit('${esc(i.id)}')">изменить</button>`);
+      if (i.mode === 'paper' && i.status !== 'archived')
+        acts.push(`<button onclick="openPromote('${esc(i.id)}')">в бой</button>`);
       const params = Object.entries(i.params || {}).map(([k,v]) => `${k}=${esc(v)}`).join(' ');
       return `<tr><td><b>${esc(i.id)}</b><br><span class="muted">${esc(i.note||'')}</span></td>
         <td>${esc(i.spec_id)} / ${esc(i.instrument)}<br><code>${params}</code></td>
@@ -216,6 +231,30 @@ async function checkBroker(name) {
         $('status').textContent = `${name}: ${r.ok?'OK':'нет связи'} — ${r.detail}`; }
   catch(e) { $('status').textContent = e.message; }
 }
+let promoting = null;
+function openPromote(id){
+  promoting = id;
+  $('p-err').textContent = '';
+  $('p-account').innerHTML = accounts.map(a =>
+    `<option value="${esc(a.id)}">${esc(a.id)} — ${Number(a.capital).toLocaleString('ru')} ₽</option>`).join('');
+  const first = accounts[0];
+  $('p-capital').value = first ? first.capital : '';
+  $('promote-modal').classList.add('on');
+}
+function closePromote(){ $('promote-modal').classList.remove('on'); }
+async function submitPromote(){
+  const accId = $('p-account').value;
+  const acc = accounts.find(a => a.id === accId) || {};
+  try{
+    await api('/instances/' + encodeURIComponent(promoting) + '/promote', {
+      method:'POST',
+      body:JSON.stringify({account:accId, pricing:$('p-pricing').value,
+                           capital:Number($('p-capital').value) || acc.capital || 0})
+    });
+    closePromote(); await loadAll();
+  }catch(e){ $('p-err').textContent = e.message; }
+}
+
 let editing = null;
 async function openEdit(id){
   const [inst, sp] = await Promise.all([api('/instances/'+encodeURIComponent(id)), api('/specs')]);
