@@ -20,4 +20,6 @@ CNY 2022-04-26…20.11 (784k M1), Si 2009…2026 (3.6M), GL/MIX с ISS. Живо
 
 Поиск стратегий (21.11): каталог ~78 идей (`reports/strategy-catalog.md`), 17 прототипов, шорт-лист 7 после train→OOS (`reports/strategy-research-summary.md`); в бумажный контур не выложено.
 
+Ресурсы Коваль-Зайцева (23.11): разобраны TG `@truetrading_ru` и YouTube `@truetrading` + два doc с кодами; 13 кандидатов KZ-01…KZ-13, приоритет — «пробой дня» с фильтрами MA30/BB-сквиз (`reports/koval-zaytsev-strategy-search.md`). Конфиги не менялись, рабочий робот по «пробою канала» уже есть (`cb-day`, `cb-day-si`).
+
 Архив прежних разделов: `reports/PROGRESS-archive-2026-11-20.md`.
