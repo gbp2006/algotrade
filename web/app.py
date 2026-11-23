@@ -49,6 +49,7 @@ from algo.robot_configs import ROBOT_BY_ID, ROBOT_CONFIGS  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS, margin, symbol as inst_symbol  # noqa: E402
 from algo.portfolio import (CAPITAL, account_card, drawdown_stats,  # noqa: E402
                             exposure_of, ledger)
+from algo import metrics_store  # noqa: E402
 
 
 def instrument_of(cfg):
@@ -291,6 +292,7 @@ def state():
         log = LOG.read_text(encoding="utf-8", errors="replace").splitlines()[-20:]
 
     price = q.get("last") if q and "last" in q else None
+    snap = {r["config"]: r for r in metrics_store.latest()}
     strategies = []
     for cfg in ALL_CONFIGS:
         try:
@@ -300,6 +302,7 @@ def state():
             qc, px_c = None, None
         item = config_stats(cfg, rows, px_c)
         item["quote"] = qc
+        item["metrics"] = snap.get(cfg.id)
         strategies.append(item)
     del price
     portfolio = {
@@ -477,6 +480,17 @@ def api_robot_compare():
     rows, start, end = mod.build_rows()
     return JSONResponse({"start": start, "end": end,
                          "comparison": mod.robot_compare(rows)})
+
+
+@app.get("/api/metrics")
+def api_metrics(config: str | None = None):
+    """История состояния счёта и метрик из SQLite (для графиков и анализа)."""
+    metrics_store.init_db()
+    return JSONResponse({
+        "latest": metrics_store.latest(config),
+        "history": metrics_store.history(config) if config else [],
+        "equity": metrics_store.equity_curve(config) if config else [],
+    })
 
 
 @app.get("/api/trades")

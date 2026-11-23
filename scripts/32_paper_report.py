@@ -28,6 +28,7 @@ from algo.configs import CONFIGS  # noqa: E402
 from algo.robot_configs import ROBOT_CONFIGS  # noqa: E402
 from algo import risk  # noqa: E402
 from algo import store  # noqa: E402
+from algo import metrics_store  # noqa: E402
 from algo.data import load_cached, to_timeframe  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS  # noqa: E402
 from algo.instruments import symbol as contract_symbol  # noqa: E402
@@ -65,6 +66,27 @@ def ledger(rows: list[dict], mult: float) -> tuple[int, float, int]:
             entry = price
         pos = target
     return trades, pnl, len(days)
+
+
+def trade_stats(rows: list[dict], mult: float) -> tuple[int, int, int, float, float]:
+    """(сделок, побед, поражений, gross_win, gross_loss) по журналу конфигурации."""
+    pos, entry, wins, losses, gw, gl, trades = 0, 0.0, 0, 0, 0.0, 0.0, 0
+    for r in rows:
+        target, price = int(r["target"]), float(r["price"])
+        if target == pos:
+            continue
+        if pos != 0:
+            pnl = (price - entry) * mult * pos
+            trades += 1
+            if pnl > 0:
+                wins += 1
+                gw += pnl
+            elif pnl < 0:
+                losses += 1
+                gl -= pnl
+        entry = price if target != 0 else 0.0
+        pos = target
+    return trades, wins, losses, gw, gl
 
 
 def expected(cfg, m5: pd.DataFrame, start: str, end: str,
@@ -194,10 +216,27 @@ def build_rows() -> tuple[list[dict], str, str]:
             e_trades, e_pnl = expected(cfg, cache[inst.code], c_start, c_end,
                                        mult, capital, tick=inst.tick)
         dd = _dd_stats(mine, mult, capital)
-        out.append({"config": cfg.id, "instrument": inst.code, "days": days,
-                    "trades": trades, "pnl": pnl, "expected": e_pnl,
-                    "error": None if e_pnl is None else pnl - e_pnl,
-                    "max_dd": dd["max_dd"], "max_dd_days": dd["max_dd_days"]})
+        n, wins, losses, gw, gl = trade_stats(mine, mult)
+        last = mine[-1]
+        position = int(last["target"])
+        last_px = float(last["price"])
+        notional = abs(position) * last_px * mult
+        out.append({
+            "config": cfg.id, "instrument": inst.code, "days": days,
+            "trades": trades, "pnl": pnl, "expected": e_pnl,
+            "error": None if e_pnl is None else pnl - e_pnl,
+            "max_dd": dd["max_dd"], "max_dd_days": dd["max_dd_days"],
+            "capital": capital, "equity": capital + pnl, "realized": pnl,
+            "dd_abs": dd["max_dd"],
+            "dd_pct": round(100 * abs(dd["max_dd"]) / capital, 2) if capital else 0.0,
+            "wins": wins, "losses": losses,
+            "winrate": round(100 * wins / n, 1) if n else 0.0,
+            "avg_trade": round(pnl / n, 2) if n else 0.0,
+            "profit_factor": round(gw / gl, 2) if gl else None,
+            "position": position, "notional": round(notional),
+            "exposure_pct": round(100 * notional / capital, 1) if capital else 0.0,
+            "pnl_pct": round(100 * pnl / capital, 2) if capital else 0.0,
+        })
     return out, start, end
 
 
@@ -254,6 +293,9 @@ def main() -> int:
                   f"DD {r['robot_dd']:>7.0f}/{r['base_dd']:>7.0f}")
     (ROOT / "results" / "robot_compare.csv").write_text(
         pd.DataFrame(cmp).to_csv(index=False), encoding="utf-8")
+    # История состояния счетов и метрик для панели/анализа (SQLite, не выкладывается)
+    saved = metrics_store.save_snapshot(pd.Timestamp.now().strftime("%Y-%m-%d"), rows)
+    print(f"снапшотов метрик в БД: {saved}")
     return 0
 
 
