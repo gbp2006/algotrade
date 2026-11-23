@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -11,6 +12,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from algo.broker import finam as fb  # noqa: E402
+from algo.broker import secrets as sec  # noqa: E402
 
 
 class Resp:
@@ -29,9 +31,13 @@ def broker() -> fb.FinamBroker:
 
 class TestBrokerGuard(unittest.TestCase):
     def test_secret_required(self):
-        with mock.patch.dict(os.environ, {}, clear=True):
-            with self.assertRaises(fb.FinamError):
-                fb.FinamBroker()
+        # сервисный ключ может лежать в auth.json — временно убираем и его
+        with tempfile.TemporaryDirectory() as tmp:
+            missing = Path(tmp) / "auth.json"
+            with mock.patch.object(sec, "AUTH_PATH", missing), \
+                 mock.patch.dict(os.environ, {"ALGO_AUTH": str(missing)}, clear=True):
+                with self.assertRaises(fb.FinamError):
+                    fb.FinamBroker()
 
     def test_place_market_blocked_by_default(self):
         b = broker()
