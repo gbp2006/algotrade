@@ -400,3 +400,11 @@ ts,strategy,instrument,period,params,trades,net,pf,avg,dd,in_market,note
 2026-11-23 18:49,ma48_vol_sizing,CNY,oos 2026,base=MA48;sizing=ATR14/median252 ladder;modes=1x/2x/vol,111,183285.26,0,,0,,"RU-01: research-only, сигнал базы не менялся"
 2026-11-23 18:49,ma48_vol_sizing,Si,oos 2026,base=MA48;sizing=ATR14/median252 ladder;modes=1x/2x/vol,110,155576.35,0,,0,,"RU-01: research-only, сигнал базы не менялся"
 2026-11-23 18:49,ma48_vol_sizing,PORTFOLIO10,2016-2025,capital=1000000;modes=1x/2x/vol,12510,97648362,0,,0,,средний CAGR и DD по 10 инструментам — в отчёте
+2026-11-23 19:05,ru03_rez_ls,CNY,oos 2026,source=smart-lab 1130044;entry=10:00;exit=20:40;trail=0.02,166,-50.43,0.99,-0.3,-953.8,46.4,RU-03 исследовательский прототип
+2026-11-23 19:05,ru03_rez_ls,Si,oos 2026,source=smart-lab 1130044;entry=10:00;exit=20:40;trail=0.02,159,-1404.61,0.97,-8.83,-6251.39,47.4,RU-03 исследовательский прототип
+2026-11-23 19:05,ru03_rez_long,CNY,oos 2026,source=smart-lab 1130044;entry=10:00;exit=20:40;trail=0.02,87,140.25,1.04,1.61,-722.79,24.0,RU-03 исследовательский прототип
+2026-11-23 19:05,ru03_rez_long,Si,oos 2026,source=smart-lab 1130044;entry=10:00;exit=20:40;trail=0.02,79,-1114.49,0.95,-14.11,-4298.0,23.2,RU-03 исследовательский прототип
+2026-11-23 19:06,ru03_rez_ls,CNY,oos 2026,source=smart-lab 1130044;entry=10:00;exit=20:40;trail=0.02,166,-50.43,0.99,-0.3,-953.8,46.4,RU-03 исследовательский прототип
+2026-11-23 19:06,ru03_rez_ls,Si,oos 2026,source=smart-lab 1130044;entry=10:00;exit=20:40;trail=0.02,159,-1404.61,0.97,-8.83,-6251.39,47.4,RU-03 исследовательский прототип
+2026-11-23 19:06,ru03_rez_long,CNY,oos 2026,source=smart-lab 1130044;entry=10:00;exit=20:40;trail=0.02,87,140.25,1.04,1.61,-722.79,24.0,RU-03 исследовательский прототип
+2026-11-23 19:06,ru03_rez_long,Si,oos 2026,source=smart-lab 1130044;entry=10:00;exit=20:40;trail=0.02,79,-1114.49,0.95,-14.11,-4298.0,23.2,RU-03 исследовательский прототип
