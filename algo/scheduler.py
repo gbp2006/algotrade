@@ -249,8 +249,22 @@ def run_once(now: datetime | None = None, execute: bool | None = None,
     return fired
 
 
+def _stale_lock() -> bool:
+    """Lock от упавшего процесса не должен блокировать сервис после рестарта."""
+    if not LOCK.exists():
+        return False
+    try:
+        pid = int(LOCK.read_text(encoding="utf-8").strip())
+        os.kill(pid, 0)  # живой ли процесс
+    except (ValueError, ProcessLookupError, OSError):
+        return True
+    return False
+
+
 def loop(interval: int = 10) -> None:
     LOCK.parent.mkdir(parents=True, exist_ok=True)
+    if _stale_lock():
+        LOCK.unlink(missing_ok=True)
     try:
         fd = os.open(LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
     except FileExistsError:
