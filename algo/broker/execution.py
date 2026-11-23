@@ -123,15 +123,21 @@ class OrderGateway:
         return ""
 
     def submit(self, order: Order, account: str | None = None,
-               dry_run: bool = False) -> Result:
+               dry_run: bool = False, stop: Path | None = None) -> Result:
         """`dry_run=True` проверяет всё, кроме отправки, и пишет статус `planned`.
 
         Нужен для репетиции G3: при выключенном флаге обычный `submit` сразу
         возвращает `blocked` и не проверяет лимиты/цену — репетировать нечего.
+
+        `stop` — путь к боевому STOP-флагу; проверяется перед КАЖДОЙ заявкой,
+        а не только в начале прогона (флаг может появиться mid-session).
         """
         cid = client_order_id(order.client_id)
         if os.environ.get("FINAM_ALLOW_TRADING") != "1" and not dry_run:
             return self._write(order, Result("blocked", "FINAM_ALLOW_TRADING != 1",
+                                             client_order_id=cid))
+        if stop is not None and stop.exists():
+            return self._write(order, Result("blocked", f"STOP: {stop.name}",
                                              client_order_id=cid))
 
         self.lock.parent.mkdir(parents=True, exist_ok=True)
