@@ -66,6 +66,28 @@ class TestScheduler(unittest.TestCase):
             self.assertIn("daily", first)
             self.assertEqual(second, [])  # слоты уже заняты
 
+    def test_instance_jobs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = RobotStore(Path(tmp) / "robots.db")
+            store.init_db()
+            store.create_instance({
+                "id": "p-test", "spec_id": "prostushka", "mode": "paper",
+                "status": "active", "params": {"entry": "13:40"},
+            })
+            store.create_instance({
+                "id": "c-test", "spec_id": "channel_break", "mode": "paper",
+                "status": "active", "params": {"start": "01:00", "switch": "13:00"},
+            })
+            jobs = sch.instance_jobs(store)
+            ids = {j.id for j in jobs}
+            self.assertIn("inst:p-test:entry", ids)
+            self.assertIn("inst:c-test:channel", ids)
+            entry = next(j for j in jobs if j.id == "inst:p-test:entry")
+            self.assertEqual(entry.times, ("13:40",))
+            self.assertIn("--date {date}", entry.catchup_template)
+            self.assertEqual(sch.sync_instance_jobs(store), len(jobs))
+            self.assertEqual(sch.sync_instance_jobs(store), 0)
+
     def test_custom_job(self):
         with tempfile.TemporaryDirectory() as tmp:
             store = RobotStore(Path(tmp) / "robots.db")

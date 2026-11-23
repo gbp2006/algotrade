@@ -180,6 +180,64 @@ def seed_default_jobs(store: RobotStore | None = None) -> int:
     return added
 
 
+def instance_jobs(store: RobotStore | None = None) -> list[Job]:
+    """Расписания активных инстансов. У робота может быть свой вход/выход.
+
+    Системные задания остаются общими: они гарантируют, что ни один день не
+    будет пропущен даже если персональное задание не сработало. Per-instance
+    задания добавляют к ним точные времена этого робота.
+    """
+    from .instance_configs import active_configs
+
+    st = store or _store()
+    out: list[Job] = []
+    for cfg in active_configs("paper", st):
+        params = cfg.params
+        if cfg.strategy == "channel_break":
+            out.append(Job(
+                id=f"inst:{cfg.id}:channel", owner=cfg.id,
+                command=f"./run.sh paper-live --channel --config {cfg.id}",
+                interval_min=10, hours=(9, 23),
+                note="внутридневной пробой канала"))
+        entry = params.get("entry") or params.get("entry_time")
+        if isinstance(entry, str) and ":" in entry:
+            out.append(Job(
+                id=f"inst:{cfg.id}:entry", owner=cfg.id,
+                command=f"./run.sh paper-live --config {cfg.id}",
+                times=(entry,), catchup_template=(
+                    f"./run.sh paper-live --config {cfg.id} "
+                    "--date {date} --time {time}"),
+                note="своё время входа"))
+        if params.get("hold") == "morning" and isinstance(params.get("exit"), str):
+            out.append(Job(
+                id=f"inst:{cfg.id}:exit", owner=cfg.id,
+                command=f"./run.sh paper-live --config {cfg.id}",
+                times=(params["exit"],),
+                note="утренний выход"))
+    return out
+
+
+def sync_instance_jobs(store: RobotStore | None = None) -> int:
+    """Добавить недостающие per-instance задания, не перетирая правки юзера."""
+    st = store or _store()
+    st.init_db()
+    have = {j["id"] for j in st.list_jobs()}
+    added = 0
+    for job in instance_jobs(st):
+        if job.id in have:
+            continue
+        st.upsert_job({
+            "id": job.id, "owner": job.owner, "command": job.command,
+            "times": list(job.times), "weekdays": list(job.weekdays),
+            "interval_min": job.interval_min,
+            "hours_from": job.hours[0] if job.hours else None,
+            "hours_to": job.hours[1] if job.hours else None,
+            "catchup_template": job.catchup_template, "note": job.note,
+        })
+        added += 1
+    return added
+
+
 def _log(line: str) -> None:
     LOG.parent.mkdir(parents=True, exist_ok=True)
     with LOG.open("a", encoding="utf-8") as f:
@@ -273,6 +331,7 @@ def loop(interval: int = 10) -> None:
     os.write(fd, str(os.getpid()).encode())
     st = _store()
     seed_default_jobs(st)
+    sync_instance_jobs(st)
     _log(f"старт, shadow={shadow()}, jobs={len(load_jobs(st))}")
     try:
         while True:
