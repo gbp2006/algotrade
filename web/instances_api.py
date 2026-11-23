@@ -329,7 +329,7 @@ def save_key(payload: dict):
 @router.get("/service-key")
 def service_key_status():
     from algo.broker.secrets import SERVICE_KEY_REF
-    names = (list(_read_auth().get("finam") or {}).keys())
+    names = list((_read_auth().get("finam") or {}).keys())
     return {"ref": SERVICE_KEY_REF, "set": SERVICE_KEY_REF in names,
             "env_fallback": bool(os.environ.get("FINAM_SECRET"))}
 
