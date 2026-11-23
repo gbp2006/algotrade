@@ -185,12 +185,25 @@
         <tbody id="orders"></tbody></table></div>
     <div class="card"><h3>Счета и брокеры</h3><div class="row" id="accounts"></div>
       <div class="row" id="brokers" style="margin-top:10px"></div></div>
-    <div class="card"><h3>Расписание и запуски</h3>
+    <div class="card"><h3>Расписание и запуски
+      <button style="float:right" onclick="openJob()">+ задание</button></h3>
       <p class="muted" id="sched-state"></p>
       <table><thead><tr><th>Задание</th><th>Время / интервал</th><th>Команда</th>
-        <th>Последний запуск</th></tr></thead><tbody id="jobs"></tbody></table></div>
+        <th>Последний запуск</th><th></th></tr></thead><tbody id="jobs"></tbody></table></div>
   </main>
 </div>
+<div class="modal" id="job-modal"><div class="box">
+  <h2>Новое задание</h2>
+  <div class="field"><label>id</label><input id="j-id" placeholder="inst:p-base:entry"></div>
+  <div class="field"><label>Робот (owner)</label><input id="j-owner" placeholder="p-base или system"></div>
+  <div class="field"><label>Команда</label><input id="j-cmd" placeholder="./run.sh paper-live --config p-base"></div>
+  <div class="field"><label>Время (HH:MM через запятую)</label><input id="j-times" placeholder="13:50"></div>
+  <div class="field"><label>Интервал, мин</label><input id="j-interval" type="number" placeholder="10"></div>
+  <div class="field"><label>Реплей при догоне</label><input id="j-catchup" placeholder="./run.sh paper-live --date {date} --time {time}"></div>
+  <div class="err" id="j-err"></div>
+  <div class="row"><button class="primary" onclick="submitJob()">Сохранить</button>
+    <button onclick="closeJob()">Отмена</button></div>
+</div></div>
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -235,8 +248,9 @@ async function load(){
       const last = lastByJob[j.id];
       return `<tr><td><b>${esc(j.id)}</b><br><span class="muted">${esc(j.owner)}</span></td>
         <td>${esc(when)}</td><td><code>${esc(j.command)}</code></td>
-        <td>${last ? esc(last.status) + ' · ' + esc(last.slot || last.started || '') : '—'}</td></tr>`;
-    }).join('') : '<tr><td colspan="4" class="muted">заданий нет</td></tr>';
+        <td>${last ? esc(last.status) + ' · ' + esc(last.slot || last.started || '') : '—'}</td>
+        <td><button onclick="deleteJob('${esc(j.id)}')">удалить</button></td></tr>`;
+    }).join('') : '<tr><td colspan="5" class="muted">заданий нет</td></tr>';
     $('msg').textContent = `${robots.length} боевых роботов, ${st.paper_days}/30 дней бумаги`;
   }catch(e){ $('msg').textContent='ошибка: '+e.message; }
 }
@@ -247,6 +261,28 @@ async function stopReal(a){ if(!confirm(a==='set'?'Установить глоб
   catch(e){ $('msg').textContent=e.message; } }
 async function check(n){ try{const r=await api(`/brokers/${n}/check`,{method:'POST'}); $('msg').textContent=`${n}: ${r.ok?'OK':'нет связи'} — ${r.detail}`;}
   catch(e){ $('msg').textContent=e.message; } }
+function openJob(){
+  $('j-err').textContent=''; $('job-modal').classList.add('on');
+}
+function closeJob(){ $('job-modal').classList.remove('on'); }
+async function submitJob(){
+  const times = $('j-times').value.split(',').map(x=>x.trim()).filter(Boolean);
+  const interval = $('j-interval').value ? Number($('j-interval').value) : null;
+  const payload = {
+    id:$('j-id').value.trim(), owner:$('j-owner').value.trim()||'system',
+    command:$('j-cmd').value.trim(), times, interval_min:interval,
+    catchup_template:$('j-catchup').value.trim()
+  };
+  try{
+    await api('/scheduler/jobs',{method:'POST',body:JSON.stringify(payload)});
+    closeJob(); await load();
+  }catch(e){ $('j-err').textContent=e.message; }
+}
+async function deleteJob(id){
+  if(!confirm('Удалить задание '+id+'?'))return;
+  try{ await api('/scheduler/jobs/'+encodeURIComponent(id),{method:'DELETE'}); await load(); }
+  catch(e){ $('msg').textContent=e.message; }
+}
 load();
 </script>
 </body>
