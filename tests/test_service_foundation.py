@@ -103,6 +103,13 @@ class TestStore(unittest.TestCase):
         self.assertEqual(self.db.get_instance("p-test")["status"], "archived")
         self.assertGreaterEqual(len(self.db.history("p-test")), 4)
 
+    def test_update_account(self):
+        self.db.create_account({"id": "A1", "label": "КлФ-A1"})
+        r = self.db.update_account("A1", {"max_exposure": 0.25, "label": "КлФ-1"})
+        self.assertEqual(r["max_exposure"], 0.25)
+        self.assertEqual(r["label"], "КлФ-1")
+        self.assertEqual(self.db.get_account("A1")["max_exposure"], 0.25)
+
     def test_live_requires_fields(self):
         self.db.create_account({"id": "A1"})
         with self.assertRaises(store.StoreError):

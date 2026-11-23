@@ -315,6 +315,22 @@ def _robot_key(payload: dict, iid: str) -> str:
     return value
 
 
+@router.patch("/accounts/{acc_id}")
+def update_account(acc_id: str, payload: dict,
+                   store: RobotStore = Depends(get_store)):
+    data = dict(payload)
+    key = str(data.get("key_ref") or "").strip()
+    if key.startswith("tapi_sk_"):
+        try:
+            data["key_ref"] = _write_key(f"acc:{acc_id}", key)
+        except ValueError as exc:
+            _fail(exc)
+    try:
+        return store.update_account(acc_id, data)
+    except (StoreError, ValueError) as exc:
+        _fail(exc)
+
+
 @router.post("/keys", status_code=201)
 def save_key(payload: dict):
     """Записать именованный ключ в auth.json (600). В ответе — только имя."""

@@ -177,6 +177,36 @@ class RobotStore:
             )
         return {"id": acc_id}
 
+    def get_account(self, acc_id: str) -> dict | None:
+        with self._conn() as c:
+            row = c.execute("SELECT * FROM accounts WHERE id=?", (acc_id,)).fetchone()
+        return dict(row) if row else None
+
+    def update_account(self, acc_id: str, data: dict) -> dict:
+        old = self.get_account(acc_id)
+        if old is None:
+            raise StoreError(f"нет счёта {acc_id}")
+        fields = {
+            "label": str(data.get("label", old["label"])),
+            "max_exposure": float(data.get("max_exposure", old["max_exposure"])),
+            "max_daily_loss_pct": float(
+                data.get("max_daily_loss_pct", old["max_daily_loss_pct"])),
+            "max_qty": int(data.get("max_qty", old["max_qty"])),
+            "comment": str(data.get("comment", old.get("comment") or "")),
+            "key_ref": str(data.get("key_ref", old.get("key_ref") or "") or ""),
+            "trading_code": str(data.get("trading_code", old.get("trading_code") or "") or ""),
+        }
+        if fields["max_exposure"] <= 0:
+            raise StoreError("экспозиция счёта должна быть положительной")
+        with self._conn() as c:
+            c.execute(
+                "UPDATE accounts SET label=?, max_exposure=?, max_daily_loss_pct=?, "
+                "max_qty=?, comment=?, key_ref=?, trading_code=?, updated_at=? "
+                "WHERE id=?",
+                (*fields.values(), _now(), acc_id),
+            )
+        return next(a for a in self.list_accounts() if a["id"] == acc_id)
+
     def create_instance(self, data: dict, actor: str = "panel") -> dict:
         iid = str(data.get("id", "")).strip()
         spec_id = str(data.get("spec_id", ""))

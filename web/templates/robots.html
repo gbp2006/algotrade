@@ -3,74 +3,210 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/static/img/favicon.ico" sizes="any">
+<link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/static/img/favicon-32.png" type="image/png" sizes="32x32">
+<meta name="theme-color" content="#0a0c11">
 <title>Autopilot — роботы и брокеры</title>
 <style>
-  :root{--bg:#0a0c11;--card:#13161e;--line:#222836;--text:#e8eaf0;--muted:#8b90a0;
-        --accent:#4f7cff;--green:#2fd07b;--red:#ff4d5e;--yellow:#f5b83d;--radius:16px}
+  :root{
+    --bg:#0a0c11; --card:#13161e; --line:#222836; --text:#e8eaf0; --muted:#8b90a0;
+    --accent:#4f7cff; --green:#2fd07b; --red:#ff4d5e; --yellow:#f5b83d; --radius:18px;
+  }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--text);
-       font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-  .top{display:flex;align-items:center;gap:16px;padding:18px 26px;border-bottom:1px solid var(--line)}
-  .top b{font-size:18px}
-  .top a{color:var(--muted);text-decoration:none;font-size:13px}
-  .top a:hover{color:#fff}
-  .wrap{padding:24px 26px 60px;max-width:1500px;margin:0 auto}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
-        padding:18px 20px;margin-bottom:20px}
+       font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif}
+  .layout{display:flex;min-height:100vh}
+  .side{width:292px;flex:0 0 292px;padding:20px 16px;display:flex;flex-direction:column;
+        border-right:1px solid var(--line);background:#0c0f15}
+  .logo{display:flex;align-items:center;gap:10px;padding:6px 8px 18px}
+  .logo .dot{width:30px;height:30px;border-radius:10px;
+             background:linear-gradient(135deg,#4f7cff,#8a5cff);display:grid;place-items:center;
+             font-weight:700;font-size:13px}
+  .logo b{font-size:17px}
+  .side h4{margin:6px 8px 10px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  #list{max-height:calc(100vh - 250px);overflow-y:auto;scrollbar-width:thin}
+  .item{display:flex;align-items:center;gap:12px;padding:13px 12px;border-radius:12px;cursor:pointer;
+        color:#c8ccd8;border:1px solid transparent}
+  .item:hover{background:#141822}
+  .item.active{background:#171c27;border-color:#242b3a}
+  .item .ico{width:26px;height:26px;border-radius:7px;background:#1e2432;display:grid;place-items:center;
+             font-size:11px;color:#9aa3b8}
+  .item .nm{flex:1;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item .st{width:9px;height:9px;border-radius:50%;background:#3a4152}
+  .st.live{background:var(--green);box-shadow:0 0 8px rgba(47,208,123,.6)}
+  .st.waiting{background:var(--yellow)}
+  .st.offline{background:#4a5163}
+  .side .grow{flex:1}
+  .user{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:#12161f}
+  .user .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#3d5afe,#8a5cff)}
+  .user small{display:block;color:var(--muted);font-size:11px}
+  .power{margin-left:auto;width:30px;height:30px;border-radius:50%;border:1px solid #3a2a2f;
+         background:#241a1e;color:var(--red);cursor:pointer;font-size:13px}
+  .power.on{background:#12301f;border-color:#2f6b47;color:var(--green)}
+  .main{flex:1;padding:26px 32px 48px;min-width:0}
+  .navtabs{display:flex;gap:6px;margin:-6px 0 18px}
+  .navtabs a{color:var(--muted);text-decoration:none;padding:7px 14px;border-radius:9px;font-size:13px}
+  .navtabs a.on{background:#20304f;color:#dbe6ff}
+  .navtabs a.live.on{background:#3a1622;color:#ff9aa7}
+  .hero{position:relative;border-radius:20px;overflow:hidden;padding:86px 38px 36px;
+        min-height:400px;display:flex;flex-direction:column;justify-content:flex-end;
+        background:#0b0d13;border:1px solid #2a1b22}
+  .hero:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;
+     background:linear-gradient(90deg,rgba(8,9,13,.98) 0%,rgba(8,9,13,.92) 30%,rgba(8,9,13,.62) 52%,
+                rgba(8,9,13,.12) 72%,rgba(8,9,13,0) 100%),
+                linear-gradient(0deg,rgba(8,9,13,.96) 0%,rgba(8,9,13,.30) 32%,rgba(8,9,13,0) 55%),
+                radial-gradient(60% 120% at 92% 45%,rgba(160,20,40,.22) 0%,rgba(160,20,40,0) 70%)}
+  .hero-img{position:absolute;right:0;top:0;height:100%;width:auto;z-index:0;
+            -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 26%);
+            mask-image:linear-gradient(90deg,transparent 0%,#000 26%)}
+  .hero>*:not(.hero-img):not(.hero-tools){position:relative;z-index:2}
+  .hero h1{margin:0;font-size:52px;text-shadow:0 2px 18px rgba(0,0,0,.55);line-height:1.02;letter-spacing:-.02em;text-transform:uppercase;
+           max-width:560px;font-weight:800}
+  .hero p{margin:12px 0 0;color:#b3bcd2;max-width:480px;font-size:15px}
+  .switcher{display:inline-flex;background:#0e121b;border:1px solid #26304a;border-radius:999px;
+            padding:4px;margin-top:20px;width:max-content}
+  .switcher button{border:0;background:transparent;color:#9aa3b8;padding:9px 20px;border-radius:999px;
+            font-size:13px;cursor:pointer}
+  .switcher button.on{background:#20304f;color:#dbe6ff}
+  .switcher button.on.live{background:#123a2a;color:#7ff0b5}
+  .hero-tools{position:absolute;top:22px;left:26px;display:flex;gap:8px;z-index:5}
+  .tool{width:38px;height:38px;border-radius:50%;background:#151a26;border:1px solid #29303f;
+        display:grid;place-items:center;font-size:14px;color:#aeb6c8;cursor:pointer}
+  .tool:hover{background:#1d2433;color:#fff}
+  .pf{display:flex;gap:26px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);
+      border-radius:16px;padding:16px 22px;margin-bottom:18px}
+  .pf .it{min-width:130px}
+  .pf .it span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;
+               letter-spacing:.07em;margin-bottom:4px}
+  .pf .it b{font-size:20px;font-weight:650}
+  .banner{display:none;margin-bottom:18px;padding:14px 140px 14px 18px;border-radius:14px;
+          background:#2a1218;border:1px solid #5a2430;color:#ffb3bc;font-size:13px;
+          position:relative}
+  .banner.show{display:block}
+  .banner b{color:#ff7d8a}
+  .banner .w{margin-top:6px;color:#e0b7a0;font-size:12px}
+  .banner .ack{position:absolute;top:12px;right:14px;padding:7px 12px;border-radius:9px;
+               border:1px solid #6b2f3c;background:#3a1a22;color:#ffc9d0;font-size:12px;
+               cursor:pointer;white-space:nowrap}
+  .banner .ack:hover{background:#4a2029;border-color:#8a3a4a}
+  .row{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;margin-top:18px}
+  @media(max-width:1100px){.row{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px 24px}
+  .card h3{margin:0 0 12px;font-size:12.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
+           display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .nums{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .big{font-size:38px;font-weight:650;letter-spacing:-.02em}
+  .chip{font-size:12.5px;padding:4px 10px;border-radius:8px;background:#1b2130;color:#b8c0d4}
+  .chip.up{background:#12301f;color:#63e39b}
+  .chip.down{background:#33161c;color:#ff8792}
+  .ctrls{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .seg{display:inline-flex;background:#0f1320;border:1px solid #232b3c;border-radius:9px;overflow:hidden}
+  .seg button{border:0;background:transparent;color:#8d95a8;padding:5px 10px;font-size:11px;cursor:pointer}
+  .seg button.on{background:#1d2740;color:#dbe6ff}
+  .chart{width:100%;height:290px;margin-top:6px;cursor:crosshair;display:block}
+  .trade .dir{display:inline-block;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;
+        letter-spacing:.08em;text-transform:uppercase}
+  .dir.long{background:#12301f;color:#63e39b}
+  .dir.short{background:#3a1219;color:#ff7d8a}
+  .dir.flat{background:#1b2130;color:#98a1b5}
+  .kv{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #1c2230}
+  .kv:last-child{border:0}
+  .kv span{color:var(--muted);font-size:13px}
+  .kv b{font-weight:600}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;
+     padding:8px 6px;border-bottom:1px solid var(--line);font-weight:500}
+  td{padding:12px 6px;border-bottom:1px solid #181d28}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:#161b25}
+  tr:last-child td{border:0}
+  .pos{color:var(--green)} .neg{color:var(--red)}
+  pre{max-height:220px;overflow:auto;margin:0;font:12px/1.5 ui-monospace,Menlo,monospace;
+      color:#9aa4b8;white-space:pre-wrap}
+  .health{display:flex;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:12px}
+  .health b{color:var(--text);font-weight:600}
+  .dot-live{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;
+            background:var(--green);animation:pulse 1.6s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .overlay{position:fixed;inset:0;background:rgba(6,8,12,.72);display:none;place-items:center;z-index:50;
+           backdrop-filter:blur(4px)}
+  .overlay.show{display:grid}
+  .modal{width:520px;max-width:92vw;background:#151922;border:1px solid #252c3b;border-radius:16px;padding:22px}
+  .modal h2{margin:0 0 14px;font-size:17px}
+  .modal .close{float:right;cursor:pointer;color:var(--muted);font-size:18px;line-height:1}
+  .modal .kv{border-color:#1e2534}
+  .btn{border:1px solid #2b3448;background:#1a2130;color:#cfd6e6;padding:9px 16px;border-radius:10px;
+       cursor:pointer;font-size:13px}
+  .btn:hover{background:#212a3c}
+  .detail-overlay{position:fixed;inset:0;background:rgba(6,8,12,.86);display:none;z-index:60;overflow:auto;
+                  backdrop-filter:blur(6px);padding:28px 4vw}
+  .detail-overlay.show{display:block}
+  .detail{max-width:1180px;margin:0 auto}
+  .detail header{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px}
+  .detail header h2{margin:0;font-size:32px;letter-spacing:-.01em}
+  .detail header p{margin:4px 0 0;color:var(--muted);font-size:13px}
+  .detail header .btn{margin-left:auto}
+  .dstats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+  .dstat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;min-width:140px}
+  .dstat span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+  .dstat b{font-size:22px;font-weight:650}
+  .tip{position:absolute;background:#0d1119;border:1px solid #2a3244;border-radius:8px;padding:6px 9px;
+       font-size:11px;color:#c9d1e2;pointer-events:none;white-space:nowrap;display:none;z-index:5}
+
+  <!-- robots-only additions -->
+  .card{margin-bottom:18px}
+  .card h2{margin:0 0 12px;font-size:15px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--text)}
   h2{margin:0 0 14px;font-size:16px}
   .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
   button,.btn{background:#1d2432;border:1px solid #2d3648;color:var(--text);border-radius:9px;
        padding:8px 13px;cursor:pointer;font-size:13px}
   button:hover{border-color:var(--accent)}
   button.primary{background:#20345f;border-color:#3554a0}
-  button.danger{background:#301d22;border-color:#5a2a35;color:#ff9aa7}
   button:disabled{opacity:.45;cursor:not-allowed}
   input,select{background:#0e1118;border:1px solid #2a3142;color:var(--text);border-radius:8px;
        padding:7px 9px;font-size:13px;min-width:110px}
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  th{text-align:left;color:var(--muted);font-weight:500;padding:8px 10px;border-bottom:1px solid var(--line)}
-  td{padding:10px;border-bottom:1px solid #1b202b;vertical-align:top}
-  tr:hover td{background:#161b25}
   .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;
          background:#232b3a;color:#c4ccdd}
   .badge.active{background:#123323;color:#7ff0b5}
   .badge.paused{background:#3a2d12;color:#ffd277}
   .badge.live{background:#3a1622;color:#ff9aa7}
   .badge.archived{opacity:.55}
-  .muted{color:var(--muted)}
-  .modal{position:fixed;inset:0;background:rgba(4,6,10,.78);display:none;
-         align-items:center;justify-content:center;z-index:20}
-  .modal.on{display:flex}
-  .modal .box{background:#121620;border:1px solid #303a4e;border-radius:18px;
-       padding:22px;width:min(620px,92vw);max-height:88vh;overflow:auto}
-  .field{display:grid;grid-template-columns:170px 1fr;gap:10px;align-items:center;margin:8px 0}
+  .field{display:grid;grid-template-columns:190px 1fr;gap:10px;align-items:center;margin:8px 0}
   .field label{color:var(--muted)}
   .hint{font-size:11px;color:var(--muted);margin-top:4px}
   .params{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .params label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
   .params label.flag{flex-direction:row;align-items:center;justify-content:space-between;
        gap:8px;padding:7px 9px;border:1px solid #2a3142;border-radius:8px;cursor:pointer}
-  .params label.flag:hover{border-color:var(--accent)}
   .params input[type=checkbox]{appearance:none;width:34px;height:18px;min-width:34px;margin:0;
-       border-radius:999px;background:#263044;border:1px solid #35415a;position:relative;cursor:pointer;
-       transition:background .15s}
+       border-radius:999px;background:#263044;border:1px solid #35415a;position:relative;cursor:pointer}
   .params input[type=checkbox]:after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;
-       border-radius:50%;background:#9aa3b8;transition:transform .15s,background .15s}
+       border-radius:50%;background:#9aa3b8}
   .params input[type=checkbox]:checked{background:#1d5a3a;border-color:#2f9b63}
   .params input[type=checkbox]:checked:after{transform:translateX(16px);background:#7ff0b5}
-  code.id-hint{color:#9fb3e0}
   .err{color:#ff8e9a;font-size:12px;min-height:18px}
   code{font-size:11px;color:#9fb3e0}
+  .modal{position:fixed;inset:0;width:auto;max-width:none;background:rgba(4,6,10,.80);
+       border:0;border-radius:0;padding:0;display:none;align-items:center;justify-content:center;z-index:50}
+  .modal.on{display:flex}
+  .modal .box{background:#121620;border:1px solid #303a4e;border-radius:18px;
+       padding:22px;width:min(680px,92vw);max-height:88vh;overflow:auto}
 </style>
 </head>
 <body>
-<div class="top"><b>Autopilot · роботы</b>
-  <nav style="display:flex;gap:6px;margin-left:12px">
-    <a href="/" style="color:var(--muted);text-decoration:none;font-size:13px">Тест</a>
-    <a href="/trade" style="color:var(--muted);text-decoration:none;font-size:13px">Торговля</a>
-  </nav>
-  <span class="muted" id="status"></span></div>
-<div class="wrap">
+<div class="layout">
+<aside class="side">
+  <div class="logo"><div class="dot">A</div><b>Autopilot</b></div>
+  <a class="item active" href="/robots" style="text-decoration:none"><span class="ico">🤖</span><span class="nm">Роботы и брокеры</span></a>
+  <h4>Стратегии</h4>
+  <div id="list"></div>
+  <div class="grow"></div>
+  <div class="user"><div class="av"></div><div><div style="font-size:13px">Юань · песочница</div><small id="upd">—</small></div></div>
+</aside>
+<main class="main">
+  <div class="navtabs"><a href="/">Тест</a><a href="/trade">Торговля</a><a class="on" href="/robots?mode=live">Роботы</a></div>
+  <span class="muted" id="status"></span>
   <div class="card">
     <div class="row"><h2 style="margin:0 auto 0 0">Инстансы роботов</h2>
       <button class="primary" onclick="openCreate()">+ Добавить из библиотеки</button>
@@ -89,7 +225,8 @@
       <input id="acc-code" placeholder="Торговый код (872635RN4O3)">
       <input id="acc-keyref" placeholder="Секрет Finam для счёта" type="password">
       <input id="acc-exp" placeholder="экспозиция 0.25–2.0" type="number" step="0.05" value="1.0">
-      <button onclick="addAccount()">Добавить счёт</button></div>
+      <button onclick="addAccount()">Добавить счёт</button>
+      <button onclick="openAccountEdit()">Изменить счёт</button></div>
     <div class="hint">Экспозиция: 2.0 — правило Силаева (200% номинала), 1.0 — половинный сайз, 0.25 — один контракт на 50 тыс. ₽. Лот = equity × экспозиция / (цена × множитель).</div>
     <div class="hint">Ключ счёта вставляется сюда один раз: он сохранится в <code>auth.json</code> с правами 600, а в карточке счёта останется только имя. Робот берёт ключ из выбранного счёта.</div>
     <div class="row" style="margin-top:8px">
@@ -116,7 +253,7 @@
       <span id="fav-list" class="muted"></span>
     </div>
   </div>
-</div>
+</main></div>
 
 <div class="modal" id="modal"><div class="box">
   <h2 id="modal-title">Новый робот</h2>
@@ -168,6 +305,15 @@
 <div class="modal" id="edit-modal"><div class="box">
   <h2 id="edit-title">Параметры робота</h2>
   <p class="muted">Активный робот при сохранении уйдёт на паузу; создаётся новая версия параметров.</p>
+  <div class="field"><label>Счёт</label><select id="e-account"></select></div>
+  <div class="field"><label>Режим цены</label><select id="e-pricing">
+      <option value="signal">цена сигнала</option>
+      <option value="marketable">маркет-лимит</option>
+      <option value="market">рыночная</option></select></div>
+  <div class="field"><label>Повторяет бумажного</label>
+    <input id="e-source" list="e-source-list" placeholder="p-base">
+    <datalist id="e-source-list"></datalist></div>
+  <div class="field"><label>Экспозиция</label><input id="e-exposure" type="number" step="0.05" min="0.01" max="2"></div>
   <div class="params" id="e-params"></div>
   <div class="hint">Переключатели: включено = <code>true</code>, выключено = <code>false</code>; `*` — отличается от дефолта.</div>
   <div class="field"><label>Причина изменения</label><input id="e-reason" placeholder="например: echo CM grid 48→55"></div>
@@ -176,6 +322,19 @@
   <div class="row"><button onclick="previewEdit()">Проверить на истории</button>
     <button class="primary" onclick="submitEdit()">Сохранить версию</button>
     <button onclick="closeEdit()">Отмена</button></div>
+</div></div>
+
+<div class="modal" id="account-modal"><div class="box">
+  <h2>Редактирование счёта</h2>
+  <div class="field"><label>Счёт</label><select id="a-edit-id" onchange="fillAccountEdit()"></select></div>
+  <div class="field"><label>Метка</label><input id="a-edit-label"></div>
+  <div class="field"><label>Торговый код</label><input id="a-edit-code"></div>
+  <div class="field"><label>Экспозиция (0.25–2.0)</label><input id="a-edit-exp" type="number" step="0.05" min="0.01" max="2"></div>
+  <div class="field"><label>Новый ключ (если меняем)</label><input id="a-edit-key" type="password" placeholder="оставьте пустым, чтобы не менять"></div>
+  <div class="field"><label>Комментарий</label><input id="a-edit-comment"></div>
+  <div class="err" id="a-edit-err"></div>
+  <div class="row"><button class="primary" onclick="submitAccountEdit()">Сохранить</button>
+    <button onclick="closeAccountEdit()">Отмена</button></div>
 </div></div>
 
 <script>
@@ -401,6 +560,37 @@ async function saveKey() {
         await loadAll(); }
   catch(e) { $('status').textContent = 'ошибка: ' + e.message; }
 }
+function openAccountEdit() {
+  if (!accounts.length) { $('status').textContent = 'нет счетов'; return; }
+  $('a-edit-id').innerHTML = accounts.map(a =>
+    `<option value="${esc(a.id)}">${esc(a.id)}${a.label ? ' · ' + esc(a.label) : ''}</option>`).join('');
+  $('a-edit-err').textContent = '';
+  fillAccountEdit();
+  $('account-modal').classList.add('on');
+}
+function closeAccountEdit(){ $('account-modal').classList.remove('on'); }
+function fillAccountEdit() {
+  const a = accounts.find(x => x.id === $('a-edit-id').value) || {};
+  $('a-edit-label').value = a.label || '';
+  $('a-edit-code').value = a.trading_code || '';
+  $('a-edit-exp').value = a.max_exposure || 1;
+  $('a-edit-comment').value = a.comment || '';
+  $('a-edit-key').value = '';
+}
+async function submitAccountEdit() {
+  try {
+    const payload = {
+      label: $('a-edit-label').value.trim(),
+      trading_code: $('a-edit-code').value.trim(),
+      max_exposure: Number($('a-edit-exp').value) || 1,
+      comment: $('a-edit-comment').value.trim(),
+    };
+    if ($('a-edit-key').value) payload.key_ref = $('a-edit-key').value;
+    await api('/accounts/' + encodeURIComponent($('a-edit-id').value),
+              {method:'PATCH', body:JSON.stringify(payload)});
+    closeAccountEdit(); await loadAll();
+  } catch(e) { $('a-edit-err').textContent = e.message; }
+}
 async function loadServiceKey() {
   try { const r = await api('/service-key');
         $('service-status').textContent = r.set ? 'сервисный ключ сохранён (' + r.ref + ')'
@@ -447,6 +637,13 @@ async function openEdit(id){
   editing = inst;
   $('edit-title').textContent = id + ' · ' + inst.spec_id;
   $('e-reason').value = ''; $('e-err').textContent = ''; $('e-preview').textContent = '—';
+  $('e-account').innerHTML = accounts.map(a =>
+    `<option value="${esc(a.id)}">${esc(a.id)}${a.label ? ' · ' + esc(a.label) : ''}</option>`).join('');
+  $('e-account').value = inst.account || '';
+  $('e-pricing').value = inst.pricing || 'marketable';
+  $('e-source').value = inst.source_config || '';
+  $('e-source-list').innerHTML = paperIds.map(x => `<option value="${esc(x)}"></option>`).join('');
+  $('e-exposure').value = inst.exposure || '';
   $('e-params').innerHTML = spec ? Object.keys(spec.defaults).map(k=>{
     const v = inst.params[k];
     const changed = String(v) !== String(spec.defaults[k]);
@@ -463,7 +660,9 @@ function editPayload(){
     else if (t === 'float') v = parseFloat(v);
     params[inp.dataset.p] = v;
   });
-  return {params};
+  return {params, account:$('e-account').value,
+          pricing:$('e-pricing').value, source_config:$('e-source').value.trim(),
+          exposure:Number($('e-exposure').value) || 0};
 }
 async function previewEdit(){
   if (!editing) return;
