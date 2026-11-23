@@ -14,7 +14,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from algo import robot_library as lib
+from algo import backtest_preview, robot_library as lib
 from algo.broker import registry
 from algo.instance_configs import migrate_runtime_from_paper, seed_static_configs
 from algo.robot_store import ConflictError, RobotStore, StoreError
@@ -162,6 +162,23 @@ def action(iid: str, action: str, payload: dict | None = None,
 
 def history_view(store: RobotStore, iid: str) -> list[dict]:
     return store.history(iid)
+
+
+def backtest_preview_view(payload: dict) -> dict:
+    try:
+        return backtest_preview.preview(
+            str(payload.get("spec_id", "")),
+            str(payload.get("instrument", "CNY")),
+            payload.get("params") or {},
+            int(payload.get("days", 60)),
+        )
+    except Exception as exc:  # noqa: BLE001 — предпросмотр не должен ронять API
+        return {"ok": False, "reason": f"{type(exc).__name__}: {exc}"[:200]}
+
+
+@router.post("/backtest-preview")
+def backtest_preview_endpoint(payload: dict):
+    return backtest_preview_view(payload)
 
 
 @router.get("/instances/{iid}/history")

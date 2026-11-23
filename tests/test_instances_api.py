@@ -51,6 +51,16 @@ class TestApiViews(unittest.TestCase):
     def test_brokers_list(self):
         self.assertIn("finam", [b["name"] for b in api.brokers()])
 
+    def test_backtest_preview(self):
+        r = api.backtest_preview_view({
+            "spec_id": "prostushka", "instrument": "RTS",
+            "params": {"ma_window": 48}, "days": 5,
+        })
+        self.assertTrue(r["ok"], r)
+        self.assertIn("trades", r)
+        bad = api.backtest_preview_view({"spec_id": "unknown"})
+        self.assertFalse(bad["ok"])
+
     def test_live_views_and_stop(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

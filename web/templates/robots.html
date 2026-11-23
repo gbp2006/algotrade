@@ -96,6 +96,18 @@
     <button onclick="closeModal()">Отмена</button></div>
 </div></div>
 
+<div class="modal" id="edit-modal"><div class="box">
+  <h2 id="edit-title">Параметры робота</h2>
+  <p class="muted">Активный робот при сохранении уйдёт на паузу; создаётся новая версия параметров.</p>
+  <div class="params" id="e-params"></div>
+  <div class="field"><label>Причина изменения</label><input id="e-reason" placeholder="например: echo CM grid 48→55"></div>
+  <div class="field"><label>Предпросмотр (60 дней)</label><div id="e-preview" class="muted">—</div></div>
+  <div class="err" id="e-err"></div>
+  <div class="row"><button onclick="previewEdit()">Проверить на истории</button>
+    <button class="primary" onclick="submitEdit()">Сохранить версию</button>
+    <button onclick="closeEdit()">Отмена</button></div>
+</div></div>
+
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -128,6 +140,7 @@ async function loadAll() {
       if (i.status === 'active') acts.push(`<button onclick="act('${esc(i.id)}','pause')">пауза</button>`);
       acts.push(`<button onclick="act('${esc(i.id)}','stop')">стоп</button>`);
       acts.push(`<button onclick="act('${esc(i.id)}','archive')">убрать</button>`);
+      if (i.status !== 'archived') acts.push(`<button onclick="openEdit('${esc(i.id)}')">изменить</button>`);
       const params = Object.entries(i.params || {}).map(([k,v]) => `${k}=${esc(v)}`).join(' ');
       return `<tr><td><b>${esc(i.id)}</b><br><span class="muted">${esc(i.note||'')}</span></td>
         <td>${esc(i.spec_id)} / ${esc(i.instrument)}<br><code>${params}</code></td>
@@ -202,6 +215,50 @@ async function checkBroker(name) {
   try { const r = await api(`/brokers/${name}/check`, {method:'POST'});
         $('status').textContent = `${name}: ${r.ok?'OK':'нет связи'} — ${r.detail}`; }
   catch(e) { $('status').textContent = e.message; }
+}
+let editing = null;
+async function openEdit(id){
+  const [inst, sp] = await Promise.all([api('/instances/'+encodeURIComponent(id)), api('/specs')]);
+  const spec = sp.find(s => s.id === inst.spec_id);
+  editing = inst;
+  $('edit-title').textContent = id + ' · ' + inst.spec_id;
+  $('e-reason').value = ''; $('e-err').textContent = ''; $('e-preview').textContent = '—';
+  $('e-params').innerHTML = spec ? Object.keys(spec.defaults).map(k=>{
+    const v = inst.params[k];
+    const changed = String(v) !== String(spec.defaults[k]);
+    return `<label>${esc(k)}${changed?' *':''}<input data-p="${esc(k)}" data-type="${esc(spec.schema[k])}" value="${esc(v)}"></label>`;
+  }).join('') : '<span class="muted">нет spec</span>';
+  $('edit-modal').classList.add('on');
+}
+function closeEdit(){ $('edit-modal').classList.remove('on'); }
+function editPayload(){
+  const params = {};
+  document.querySelectorAll('#e-params input[data-p]').forEach(inp=>{
+    const t = inp.dataset.type; let v = inp.value;
+    if (t === 'int') v = parseInt(v,10);
+    else if (t === 'float') v = parseFloat(v);
+    else if (t === 'bool') v = v === 'true';
+    params[inp.dataset.p] = v;
+  });
+  return {params};
+}
+async function previewEdit(){
+  if (!editing) return;
+  try{
+    const r = await api('/backtest-preview', {method:'POST', body:JSON.stringify({
+      spec_id:editing.spec_id, instrument:editing.instrument, params:editPayload().params})});
+    $('e-preview').textContent = r.ok
+      ? `${r.trades} сделок, net ${r.net_profit}, PF ${r.profit_factor}, DD ${r.max_drawdown} (${r.from}..${r.to})`
+      : ('нет расчёта: ' + r.reason);
+  }catch(e){ $('e-err').textContent = e.message; }
+}
+async function submitEdit(){
+  if (!editing) return;
+  try{
+    const body = Object.assign(editPayload(), {version:editing.version, reason:$('e-reason').value});
+    await api('/instances/'+encodeURIComponent(editing.id), {method:'PATCH', body:JSON.stringify(body)});
+    closeEdit(); await loadAll();
+  }catch(e){ $('e-err').textContent = e.message; }
 }
 loadAll();
 </script>
