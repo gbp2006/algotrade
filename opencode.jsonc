@@ -383,6 +383,16 @@
       "finam-mcp": {
         "type": "remote",
         "url": "https://mcp.finam.ru/sk_cX7zrq5h7Fs0BRGrRdvm3uHMPA4pYGFY05fvngYnIkY"
+      },
+      // OsEngine: локальный терминал под Wine, MCP-хост на :6500.
+      // Ключ — публичный дефолт OsEngine для loopback, не секрет.
+      // Только исследования: не эталон (ADR 18.11) и без выхода в контур (ADR 23.11).
+      "osengine": {
+        "type": "remote",
+        "url": "http://localhost:6500/api/v2/mcp",
+        "headers": {
+          "X-Api-Key": "osengine-mcp-default-key"
+        }
       }
     }
   },
