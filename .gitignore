@@ -22,6 +22,8 @@ results/live_run.lock
 results/live_run.json
 results/rollover.lock
 results/rollover_run.json
+results/scheduler.log
+results/scheduler_state.json
 live_settings.json
 results/shadow.json
 results/shadow.log
