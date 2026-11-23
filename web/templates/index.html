@@ -70,7 +70,7 @@
   .switcher button{border:0;background:transparent;color:#9aa3b8;padding:9px 20px;border-radius:999px;
             font-size:13px;cursor:pointer}
   .switcher button.on{background:#20304f;color:#dbe6ff}
-  .switcher button.on.live{background:#123a2a;color:#7ff0b5}
+  .switcher button.on.resume{background:#123a2a;color:#7ff0b5}
   .hero-tools{position:absolute;top:22px;left:26px;display:flex;gap:8px;z-index:5}
   .tool{width:38px;height:38px;border-radius:50%;background:#151a26;border:1px solid #29303f;
         display:grid;place-items:center;font-size:14px;color:#aeb6c8;cursor:pointer}
@@ -185,8 +185,8 @@
       <h1 id="h-title">—</h1>
       <p id="h-desc"></p>
       <div class="switcher">
-        <button id="sw-off" title="Остановить торговлю">○ Offline</button>
-        <button id="sw-on" title="Разрешить торговлю">● Live</button>
+        <button id="sw-off" title="Поставить бумажный контур на паузу">⏸ Пауза бумаги</button>
+        <button id="sw-on" title="Снять паузу бумажного контура">▶ Снять паузу</button>
         <span id="h-status" class="chip">...</span>
       </div>
     </section>
@@ -572,8 +572,8 @@ function render(){
   const h = DATA.health, live = !h.stop;
   const hStatus = h.status === "OK" ? "ok" : (h.status === "PROBLEMS" ? "bad" : "");
   const hLabel = hStatus === "bad" ? "ПРОБЛЕМЫ" : (hStatus === "ok" ? "OK" : "...");
-  document.getElementById("sw-off").className = live ? "" : "on";
-  document.getElementById("sw-on").className = live ? "on live" : "";
+  document.getElementById("sw-off").className = live ? "on" : "";
+  document.getElementById("sw-on").className = live ? "" : "on resume";
   document.getElementById("h-status").textContent = hLabel;
   document.getElementById("h-status").className = "chip " + (hStatus === "bad" ? "down" : hStatus === "ok" ? "up" : "");
 

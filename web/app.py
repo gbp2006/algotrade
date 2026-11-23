@@ -1,4 +1,4 @@
-"""Веб-дашборд бумажной торговли: тёмный интерфейс, 6 конфигураций.
+"""Веб-дашборд бумажной торговли: тёмный интерфейс, активные инстансы из store.
 
 Запуск: uvicorn web.app:app --host 0.0.0.0 --port 8080
 Доступ: без авторизации — панель открыта только в домашней сети / через VPN.
@@ -33,6 +33,16 @@ HEALTH = ROOT / "results" / "health.json"
 ALERTS = ROOT / "results" / "alerts_seen.json"
 MSK = timezone(timedelta(hours=3))
 MULT = 1000.0
+
+
+def read_health() -> dict | None:
+    """Битый health.json не должен ронять дашборд и ACK алертов."""
+    if not HEALTH.exists():
+        return None
+    try:
+        return json.loads(HEALTH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
 
 try:
     from dotenv import load_dotenv  # type: ignore
@@ -335,7 +345,7 @@ def state():
     portfolio["exposure_pct"] = (round(100 * portfolio["notional"] / portfolio["equity"], 1)
                                  if portfolio["equity"] else 0.0)
 
-    wd = json.loads(HEALTH.read_text(encoding="utf-8")) if HEALTH.exists() else None
+    wd = read_health()
     ok = bool(wd and wd.get("ok"))
     digest = alerts_digest(wd)
     if not digest and ALERTS.exists():
@@ -550,12 +560,7 @@ def api_health():
 
     Для внешних мониторов: 200, если ok, иначе 503 (проблемы — в теле).
     """
-    wd = None
-    if HEALTH.exists():
-        try:
-            wd = json.loads(HEALTH.read_text(encoding="utf-8"))
-        except Exception:  # noqa: BLE001 — битый health.json не должен ронять панель
-            wd = None
+    wd = read_health()
     ok = bool(wd and wd.get("ok"))
     return JSONResponse({
         "status": "OK" if ok else "PROBLEMS",
@@ -599,7 +604,7 @@ def toggle_stop():
 @app.post("/api/alerts/ack")
 def ack_alerts():
     """Отметить текущий набор алертов прочитанным (общий для всех браузеров)."""
-    wd = json.loads(HEALTH.read_text(encoding="utf-8")) if HEALTH.exists() else None
+    wd = read_health()
     digest = alerts_digest(wd)
     if not digest:
         ALERTS.unlink(missing_ok=True)

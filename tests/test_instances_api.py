@@ -11,6 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from algo.robot_store import RobotStore  # noqa: E402
+from web import app as web_app  # noqa: E402
 from web import instances_api as api  # noqa: E402
 
 
@@ -86,6 +87,26 @@ class TestApiViews(unittest.TestCase):
                 self.assertTrue(api.live_state_view()["stop_real"])
                 api.stop_real_view("clear")
                 self.assertFalse(api.live_state_view()["stop_real"])
+
+
+class TestPanelSafety(unittest.TestCase):
+    def test_read_health_survives_broken_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "health.json"
+            with mock.patch.object(web_app, "HEALTH", path):
+                self.assertIsNone(web_app.read_health())
+                path.write_text("{битый", encoding="utf-8")
+                self.assertIsNone(web_app.read_health())
+                path.write_text('{"ok": true}', encoding="utf-8")
+                self.assertEqual(web_app.read_health(), {"ok": True})
+
+    def test_paper_toggle_does_not_claim_live(self):
+        html = (Path(__file__).resolve().parent.parent / "web" / "templates"
+                / "index.html").read_text(encoding="utf-8")
+        self.assertIn("Пауза бумаги", html)
+        self.assertIn("Снять паузу", html)
+        self.assertNotIn("○ Offline", html)
+        self.assertNotIn("● Live", html)
 
 
 if __name__ == "__main__":
