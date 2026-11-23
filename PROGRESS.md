@@ -20,7 +20,7 @@ CNY 2022-04-26…20.11 (784k M1), Si 2009…2026 (3.6M), GL/MIX с ISS. Живо
 
 Поиск стратегий (21.11): каталог ~78 идей (`reports/strategy-catalog.md`), 17 прототипов, шорт-лист 7 после train→OOS (`reports/strategy-research-summary.md`); в бумажный контур не выложено.
 
-Ресурсы Коваль-Зайцева (23.11): разобраны TG `@truetrading_ru` и YouTube `@truetrading` + два doc с кодами; 13 кандидатов KZ-01…KZ-13 (`reports/koval-zaytsev-strategy-search.md`). Прототип KZ-02 в двух интерпретациях (`reports/kz02-prototype.md`) и строгие гейты (`reports/kz02-rigorous-validation.md`): PF 2.18/1.81, но DSR не пройден — research-only, в контур не добавлен. Рабочий робот по «пробою канала» есть (`cb-day`, `cb-day-si`).
+Ресурсы Коваль-Зайцева (23.11): разобраны TG `@truetrading_ru` и YouTube `@truetrading` + два doc с кодами; 13 кандидатов KZ-01…KZ-13 (`reports/koval-zaytsev-strategy-search.md`). Прототип KZ-02 в двух интерпретациях (`reports/kz02-prototype.md`), строгие гейты (`reports/kz02-rigorous-validation.md`), 10 фьючерсов (`reports/kz02-multi-futures.md`) и сетка параметров (`reports/kz02-param-search.md`): PF до 2.2–3.0 на OOS 2026, но CAGR 3.9–5.0% против 11.9% у базы и гейты 0/4 — рабочего варианта нет, в контур не добавлен. Рабочий робот по «пробою канала» есть (`cb-day`, `cb-day-si`).
 
 Готовность к бою (23.11): предохранители подготовлены и покрыты тестами — боевые лимиты из капитала, STOP перед каждой заявкой, уникальный `client_id`, блокирующая сверка позиций (`algo/broker/live_guard.py`, `docs/live-runbook.md`). Транспорт к роботу не подключён, флаг 0. Открыто 4 решения пользователя до включения: цена реальной заявки, капитал/лимиты, стартовый набор конфигов, запрет торговли в день экспирации.
 

@@ -358,3 +358,36 @@ ts,strategy,instrument,period,params,trades,net,pf,avg,dd,in_market,note
 2026-11-23 18:01,kz02_intra,Si,oos 2026,source=truetrading_ru;prototype=81_kz_breakout;ma=30;koef=0.15,23,7827.53,1.79,340.33,-3290.44,32.4,"исследовательский прототип, 1 контракт, без сайзинга"
 2026-11-23 18:01,kz02_intra_ls,Si,oos 2026,source=truetrading_ru;prototype=81_kz_breakout;ma=30;koef=0.15,41,16132.48,2.03,393.48,-4083.42,61.8,"исследовательский прототип, 1 контракт, без сайзинга"
 2026-11-23 18:01,kz03_day,Si,oos 2026,source=truetrading_ru;prototype=81_kz_breakout;ma=30;koef=0.15,30,3236.55,1.25,107.88,-4349.19,36.3,"исследовательский прототип, 1 контракт, без сайзинга"
+2026-11-23 18:16,kzmulti_kz02_intra_ls,PORTFOLIO10,2016-2025,"capital=1000000;sizing=100% экспозиции на входе;parameters=frozen ma30/bb14/dev2/koef0.15;instruments=Si,Eu,ED,RTS,MIX,BR,GOLD,SILV,SBRF,GAZR",4859,1343964,0,,0,,"10 инструментов, по 1M на каждый, без подгонки"
+2026-11-23 18:16,kzmulti_kz02_intra,PORTFOLIO10,2016-2025,"capital=1000000;sizing=100% экспозиции на входе;parameters=frozen ma30/bb14/dev2/koef0.15;instruments=Si,Eu,ED,RTS,MIX,BR,GOLD,SILV,SBRF,GAZR",2653,4101131,0,,0,,"10 инструментов, по 1M на каждый, без подгонки"
+2026-11-23 18:16,kzmulti_kz02_day,PORTFOLIO10,2016-2025,"capital=1000000;sizing=100% экспозиции на входе;parameters=frozen ma30/bb14/dev2/koef0.15;instruments=Si,Eu,ED,RTS,MIX,BR,GOLD,SILV,SBRF,GAZR",2294,6671329,0,,0,,"10 инструментов, по 1M на каждый, без подгонки"
+2026-11-23 18:17,kzgrid_ma20_k0.1_bb10,PORTFOLIO10,2016-2025,source=truetrading_ru;mode=grid;ma=20;koef=0.1;bb=10,2178,6762218,0,,0,,"прибыль суммы 10 счетов по 1M, параметры из сетки"
+2026-11-23 18:17,kzgrid_ma20_k0.1_bb14,PORTFOLIO10,2016-2025,source=truetrading_ru;mode=grid;ma=20;koef=0.1;bb=14,2006,7363065,0,,0,,"прибыль суммы 10 счетов по 1M, параметры из сетки"
+2026-11-23 18:17,kzgrid_ma20_k0.15_bb10,PORTFOLIO10,2016-2025,source=truetrading_ru;mode=grid;ma=20;koef=0.15;bb=10,2346,5432672,0,,0,,"прибыль суммы 10 счетов по 1M, параметры из сетки"
+2026-11-23 18:17,kzgrid_ma20_k0.15_bb14,PORTFOLIO10,2016-2025,source=truetrading_ru;mode=grid;ma=20;koef=0.15;bb=14,2277,6913406,0,,0,,"прибыль суммы 10 счетов по 1M, параметры из сетки"
+2026-11-23 18:18,kzgrid_ma20_k0.25_bb10,PORTFOLIO10,2016-2025,source=truetrading_ru;mode=grid;ma=20;koef=0.25;bb=10,2414,5764744,0,,0,,"прибыль суммы 10 счетов по 1M, параметры из сетки"
+2026-11-23 18:18,kzgrid_ma20_k0.25_bb14,PORTFOLIO10,2016-2025,source=truetrading_ru;mode=grid;ma=20;koef=0.25;bb=14,2397,5126297,0,,0,,"прибыль суммы 10 счетов по 1M, параметры из сетки"
+2026-11-23 18:18,kzgrid_ma30_k0.1_bb10,PORTFOLIO10,2016-2025,source=truetrading_ru;mode=grid;ma=30;koef=0.1;bb=10,2191,6827825,0,,0,,"прибыль суммы 10 счетов по 1M, параметры из сетки"
+2026-11-23 18:18,kzgrid_ma30_k0.1_bb14,PORTFOLIO10,2016-2025,source=truetrading_ru;mode=grid;ma=30;koef=0.1;bb=14,2030,8373175,0,,0,,"прибыль суммы 10 счетов по 1M, параметры из сетки"
+2026-11-23 18:18,kzgrid_ma30_k0.15_bb10,PORTFOLIO10,2016-2025,source=truetrading_ru;mode=grid;ma=30;koef=0.15;bb=10,2353,6953385,0,,0,,"прибыль суммы 10 счетов по 1M, параметры из сетки"
+2026-11-23 18:18,kzgrid_ma30_k0.15_bb14,PORTFOLIO10,2016-2025,source=truetrading_ru;mode=grid;ma=30;koef=0.15;bb=14,2294,6671329,0,,0,,"прибыль суммы 10 счетов по 1M, параметры из сетки"
+2026-11-23 18:18,kzgrid_ma30_k0.25_bb10,PORTFOLIO10,2016-2025,source=truetrading_ru;mode=grid;ma=30;koef=0.25;bb=10,2424,5650902,0,,0,,"прибыль суммы 10 счетов по 1M, параметры из сетки"
+2026-11-23 18:18,kzgrid_ma30_k0.25_bb14,PORTFOLIO10,2016-2025,source=truetrading_ru;mode=grid;ma=30;koef=0.25;bb=14,2411,4823613,0,,0,,"прибыль суммы 10 счетов по 1M, параметры из сетки"
+2026-11-23 18:18,kzgrid_ma50_k0.1_bb10,PORTFOLIO10,2016-2025,source=truetrading_ru;mode=grid;ma=50;koef=0.1;bb=10,2195,7376188,0,,0,,"прибыль суммы 10 счетов по 1M, параметры из сетки"
+2026-11-23 18:18,kzgrid_ma50_k0.1_bb14,PORTFOLIO10,2016-2025,source=truetrading_ru;mode=grid;ma=50;koef=0.1;bb=14,2041,7874050,0,,0,,"прибыль суммы 10 счетов по 1M, параметры из сетки"
+2026-11-23 18:18,kzgrid_ma50_k0.15_bb10,PORTFOLIO10,2016-2025,source=truetrading_ru;mode=grid;ma=50;koef=0.15;bb=10,2341,6332011,0,,0,,"прибыль суммы 10 счетов по 1M, параметры из сетки"
+2026-11-23 18:18,kzgrid_ma50_k0.15_bb14,PORTFOLIO10,2016-2025,source=truetrading_ru;mode=grid;ma=50;koef=0.15;bb=14,2284,6102454,0,,0,,"прибыль суммы 10 счетов по 1M, параметры из сетки"
+2026-11-23 18:18,kzgrid_ma50_k0.25_bb10,PORTFOLIO10,2016-2025,source=truetrading_ru;mode=grid;ma=50;koef=0.25;bb=10,2404,5129514,0,,0,,"прибыль суммы 10 счетов по 1M, параметры из сетки"
+2026-11-23 18:18,kzgrid_ma50_k0.25_bb14,PORTFOLIO10,2016-2025,source=truetrading_ru;mode=grid;ma=50;koef=0.25;bb=14,2389,4510962,0,,0,,"прибыль суммы 10 счетов по 1M, параметры из сетки"
+2026-11-23 18:18,kzparam_day_ma30_k0.1_bb14,CNY,oos 2026,source=truetrading_ru;mode=day;ma=30;koef=0.1;bb=14,20,1628.66,2.27,81.43,-468.49,46.8,параметры выбраны на 2016–2025; research-only
+2026-11-23 18:18,kzparam_day_ma30_k0.1_bb14,Si,oos 2026,source=truetrading_ru;mode=day;ma=30;koef=0.1;bb=14,22,1487.99,1.12,67.64,-5189.99,44.1,параметры выбраны на 2016–2025; research-only
+2026-11-23 18:18,kzparam_intra_ma30_k0.1_bb14,CNY,oos 2026,source=truetrading_ru;mode=intra;ma=30;koef=0.1;bb=14,24,1964.79,3.03,81.87,-544.67,31.6,параметры выбраны на 2016–2025; research-only
+2026-11-23 18:18,kzparam_intra_ma30_k0.1_bb14,Si,oos 2026,source=truetrading_ru;mode=intra;ma=30;koef=0.1;bb=14,22,9661.25,2.2,439.15,-3290.44,32.2,параметры выбраны на 2016–2025; research-only
+2026-11-23 18:18,kzparam_day_ma50_k0.1_bb14,CNY,oos 2026,source=truetrading_ru;mode=day;ma=50;koef=0.1;bb=14,20,1197.44,1.83,59.87,-552.56,46.6,параметры выбраны на 2016–2025; research-only
+2026-11-23 18:18,kzparam_day_ma50_k0.1_bb14,Si,oos 2026,source=truetrading_ru;mode=day;ma=50;koef=0.1;bb=14,19,3780.54,1.39,198.98,-3825.75,43.0,параметры выбраны на 2016–2025; research-only
+2026-11-23 18:18,kzparam_intra_ma50_k0.1_bb14,CNY,oos 2026,source=truetrading_ru;mode=intra;ma=50;koef=0.1;bb=14,22,1608.94,2.35,73.13,-629.81,31.2,параметры выбраны на 2016–2025; research-only
+2026-11-23 18:18,kzparam_intra_ma50_k0.1_bb14,Si,oos 2026,source=truetrading_ru;mode=intra;ma=50;koef=0.1;bb=14,20,10515.21,2.47,525.76,-1495.58,31.1,параметры выбраны на 2016–2025; research-only
+2026-11-23 18:18,kzparam_day_ma20_k0.1_bb14,CNY,oos 2026,source=truetrading_ru;mode=day;ma=20;koef=0.1;bb=14,17,2321.96,3.62,136.59,-273.5,46.9,параметры выбраны на 2016–2025; research-only
+2026-11-23 18:18,kzparam_day_ma20_k0.1_bb14,Si,oos 2026,source=truetrading_ru;mode=day;ma=20;koef=0.1;bb=14,20,8717.15,1.97,435.86,-5398.01,42.1,параметры выбраны на 2016–2025; research-only
+2026-11-23 18:18,kzparam_intra_ma20_k0.1_bb14,CNY,oos 2026,source=truetrading_ru;mode=intra;ma=20;koef=0.1;bb=14,26,2027.23,3.05,77.97,-544.11,34.0,параметры выбраны на 2016–2025; research-only
+2026-11-23 18:18,kzparam_intra_ma20_k0.1_bb14,Si,oos 2026,source=truetrading_ru;mode=intra;ma=20;koef=0.1;bb=14,22,10555.34,2.47,479.79,-3348.45,31.2,параметры выбраны на 2016–2025; research-only
