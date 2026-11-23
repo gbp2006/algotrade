@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import datetime as dt
 import importlib.util
+import os
 import sys
 import unittest
+from unittest import mock
 from pathlib import Path
 
 import pandas as pd
@@ -14,6 +16,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from algo import instruments as inst_mod  # noqa: E402
+from algo import rollover_integration as ri  # noqa: E402
 
 _spec = importlib.util.spec_from_file_location(
     "rollover_live", ROOT / "scripts" / "35_rollover_live.py")
@@ -56,6 +59,16 @@ class TestActiveContracts(unittest.TestCase):
         self.assertIs(rl.instrument_for("RIZ6@RTSX", by_inst),
                       inst_mod.INSTRUMENTS["RTS"])
         self.assertIsNone(rl.instrument_for("UNKNOWN", by_inst))
+
+    def test_flag_gate(self):
+        day = dt.date(2026, 11, 23)
+        inst = inst_mod.INSTRUMENTS["RTS"]
+        with mock.patch.dict(os.environ, {ri.FLAG: "0"}):
+            self.assertEqual(ri.front_symbol(inst, day), inst_mod.symbol(inst, day))
+            self.assertIsNone(ri.decision_for_position(
+                day, "RIZ6@RTSX", 2, inst))
+        with mock.patch.dict(os.environ, {ri.FLAG: "1"}):
+            self.assertTrue(ri.enabled())
 
     def test_volumes_for(self):
         idx = pd.to_datetime(["2026-11-20", "2026-11-21", "2026-11-22"])

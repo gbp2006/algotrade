@@ -36,6 +36,8 @@ from algo.instruments import DEFAULT, INSTRUMENTS, margin, symbol  # noqa: E402
 from algo.live import decision, decision_configs, morning_exit_price  # noqa: E402
 from algo.portfolio import CAPITAL, ledger  # noqa: E402
 from algo.instance_configs import active_configs, migrate_runtime_from_paper  # noqa: E402
+from algo import instruments as inst_mod  # noqa: E402
+from algo import rollover_integration  # noqa: E402
 
 PAPER = Path(__file__).resolve().parent.parent / "results" / "paper.csv"
 STOP = Path(__file__).resolve().parent.parent / "results" / "STOP"
@@ -182,8 +184,22 @@ def main() -> int:
     else:
         phase = "decision"
 
-    # символы и бары — по одному разу на инструмент
-    symbols = {cfg.id: symbol(instrument_of(cfg), day) for cfg in ALL_CONFIGS}
+    # символы и бары — по одному разу на инструмент.
+    # При ALGO_VOL_ROLLOVER=1 нога квартального контракта выбирается по VOL —
+    # так же, как в бэктесте; без флага поведение прежнее (страховка бумаги).
+    vols_by_inst: dict[str, object] = {}
+    if rollover_integration.enabled():
+        for inst in inst_mod.INSTRUMENTS.values():
+            if inst.symbol or not inst.asset:
+                continue
+            contracts = inst_mod.active_contracts(inst, day)
+            vols_by_inst[inst.code] = rollover_integration.volumes_for(
+                b, list(contracts), day)
+    symbols = {
+        cfg.id: rollover_integration.front_symbol(
+            instrument_of(cfg), day, vols_by_inst.get(instrument_of(cfg).code))
+        for cfg in ALL_CONFIGS
+    }
     start = (datetime.combine(day, datetime.min.time(), MSK) - timedelta(days=10)
              ).strftime("%Y-%m-%dT00:00:00Z")
     m5_by: dict[str, object] = {}

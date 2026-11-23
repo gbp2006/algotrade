@@ -14,10 +14,9 @@ import argparse
 import json
 import os
 import sys
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from pathlib import Path
 
-import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -38,28 +37,12 @@ from algo.instance_configs import live_settings_from_store  # noqa: E402
 from algo.instruments import INSTRUMENTS, active_contracts  # noqa: E402
 from algo.live_config import SettingsError, load_settings  # noqa: E402
 from algo.rollover import is_perpetual, plan_roll, roll_decision  # noqa: E402
+from algo.rollover_integration import volumes_for  # noqa: E402
 
 LIVE = ROOT / "results" / "live.csv"
 STOP = ROOT / "results" / "STOP"
 LOCK = ROOT / "results" / "rollover.lock"
 SUMMARY = ROOT / "results" / "rollover_run.json"
-
-
-def volumes_for(broker, symbols: list[str], day: date,
-                lookback: int = 12) -> pd.DataFrame | None:
-    """Дневные объёмы контрактов за окно до дня решения."""
-    start = (day - timedelta(days=lookback * 2)).isoformat() + "T00:00:00Z"
-    end = day.isoformat() + "T23:59:59Z"
-    cols: dict[str, pd.Series] = {}
-    for sym in symbols:
-        try:
-            df = broker.bars(sym, "TIME_FRAME_D1", start, end)
-        except Exception:  # noqa: BLE001 — нет баров → попытка fallback по дате
-            continue
-        if df is None or df.empty or "vol" not in df:
-            continue
-        cols[sym] = df["vol"].resample("1D").sum()
-    return pd.DataFrame(cols) if cols else None
 
 
 def instrument_for(symbol: str, contracts_by_inst: dict):
