@@ -14,7 +14,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from algo import backtest_preview, robot_library as lib
+from algo import backtest_preview, robot_library as lib, scheduler
 from algo.broker import registry
 from algo.instance_configs import migrate_runtime_from_paper, seed_static_configs
 from algo.robot_store import ConflictError, RobotStore, StoreError
@@ -35,6 +35,10 @@ seed_static_configs(_default_store)  # статические конфиги с�
 try:
     migrate_runtime_from_paper(_default_store)  # позиции запущенных роботов из paper.csv
 except Exception:  # noqa: BLE001 — журнал остаётся главным источником, панель должна подняться
+    pass
+try:
+    scheduler.seed_default_jobs(_default_store)  # расписание видно в панели
+except Exception:  # noqa: BLE001
     pass
 
 
@@ -287,3 +291,38 @@ def stop_real_view(action: str) -> dict:
 @router.post("/stop-real")
 def stop_real(payload: dict):
     return stop_real_view(str(payload.get("action", "")).lower())
+
+
+# ---------- планировщик ----------
+@router.get("/scheduler/jobs")
+def scheduler_jobs(store: RobotStore = Depends(get_store)):
+    return store.list_jobs()
+
+
+@router.post("/scheduler/jobs", status_code=201)
+def scheduler_upsert_job(payload: dict, store: RobotStore = Depends(get_store)):
+    try:
+        return store.upsert_job(payload)
+    except StoreError as exc:
+        raise HTTPException(400, str(exc))
+
+
+@router.delete("/scheduler/jobs/{job_id}")
+def scheduler_delete_job(job_id: str, store: RobotStore = Depends(get_store)):
+    return {"deleted": store.delete_job(job_id)}
+
+
+@router.get("/scheduler/runs")
+def scheduler_runs(limit: int = 50, job_id: str | None = None,
+                   store: RobotStore = Depends(get_store)):
+    return store.list_runs(limit=limit, job_id=job_id)
+
+
+@router.get("/scheduler/state")
+def scheduler_state(store: RobotStore = Depends(get_store)):
+    return {
+        "shadow": scheduler.shadow(),
+        "jobs": len(store.list_jobs()),
+        "runs": len(store.list_runs(limit=200)),
+        "log": scheduler.LOG.name,
+    }

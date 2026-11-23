@@ -148,11 +148,19 @@ def main() -> int:
     ap.add_argument("--channel", action="store_true",
                     help="фаза внутридневного пробоя канала (отдельный таймер)")
     ap.add_argument("--time", help="время реплея HH:MM (только с --date)")
+    ap.add_argument("--config", action="append", default=[],
+                    help="id конфигурации (можно повторять); без значения — все")
     args = ap.parse_args()
 
     global ALL_CONFIGS
     if not ALL_CONFIGS:  # тесты подменяют список целиком — не перетираем его
         ALL_CONFIGS = active_configs("paper")
+    if args.config:
+        wanted = set(args.config)
+        ALL_CONFIGS = [c for c in ALL_CONFIGS if c.id in wanted]
+        if not ALL_CONFIGS:
+            print(f"нет активных конфигураций из {sorted(wanted)}")
+            return 0
 
     ensure_schema()
     if STOP.exists():

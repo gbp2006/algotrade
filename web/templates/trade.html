@@ -185,6 +185,10 @@
         <tbody id="orders"></tbody></table></div>
     <div class="card"><h3>Счета и брокеры</h3><div class="row" id="accounts"></div>
       <div class="row" id="brokers" style="margin-top:10px"></div></div>
+    <div class="card"><h3>Расписание и запуски</h3>
+      <p class="muted" id="sched-state"></p>
+      <table><thead><tr><th>Задание</th><th>Время / интервал</th><th>Команда</th>
+        <th>Последний запуск</th></tr></thead><tbody id="jobs"></tbody></table></div>
   </main>
 </div>
 <script>
@@ -197,9 +201,10 @@ async function api(p, opts){
 }
 async function load(){
   try{
-    const [st, robots, rt, orders, acc, br] = await Promise.all([
+    const [st, robots, rt, orders, acc, br, jobs, runs, sched] = await Promise.all([
       api('/live-state'), api('/instances?mode=live'), api('/runtime'),
-      api('/live-orders'), api('/accounts'), api('/brokers')]);
+      api('/live-orders'), api('/accounts'), api('/brokers'),
+      api('/scheduler/jobs'), api('/scheduler/runs?limit=20'), api('/scheduler/state')]);
     const run = Object.fromEntries(rt.map(x=>[x.instance_id,x]));
     $('kpi').innerHTML = `
       <div class="it"><span>Торговля</span><b>${st.allow_trading?'ВКЛ':'ВЫКЛ'}</b></div>
@@ -222,6 +227,16 @@ async function load(){
       : '<tr><td colspan="8" class="muted">заявок нет</td></tr>';
     $('accounts').innerHTML = acc.map(a=>`<span class="chip">${esc(a.id)}: ${Number(a.capital).toLocaleString('ru')} ₽</span>`).join('')||'нет счетов';
     $('brokers').innerHTML = br.map(b=>`<button onclick="check('${esc(b.name)}')">проверить ${esc(b.name)}</button>`).join('');
+    const lastByJob = {};
+    runs.forEach(r => { if (!lastByJob[r.job_id]) lastByJob[r.job_id] = r; });
+    $('sched-state').textContent = `режим: ${sched.shadow ? 'shadow (задачи не выполняются)' : 'реальный'}, заданий: ${sched.jobs}, запусков: ${sched.runs}`;
+    $('jobs').innerHTML = jobs.length ? jobs.map(j => {
+      const when = j.times.length ? j.times.join(', ') : (j.interval_min ? `каждые ${j.interval_min} мин` : '—');
+      const last = lastByJob[j.id];
+      return `<tr><td><b>${esc(j.id)}</b><br><span class="muted">${esc(j.owner)}</span></td>
+        <td>${esc(when)}</td><td><code>${esc(j.command)}</code></td>
+        <td>${last ? esc(last.status) + ' · ' + esc(last.slot || last.started || '') : '—'}</td></tr>`;
+    }).join('') : '<tr><td colspan="4" class="muted">заданий нет</td></tr>';
     $('msg').textContent = `${robots.length} боевых роботов, ${st.paper_days}/30 дней бумаги`;
   }catch(e){ $('msg').textContent='ошибка: '+e.message; }
 }

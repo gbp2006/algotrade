@@ -92,6 +92,19 @@ class RobotStore:
                   instance_id TEXT PRIMARY KEY, symbol TEXT, position INTEGER,
                   equity REAL, last_price REAL, last_decision TEXT,
                   updated_at TEXT, note TEXT);
+                CREATE TABLE IF NOT EXISTS scheduler_jobs (
+                  id TEXT PRIMARY KEY, owner TEXT NOT NULL DEFAULT 'system',
+                  command TEXT NOT NULL, times_json TEXT NOT NULL DEFAULT '[]',
+                  weekdays_json TEXT NOT NULL DEFAULT '[0,1,2,3,4]',
+                  interval_min INTEGER, hours_from INTEGER, hours_to INTEGER,
+                  enabled INTEGER NOT NULL DEFAULT 1, timeout INTEGER NOT NULL DEFAULT 1800,
+                  stop_aware INTEGER NOT NULL DEFAULT 1,
+                  catchup_template TEXT NOT NULL DEFAULT '', note TEXT DEFAULT '');
+                CREATE TABLE IF NOT EXISTS scheduler_runs (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT, job_id TEXT NOT NULL,
+                  slot TEXT NOT NULL, started TEXT, finished TEXT,
+                  status TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0,
+                  detail TEXT DEFAULT '', UNIQUE(job_id, slot));
             """)
 
     # ---------- чтение ----------
@@ -247,6 +260,90 @@ class RobotStore:
         if old and old["status"] != "archived":
             return self.set_status(iid, "archived", reason, actor)
         return old  # type: ignore[return-value]
+
+    # ---------- расписание ----------
+    def list_jobs(self, owner: str | None = None,
+                  enabled_only: bool = False) -> list[dict]:
+        sql, args = "SELECT * FROM scheduler_jobs WHERE 1=1", []
+        if owner is not None:
+            sql += " AND owner=?"
+            args.append(owner)
+        if enabled_only:
+            sql += " AND enabled=1"
+        sql += " ORDER BY id"
+        with self._conn() as c:
+            return [self._job_row(r) for r in c.execute(sql, args)]
+
+    def upsert_job(self, data: dict) -> dict:
+        jid = str(data.get("id", "")).strip()
+        if not jid:
+            raise StoreError("не задан id задания")
+        command = str(data.get("command", "")).strip()
+        if not command:
+            raise StoreError(f"{jid}: пустая команда")
+        row = (
+            jid, str(data.get("owner", "system")), command,
+            _dumps(list(data.get("times", []))),
+            _dumps(list(data.get("weekdays", [0, 1, 2, 3, 4]))),
+            data.get("interval_min"), data.get("hours_from"),
+            data.get("hours_to"), int(bool(data.get("enabled", True))),
+            int(data.get("timeout", 1800)),
+            int(bool(data.get("stop_aware", True))),
+            str(data.get("catchup_template", "")), data.get("note", ""),
+        )
+        with self._conn() as c:
+            c.execute(
+                "INSERT INTO scheduler_jobs VALUES (" + ",".join("?" * len(row)) + ")"
+                " ON CONFLICT(id) DO UPDATE SET owner=excluded.owner,"
+                "command=excluded.command,times_json=excluded.times_json,"
+                "weekdays_json=excluded.weekdays_json,interval_min=excluded.interval_min,"
+                "hours_from=excluded.hours_from,hours_to=excluded.hours_to,"
+                "enabled=excluded.enabled,timeout=excluded.timeout,"
+                "stop_aware=excluded.stop_aware,catchup_template=excluded.catchup_template,"
+                "note=excluded.note", row)
+        return next((j for j in self.list_jobs() if j["id"] == jid), {})
+
+    def delete_job(self, job_id: str) -> bool:
+        with self._conn() as c:
+            cur = c.execute("DELETE FROM scheduler_jobs WHERE id=?", (job_id,))
+        return cur.rowcount > 0
+
+    def claim_run(self, job_id: str, slot: str) -> int | None:
+        """Атомарно занять слот. None — уже запущено/завершено."""
+        with self._conn() as c:
+            try:
+                cur = c.execute(
+                    "INSERT INTO scheduler_runs(job_id,slot,status,attempts) "
+                    "VALUES (?,?,'claimed',0)", (job_id, slot))
+            except sqlite3.IntegrityError:
+                return None
+            return int(cur.lastrowid)
+
+    def finish_run(self, run_id: int, status: str, detail: str = "",
+                   attempts: int = 0) -> None:
+        with self._conn() as c:
+            c.execute(
+                "UPDATE scheduler_runs SET finished=?,status=?,detail=?,attempts=? "
+                "WHERE id=?", (_now(), status, str(detail)[:500], attempts, run_id))
+
+    def list_runs(self, limit: int = 50, job_id: str | None = None) -> list[dict]:
+        sql, args = "SELECT * FROM scheduler_runs", []
+        if job_id:
+            sql += " WHERE job_id=?"
+            args.append(job_id)
+        sql += " ORDER BY id DESC LIMIT ?"
+        args.append(limit)
+        with self._conn() as c:
+            return [dict(r) for r in c.execute(sql, args)]
+
+    @staticmethod
+    def _job_row(r: sqlite3.Row) -> dict:
+        d = dict(r)
+        d["times"] = json.loads(d.pop("times_json"))
+        d["weekdays"] = json.loads(d.pop("weekdays_json"))
+        d["enabled"] = bool(d["enabled"])
+        d["stop_aware"] = bool(d["stop_aware"])
+        return d
 
     # ---------- рантайм-состояние ----------
     def set_runtime(self, instance_id: str, data: dict) -> dict:
