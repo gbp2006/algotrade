@@ -19,7 +19,8 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 
 from algo import (backtest_preview, instruments_catalog as catalog,
-                  robot_library as lib, scheduler, trade_journal as tj)
+                  live_control, robot_library as lib, scheduler,
+                  trade_journal as tj)
 from algo.broker import position_ops as pos, registry
 from algo.broker.finam import FinamBroker
 from algo.broker.secrets import resolve_secret
@@ -474,6 +475,27 @@ def _live_run_view(payload: dict) -> dict:
 @router.post("/live-run")
 def live_run(payload: dict | None = None):
     return _live_run_view(payload or {})
+
+
+@router.get("/live-control")
+def live_control_status():
+    return live_control.status()
+
+
+@router.post("/live-control/enable")
+def live_control_enable(store: RobotStore = Depends(get_store)):
+    try:
+        return live_control.enable(store)
+    except live_control.LiveControlError as exc:
+        raise HTTPException(400, str(exc))
+
+
+@router.post("/live-control/disable")
+def live_control_disable():
+    try:
+        return live_control.disable()
+    except live_control.LiveControlError as exc:
+        raise HTTPException(400, str(exc))
 
 
 @router.get("/journal")

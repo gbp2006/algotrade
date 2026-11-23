@@ -76,7 +76,11 @@
       <div class="row"><button class="btn" onclick="liveRun(false)">Проверить бой (dry-run)</button>
         <button class="btn primary" onclick="liveRun(true)">Пустить в бой (один прогон)</button>
         <span class="muted small" id="live-run-result"></span></div>
-      <p class="hint">Репетиция пишет <code>planned</code>, реальный прогон отправляет заявки с флагом только в дочернем процессе. Постоянный таймер включается отдельно.</p>
+      <p class="hint">Репетиция пишет <code>planned</code>, реальный прогон отправляет заявки с флагом только в дочернем процессе.</p>
+      <div class="row" style="margin-top:10px">
+        <button class="btn primary" id="live-toggle" onclick="toggleLive()">Включить постоянную торговлю</button>
+        <span class="muted small" id="live-control-status"></span></div>
+      <p class="hint">Включатель сам ставит таймер на 14:00 МСК (после решения 13:55) и выставляет <code>FINAM_ALLOW_TRADING=1</code> только в юните — <code>.env</code> не меняется.</p>
     </div>
     <div class="card">
       <h3>Справочник инструментов</h3>
@@ -286,7 +290,7 @@ async function loadAll() {
      $('source-list').innerHTML = paperIds.map(x => `<option value="${esc(x)}"></option>`).join('');
     $('key-names').textContent = keys.names.length
       ? 'ключи: ' + keys.names.join(', ') : 'ключей нет';
-    loadStats(); loadFavorites(); loadServiceKey();
+    loadStats(); loadFavorites(); loadServiceKey(); loadLiveControl();
     const modeFilter = new URLSearchParams(location.search).get('mode');
     if (modeFilter) {
       $('status').textContent = `фильтр: ${modeFilter}`;
@@ -455,6 +459,25 @@ async function liveRun(arm) {
     $('status').textContent = r.stdout || 'прогон завершён';
     await loadAll();
   } catch(e) { $('live-run-result').textContent = 'ошибка: ' + e.message; }
+}
+let liveOn = false;
+async function loadLiveControl() {
+  try {
+    const r = await api('/live-control');
+    liveOn = !!r.enabled;
+    $('live-toggle').textContent = liveOn
+      ? 'Выключить постоянную торговлю' : 'Включить постоянную торговлю';
+    $('live-control-status').textContent = liveOn
+      ? `торговля включена · следующий прогон ${r.next_run || '—'}`
+      : (r.stop_real ? 'STOP_REAL установлен' : 'торговля выключена');
+  } catch(e) { $('live-control-status').textContent = 'ошибка: ' + e.message; }
+}
+async function toggleLive() {
+  if (!liveOn && !confirm('Включить постоянную реальную торговлю? Таймер 14:00 МСК, флаг только в юните.')) return;
+  try {
+    await api('/live-control/' + (liveOn ? 'disable' : 'enable'), {method:'POST'});
+    await loadLiveControl();
+  } catch(e) { $('live-control-status').textContent = 'ошибка: ' + e.message; }
 }
 async function loadServiceKey() {
   try { const r = await api('/service-key');
