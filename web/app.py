@@ -50,6 +50,7 @@ from algo.instruments import DEFAULT, INSTRUMENTS, margin, symbol as inst_symbol
 from algo.portfolio import (CAPITAL, account_card, drawdown_stats,  # noqa: E402
                             exposure_of, ledger)
 from algo import metrics_store  # noqa: E402
+from web.instances_api import router as instances_router  # noqa: E402
 
 
 def instrument_of(cfg):
@@ -60,6 +61,7 @@ def capital_of(cfg) -> float:
     return float(cfg.capital or CAPITAL)
 
 app = FastAPI(title="Algo dashboard")
+app.include_router(instances_router)
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
 app.mount("/static", StaticFiles(directory=str(Path(__file__).resolve().parent / "static")), name="static")
 
@@ -259,6 +261,13 @@ def config_stats(cfg, rows: list[dict], price: float | None = None) -> dict:
 def index(request: Request):
     # шаблон меняется при деплое — браузер не должен держать старую копию
     return templates.TemplateResponse(request, "index.html", {},
+                                      headers={"Cache-Control": "no-store"})
+
+
+@app.get("/robots", response_class=HTMLResponse)
+def robots_page(request: Request):
+    """Управление инстансами роботов (сервис, этап 3)."""
+    return templates.TemplateResponse(request, "robots.html", {},
                                       headers={"Cache-Control": "no-store"})
 
 

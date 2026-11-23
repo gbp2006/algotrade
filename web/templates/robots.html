@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Autopilot — роботы и брокеры</title>
+<style>
+  :root{--bg:#0a0c11;--card:#13161e;--line:#222836;--text:#e8eaf0;--muted:#8b90a0;
+        --accent:#4f7cff;--green:#2fd07b;--red:#ff4d5e;--yellow:#f5b83d;--radius:16px}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+       font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  .top{display:flex;align-items:center;gap:16px;padding:18px 26px;border-bottom:1px solid var(--line)}
+  .top b{font-size:18px}
+  .top a{color:var(--muted);text-decoration:none;font-size:13px}
+  .top a:hover{color:#fff}
+  .wrap{padding:24px 26px 60px;max-width:1500px;margin:0 auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+        padding:18px 20px;margin-bottom:20px}
+  h2{margin:0 0 14px;font-size:16px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  button,.btn{background:#1d2432;border:1px solid #2d3648;color:var(--text);border-radius:9px;
+       padding:8px 13px;cursor:pointer;font-size:13px}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:#20345f;border-color:#3554a0}
+  button.danger{background:#301d22;border-color:#5a2a35;color:#ff9aa7}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  input,select{background:#0e1118;border:1px solid #2a3142;color:var(--text);border-radius:8px;
+       padding:7px 9px;font-size:13px;min-width:110px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;color:var(--muted);font-weight:500;padding:8px 10px;border-bottom:1px solid var(--line)}
+  td{padding:10px;border-bottom:1px solid #1b202b;vertical-align:top}
+  tr:hover td{background:#161b25}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;
+         background:#232b3a;color:#c4ccdd}
+  .badge.active{background:#123323;color:#7ff0b5}
+  .badge.paused{background:#3a2d12;color:#ffd277}
+  .badge.live{background:#3a1622;color:#ff9aa7}
+  .badge.archived{opacity:.55}
+  .muted{color:var(--muted)}
+  .modal{position:fixed;inset:0;background:rgba(4,6,10,.78);display:none;
+         align-items:center;justify-content:center;z-index:20}
+  .modal.on{display:flex}
+  .modal .box{background:#121620;border:1px solid #303a4e;border-radius:18px;
+       padding:22px;width:min(620px,92vw);max-height:88vh;overflow:auto}
+  .field{display:grid;grid-template-columns:170px 1fr;gap:10px;align-items:center;margin:8px 0}
+  .field label{color:var(--muted)}
+  .params{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .params label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+  .err{color:#ff8e9a;font-size:12px;min-height:18px}
+  code{font-size:11px;color:#9fb3e0}
+</style>
+</head>
+<body>
+<div class="top"><b>Autopilot · роботы</b><a href="/">← дашборд</a>
+  <span class="muted" id="status"></span></div>
+<div class="wrap">
+  <div class="card">
+    <div class="row"><h2 style="margin:0 auto 0 0">Инстансы роботов</h2>
+      <button class="primary" onclick="openCreate()">+ Добавить из библиотеки</button>
+      <button onclick="loadAll()">Обновить</button></div>
+    <p class="muted">Робот без инстанса не торгует. Новый инстанс создаётся в черновике и запускается вручную.</p>
+    <table><thead><tr><th>id</th><th>тип / инструмент</th><th>режим</th><th>статус</th>
+      <th>счёт / цена</th><th>версия</th><th>действия</th></tr></thead>
+      <tbody id="instances"><tr><td colspan="7" class="muted">загрузка…</td></tr></tbody></table>
+  </div>
+  <div class="card"><h2>Счета и брокеры</h2>
+    <div class="row" id="accounts"></div>
+    <div class="row" style="margin-top:12px" id="brokers"></div>
+    <div class="row" style="margin-top:12px">
+      <input id="acc-id" placeholder="ID счёта"><input id="acc-cap" placeholder="капитал" type="number">
+      <button onclick="addAccount()">Добавить счёт</button></div>
+  </div>
+</div>
+
+<div class="modal" id="modal"><div class="box">
+  <h2 id="modal-title">Новый робот</h2>
+  <div class="field"><label>Тип робота</label><select id="f-spec" onchange="specChanged()"></select></div>
+  <div class="field"><label>id инстанса</label><input id="f-id" placeholder="p-base-2"></div>
+  <div class="field"><label>Инструмент</label><select id="f-inst"></select></div>
+  <div class="field"><label>Режим</label><select id="f-mode" onchange="modeChanged()">
+      <option value="paper">бумага</option><option value="live">бой</option></select></div>
+  <div id="live-fields" style="display:none">
+    <div class="field"><label>Счёт</label><select id="f-account"></select></div>
+    <div class="field"><label>Цена заявки</label><select id="f-pricing">
+        <option value="marketable">маркет-лимит</option><option value="signal">цена сигнала</option>
+        <option value="market">рыночная</option></select></div>
+  </div>
+  <div class="field"><label>Параметры</label><div class="params" id="f-params"></div></div>
+  <div class="err" id="err"></div>
+  <div class="row"><button class="primary" onclick="submitCreate()">Создать</button>
+    <button onclick="closeModal()">Отмена</button></div>
+</div></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let specs = [], accounts = [];
+
+async function api(path, opts) {
+  const r = await fetch('/api' + path, Object.assign({headers:{'Content-Type':'application/json'}}, opts||{}));
+  let data = null; try { data = await r.json(); } catch(e) {}
+  if (!r.ok) throw new Error((data && data.detail) || ('HTTP ' + r.status));
+  return data;
+}
+
+async function loadAll() {
+  try {
+    const [insts, sp, acc, br] = await Promise.all([
+      api('/instances'), api('/specs'), api('/accounts'), api('/brokers')]);
+    specs = sp; accounts = acc;
+    $('instances').innerHTML = insts.length ? insts.map(i => {
+      const acts = [];
+      if (i.status === 'draft' || i.status === 'paused' || i.status === 'stopped')
+        acts.push(`<button onclick="act('${esc(i.id)}','start')">старт</button>`);
+      if (i.status === 'active') acts.push(`<button onclick="act('${esc(i.id)}','pause')">пауза</button>`);
+      acts.push(`<button onclick="act('${esc(i.id)}','stop')">стоп</button>`);
+      acts.push(`<button onclick="act('${esc(i.id)}','archive')">убрать</button>`);
+      const params = Object.entries(i.params || {}).map(([k,v]) => `${k}=${esc(v)}`).join(' ');
+      return `<tr><td><b>${esc(i.id)}</b><br><span class="muted">${esc(i.note||'')}</span></td>
+        <td>${esc(i.spec_id)} / ${esc(i.instrument)}<br><code>${params}</code></td>
+        <td>${i.mode==='live'?'<span class="badge live">бой</span>':'бумага'}</td>
+        <td><span class="badge ${esc(i.status)}">${esc(i.status)}</span></td>
+        <td>${esc(i.account||'—')}<br><span class="muted">${esc(i.pricing||'—')}</span></td>
+        <td>v${i.version}</td><td><div class="row">${acts.join('')}</div></td></tr>`;
+    }).join('') : '<tr><td colspan="7" class="muted">инстансов нет</td></tr>';
+    $('accounts').innerHTML = accounts.map(a =>
+      `<span class="badge">${esc(a.id)}: ${Number(a.capital).toLocaleString('ru')} ₽</span>`).join('') || 'нет счетов';
+    $('brokers').innerHTML = br.map(b =>
+      `<button onclick="checkBroker('${esc(b.name)}')">проверить ${esc(b.name)}</button>`).join('');
+    $('status').textContent = `${insts.length} роботов, ${accounts.length} счетов`;
+  } catch(e) { $('status').textContent = 'ошибка: ' + e.message; }
+}
+
+function specChanged() {
+  const s = specs.find(x => x.id === $('f-spec').value); if (!s) return;
+  $('f-inst').innerHTML = s.instruments.map(x => `<option>${esc(x)}</option>`).join('');
+  $('f-params').innerHTML = Object.entries(s.defaults).map(([k,v]) =>
+    `<label>${esc(k)}<input data-p="${esc(k)}" value="${esc(v)}"></label>`).join('');
+}
+
+function modeChanged() { $('live-fields').style.display = $('f-mode').value==='live'?'block':'none'; }
+
+function openCreate() {
+  $('modal').classList.add('on'); $('err').textContent='';
+  $('f-spec').innerHTML = specs.map(s => `<option value="${esc(s.id)}">${esc(s.id)} — ${esc(s.description||'')}</option>`).join('');
+  $('f-account').innerHTML = accounts.map(a => `<option value="${esc(a.id)}">${esc(a.id)}</option>`).join('');
+  specChanged(); modeChanged();
+}
+function closeModal() { $('modal').classList.remove('on'); }
+
+async function submitCreate() {
+  const s = specs.find(x => x.id === $('f-spec').value);
+  const params = {};
+  document.querySelectorAll('#f-params input[data-p]').forEach(inp => {
+    const type = s.schema[inp.dataset.p];
+    let v = inp.value;
+    if (type === 'int') v = parseInt(v, 10);
+    else if (type === 'float') v = parseFloat(v);
+    else if (type === 'bool') v = v === 'true';
+    params[inp.dataset.p] = v;
+  });
+  const mode = $('f-mode').value;
+  const payload = {id:$('f-id').value.trim(), spec_id:s.id, instrument:$('f-inst').value,
+                   mode, params};
+  if (mode === 'live') {
+    payload.account = $('f-account').value;
+    payload.pricing = $('f-pricing').value;
+    payload.capital = Number((accounts.find(a=>a.id===payload.account)||{}).capital||0);
+  }
+  try { await api('/instances', {method:'POST', body:JSON.stringify(payload)});
+        closeModal(); await loadAll(); }
+  catch(e) { $('err').textContent = e.message; }
+}
+
+async function act(id, action) {
+  try { await api(`/instances/${encodeURIComponent(id)}/${action}`, {method:'POST'});
+        await loadAll(); }
+  catch(e) { $('status').textContent = 'ошибка: ' + e.message; }
+}
+async function addAccount() {
+  try { await api('/accounts', {method:'POST', body:JSON.stringify({
+        id:$('acc-id').value.trim(), capital:Number($('acc-cap').value)})});
+        $('acc-id').value=''; $('acc-cap').value=''; await loadAll(); }
+  catch(e) { $('status').textContent = 'ошибка: ' + e.message; }
+}
+async function checkBroker(name) {
+  try { const r = await api(`/brokers/${name}/check`, {method:'POST'});
+        $('status').textContent = `${name}: ${r.ok?'OK':'нет связи'} — ${r.detail}`; }
+  catch(e) { $('status').textContent = e.message; }
+}
+loadAll();
+</script>
+</body>
+</html>
