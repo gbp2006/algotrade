@@ -42,7 +42,7 @@ FILES=(
   tests/*.py
   web/*.py web/templates/*.html
   docs/*.md docs/strategies/*.md docs/sources/*.md
-  infra/db/memory.py infra/db/schema.sql
+  infra/db/memory.py infra/db/schema.sql infra/systemd/*.service
 )
 
 # Защита от случайного попадания секретов и состояния в выгрузку.
