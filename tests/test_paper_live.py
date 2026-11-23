@@ -70,9 +70,15 @@ class TestPaperPhases(unittest.TestCase):
         self.tmp.cleanup()
 
     def _configs(self, *ids):
-        p = mock.patch.object(pl, "CONFIGS", [BY_ID[i] for i in ids])
+        cfgs = [BY_ID[i] for i in ids]
+        p = mock.patch.object(pl, "CONFIGS", cfgs)
         p.start()
         self.addCleanup(p.stop)
+        # контур берёт ALL_CONFIGS, посчитанный на импорте, — подменяем и его,
+        # иначе в тест попадают все роботы и каждый ненайденный сигнал ждёт 4×30 с
+        p2 = mock.patch.object(pl, "ALL_CONFIGS", cfgs)
+        p2.start()
+        self.addCleanup(p2.stop)
 
     def _seed(self, config_id: str, strategy: str, pos: int = 32):
         self.assertTrue(not self.paper.exists() or pl.read_rows())
