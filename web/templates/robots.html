@@ -52,7 +52,11 @@
 </style>
 </head>
 <body>
-<div class="top"><b>Autopilot · роботы</b><a href="/">← дашборд</a>
+<div class="top"><b>Autopilot · роботы</b>
+  <nav style="display:flex;gap:6px;margin-left:12px">
+    <a href="/" style="color:var(--muted);text-decoration:none;font-size:13px">Тест</a>
+    <a href="/trade" style="color:var(--muted);text-decoration:none;font-size:13px">Торговля</a>
+  </nav>
   <span class="muted" id="status"></span></div>
 <div class="wrap">
   <div class="card">
@@ -109,6 +113,12 @@ async function loadAll() {
     const [insts, sp, acc, br, rt] = await Promise.all([
       api('/instances'), api('/specs'), api('/accounts'), api('/brokers'), api('/runtime')]);
     specs = sp; accounts = acc;
+    const modeFilter = new URLSearchParams(location.search).get('mode');
+    if (modeFilter) {
+      $('status').textContent = `фильтр: ${modeFilter}`;
+      const shown = insts.filter(i => i.mode === modeFilter);
+      insts.length = 0; insts.push(...shown);
+    }
     const runtime = Object.fromEntries(rt.map(x => [x.instance_id, x]));
     $('instances').innerHTML = insts.length ? insts.map(i => {
       const st = runtime[i.id] || {};
@@ -132,7 +142,7 @@ async function loadAll() {
       `<span class="badge">${esc(a.id)}: ${Number(a.capital).toLocaleString('ru')} ₽</span>`).join('') || 'нет счетов';
     $('brokers').innerHTML = br.map(b =>
       `<button onclick="checkBroker('${esc(b.name)}')">проверить ${esc(b.name)}</button>`).join('');
-    $('status').textContent = `${insts.length} роботов, ${accounts.length} счетов`;
+    $('status').textContent = `${insts.length} роботов${modeFilter?' ('+modeFilter+')':''}, ${accounts.length} счетов`;
   } catch(e) { $('status').textContent = 'ошибка: ' + e.message; }
 }
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -49,6 +50,31 @@ class TestApiViews(unittest.TestCase):
 
     def test_brokers_list(self):
         self.assertIn("finam", [b["name"] for b in api.brokers()])
+
+    def test_live_views_and_stop(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            live = root / "live.csv"
+            live.write_text(
+                "ts,client_id,client_order_id,order_id,config,symbol,side,qty,price,"
+                "multiplier,status,reason,response,account,pricing,order_type\n"
+                "2026-11-23T13:57:22,p-base:1,abc,42,p-base,CNYRUBF@RTSX,buy,32,"
+                "12.3,1000,sent,,{},A1,marketable,limit\n", encoding="utf-8")
+            stop_real = root / "STOP_REAL"
+            with mock.patch.multiple(
+                    api, LIVE=live, PAPER=root / "paper.csv",
+                    HEALTH=root / "health.json", SHADOW=root / "shadow.json",
+                    ROLLOVER=root / "rollover.json", STOP=root / "STOP",
+                    STOP_REAL=stop_real):
+                orders = api.live_orders_view()
+                self.assertEqual(len(orders), 1)
+                self.assertEqual(orders[0]["config"], "p-base")
+                state = api.live_state_view()
+                self.assertFalse(state["stop_real"])
+                api.stop_real_view("set")
+                self.assertTrue(api.live_state_view()["stop_real"])
+                api.stop_real_view("clear")
+                self.assertFalse(api.live_state_view()["stop_real"])
 
 
 if __name__ == "__main__":

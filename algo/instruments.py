@@ -87,6 +87,27 @@ def contract(inst: Instrument, day: dt.date | str | None = None) -> dict | None:
     return best
 
 
+def active_contracts(inst: Instrument,
+                     day: dt.date | str | None = None) -> dict[str, str]:
+    """Все ещё торгующиеся контракты инструмента: symbol → LASTTRADEDATE.
+
+    Для вечного контракта возвращается одна запись с датой «далеко в будущем»,
+    чтобы модуль перекладки видел его как бессрочный.
+    """
+    if inst.symbol:
+        return {inst.symbol: "2099-12-31"}
+    day = day or dt.date.today()
+    day_s = day.isoformat() if isinstance(day, dt.date) else str(day)[:10]
+    out: dict[str, str] = {}
+    for row in _fetch():
+        if row.get("ASSETCODE") != inst.asset:
+            continue
+        last = row.get("LASTTRADEDATE") or ""
+        if last and last >= day_s:
+            out[f"{row['SECID']}@{MIC}"] = last
+    return out
+
+
 def symbol(inst: Instrument, day: dt.date | str | None = None) -> str:
     """Символ Финама для инструмента на дату."""
     if inst.symbol:

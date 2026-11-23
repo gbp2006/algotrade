@@ -6,6 +6,10 @@
 
 from __future__ import annotations
 
+import csv
+import json
+import os
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -14,6 +18,15 @@ from algo import robot_library as lib
 from algo.broker import registry
 from algo.instance_configs import migrate_runtime_from_paper, seed_static_configs
 from algo.robot_store import ConflictError, RobotStore, StoreError
+
+ROOT = Path(__file__).resolve().parent.parent
+LIVE = ROOT / "results" / "live.csv"
+PAPER = ROOT / "results" / "paper.csv"
+HEALTH = ROOT / "results" / "health.json"
+SHADOW = ROOT / "results" / "shadow.json"
+ROLLOVER = ROOT / "results" / "rollover_run.json"
+STOP = ROOT / "results" / "STOP"
+STOP_REAL = ROOT / "results" / "STOP_REAL"
 
 router = APIRouter(prefix="/api", tags=["instances"])
 _default_store = RobotStore()
@@ -198,3 +211,62 @@ def broker_check_view(name: str) -> dict:
 @router.post("/brokers/{name}/check")
 def broker_check(name: str):
     return broker_check_view(name)
+
+
+# ---------- вкладка «Торговля» ----------
+def _json_file(path: Path):
+    try:
+        return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def live_orders_view(limit: int = 60) -> list[dict]:
+    if not LIVE.exists():
+        return []
+    with LIVE.open(encoding="utf-8") as f:
+        rows = [r for r in csv.DictReader(f) if "client_id" in r]
+    return list(reversed(rows[-limit:]))
+
+
+def live_state_view() -> dict:
+    days: set[str] = set()
+    if PAPER.exists():
+        with PAPER.open(encoding="utf-8") as f:
+            days = {r.get("date", "") for r in csv.DictReader(f) if "config" in r}
+    days.discard("")
+    return {
+        "allow_trading": os.environ.get("FINAM_ALLOW_TRADING") == "1",
+        "stop_paper": STOP.exists(),
+        "stop_real": STOP_REAL.exists(),
+        "paper_days": len(days),
+        "health": _json_file(HEALTH),
+        "shadow": _json_file(SHADOW),
+        "rollover": _json_file(ROLLOVER),
+    }
+
+
+@router.get("/live-orders")
+def live_orders(limit: int = 60):
+    return live_orders_view(limit)
+
+
+@router.get("/live-state")
+def live_state():
+    return live_state_view()
+
+
+def stop_real_view(action: str) -> dict:
+    if action == "set":
+        STOP_REAL.parent.mkdir(parents=True, exist_ok=True)
+        STOP_REAL.write_text("установлен из панели\n", encoding="utf-8")
+    elif action == "clear":
+        STOP_REAL.unlink(missing_ok=True)
+    else:
+        raise HTTPException(400, "action: set | clear")
+    return {"stop_real": STOP_REAL.exists()}
+
+
+@router.post("/stop-real")
+def stop_real(payload: dict):
+    return stop_real_view(str(payload.get("action", "")).lower())

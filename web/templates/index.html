@@ -46,6 +46,10 @@
          background:#241a1e;color:var(--red);cursor:pointer;font-size:13px}
   .power.on{background:#12301f;border-color:#2f6b47;color:var(--green)}
   .main{flex:1;padding:26px 32px 48px;min-width:0}
+  .navtabs{display:flex;gap:6px;margin:-6px 0 18px}
+  .navtabs a{color:var(--muted);text-decoration:none;padding:7px 14px;border-radius:9px;font-size:13px}
+  .navtabs a.on{background:#20304f;color:#dbe6ff}
+  .navtabs a.live.on{background:#3a1622;color:#ff9aa7}
   .hero{position:relative;border-radius:20px;overflow:hidden;padding:86px 38px 36px;
         min-height:400px;display:flex;flex-direction:column;justify-content:flex-end;
         background:#0b0d13;border:1px solid #2a1b22}
@@ -168,6 +172,7 @@
   </aside>
 
   <main class="main">
+    <div class="navtabs"><a class="on" href="/">Тест</a><a class="live" href="/trade">Торговля</a><a href="/robots">Роботы</a></div>
     <div class="banner" id="banner"></div>
     <div class="pf" id="pf"></div>
     <section class="hero">

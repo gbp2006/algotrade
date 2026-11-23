@@ -20,6 +20,8 @@ results/live.csv
 results/live.lock
 results/live_run.lock
 results/live_run.json
+results/rollover.lock
+results/rollover_run.json
 live_settings.json
 results/shadow.json
 results/shadow.log

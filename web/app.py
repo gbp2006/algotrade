@@ -264,6 +264,13 @@ def index(request: Request):
                                       headers={"Cache-Control": "no-store"})
 
 
+@app.get("/trade", response_class=HTMLResponse)
+def trade_page(request: Request):
+    """Вкладка «Торговля»: живые счета, заявки, стопы, перекладка."""
+    return templates.TemplateResponse(request, "trade.html", {},
+                                      headers={"Cache-Control": "no-store"})
+
+
 @app.get("/robots", response_class=HTMLResponse)
 def robots_page(request: Request):
     """Управление инстансами роботов (сервис, этап 3)."""
