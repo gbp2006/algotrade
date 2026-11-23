@@ -23,6 +23,11 @@
 </aside>
 <main class="main">
   <div class="navtabs"><a href="/">Тест</a><a href="/trade">Торговля</a><a class="on" href="/robots?mode=live">Роботы</a></div>
+  <div class="navtabs" id="mode-tabs">
+    <a href="/robots?mode=live" data-mode="live">Только бой</a>
+    <a href="/robots?mode=paper" data-mode="paper">Только бумага</a>
+    <a href="/robots" data-mode="all">Все</a>
+  </div>
   <div class="page-head">
     <div><h2>Роботы и брокеры</h2>
       <p>Инстансы, счета и ключи. Правка активного робота ставит его на паузу и создаёт новую версию параметров.</p></div>
@@ -292,6 +297,8 @@ async function loadAll() {
       ? 'ключи: ' + keys.names.join(', ') : 'ключей нет';
     loadStats(); loadFavorites(); loadServiceKey(); loadLiveControl();
     const modeFilter = new URLSearchParams(location.search).get('mode');
+    document.querySelectorAll('#mode-tabs a').forEach(a =>
+      a.classList.toggle('on', a.dataset.mode === (modeFilter || 'all')));
     if (modeFilter) {
       $('status').textContent = `фильтр: ${modeFilter}`;
       const shown = insts.filter(i => i.mode === modeFilter);

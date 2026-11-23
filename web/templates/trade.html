@@ -15,7 +15,7 @@
 <div class="layout">
 <aside class="side">
     <div class="logo"><div class="dot">A</div><b>Autopilot</b></div>
-    <a class="item" href="/robots"><span class="ico">🤖</span><span class="nm">Роботы и брокеры</span></a>
+    <a class="item" href="/robots?mode=live"><span class="ico">🤖</span><span class="nm">Роботы и брокеры</span></a>
     <h4>Стратегии</h4>
     <div id="list"></div>
     <div class="grow"></div>
@@ -144,7 +144,9 @@ async function load(){
 async function act(id,a){ try{ await api(`/instances/${encodeURIComponent(id)}/${a}`,{method:'POST'}); await load(); }
   catch(e){ $('msg').textContent=e.message; } }
 async function stopReal(a){ if(!confirm(a==='set'?'Установить глобальный STOP?':'Снять STOP?'))return;
-  try{ await api('/stop-real',{method:'POST',body:JSON.stringify({action:a})}); await load(); }
+  try{ const r=await api('/stop-real',{method:'POST',body:JSON.stringify({action:a})});
+       $('msg').textContent = r.stop_real ? 'STOP установлен: заявки заблокированы' : 'STOP снят';
+       await load(); }
   catch(e){ $('msg').textContent=e.message; } }
 async function check(n){ try{const r=await api(`/brokers/${n}/check`,{method:'POST'}); $('msg').textContent=`${n}: ${r.ok?'OK':'нет связи'} — ${r.detail}`;}
   catch(e){ $('msg').textContent=e.message; } }
