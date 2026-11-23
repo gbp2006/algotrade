@@ -9,164 +9,19 @@
 <link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png">
 <meta name="theme-color" content="#0a0c11">
 <title>Autopilot — алго-песочница</title>
-<style>
-  :root{
-    --bg:#0a0c11; --card:#13161e; --line:#222836; --text:#e8eaf0; --muted:#8b90a0;
-    --accent:#4f7cff; --green:#2fd07b; --red:#ff4d5e; --yellow:#f5b83d; --radius:18px;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);
-       font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif}
-  .layout{display:flex;min-height:100vh}
-  .side{width:292px;flex:0 0 292px;padding:20px 16px;display:flex;flex-direction:column;
-        border-right:1px solid var(--line);background:#0c0f15}
-  .logo{display:flex;align-items:center;gap:10px;padding:6px 8px 18px}
-  .logo .dot{width:30px;height:30px;border-radius:10px;
-             background:linear-gradient(135deg,#4f7cff,#8a5cff);display:grid;place-items:center;
-             font-weight:700;font-size:13px}
-  .logo b{font-size:17px}
-  .side h4{margin:6px 8px 10px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-  #list{max-height:calc(100vh - 250px);overflow-y:auto;scrollbar-width:thin}
-  .item{display:flex;align-items:center;gap:12px;padding:13px 12px;border-radius:12px;cursor:pointer;
-        color:#c8ccd8;border:1px solid transparent}
-  .item:hover{background:#141822}
-  .item.active{background:#171c27;border-color:#242b3a}
-  .item .ico{width:26px;height:26px;border-radius:7px;background:#1e2432;display:grid;place-items:center;
-             font-size:11px;color:#9aa3b8}
-  .item .nm{flex:1;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .item .st{width:9px;height:9px;border-radius:50%;background:#3a4152}
-  .st.live{background:var(--green);box-shadow:0 0 8px rgba(47,208,123,.6)}
-  .st.waiting{background:var(--yellow)}
-  .st.offline{background:#4a5163}
-  .side .grow{flex:1}
-  .user{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:#12161f}
-  .user .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#3d5afe,#8a5cff)}
-  .user small{display:block;color:var(--muted);font-size:11px}
-  .power{margin-left:auto;width:30px;height:30px;border-radius:50%;border:1px solid #3a2a2f;
-         background:#241a1e;color:var(--red);cursor:pointer;font-size:13px}
-  .power.on{background:#12301f;border-color:#2f6b47;color:var(--green)}
-  .main{flex:1;padding:26px 32px 48px;min-width:0}
-  .navtabs{display:flex;gap:6px;margin:-6px 0 18px}
-  .navtabs a{color:var(--muted);text-decoration:none;padding:7px 14px;border-radius:9px;font-size:13px}
-  .navtabs a.on{background:#20304f;color:#dbe6ff}
-  .navtabs a.live.on{background:#3a1622;color:#ff9aa7}
-  .hero{position:relative;border-radius:20px;overflow:hidden;padding:86px 38px 36px;
-        min-height:400px;display:flex;flex-direction:column;justify-content:flex-end;
-        background:#0b0d13;border:1px solid #2a1b22}
-  .hero:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;
-     background:linear-gradient(90deg,rgba(8,9,13,.98) 0%,rgba(8,9,13,.92) 30%,rgba(8,9,13,.62) 52%,
-                rgba(8,9,13,.12) 72%,rgba(8,9,13,0) 100%),
-                linear-gradient(0deg,rgba(8,9,13,.96) 0%,rgba(8,9,13,.30) 32%,rgba(8,9,13,0) 55%),
-                radial-gradient(60% 120% at 92% 45%,rgba(160,20,40,.22) 0%,rgba(160,20,40,0) 70%)}
-  .hero-img{position:absolute;right:0;top:0;height:100%;width:auto;z-index:0;
-            -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 26%);
-            mask-image:linear-gradient(90deg,transparent 0%,#000 26%)}
-  .hero>*:not(.hero-img):not(.hero-tools){position:relative;z-index:2}
-  .hero h1{margin:0;font-size:52px;text-shadow:0 2px 18px rgba(0,0,0,.55);line-height:1.02;letter-spacing:-.02em;text-transform:uppercase;
-           max-width:560px;font-weight:800}
-  .hero p{margin:12px 0 0;color:#b3bcd2;max-width:480px;font-size:15px}
-  .switcher{display:inline-flex;background:#0e121b;border:1px solid #26304a;border-radius:999px;
-            padding:4px;margin-top:20px;width:max-content}
-  .switcher button{border:0;background:transparent;color:#9aa3b8;padding:9px 20px;border-radius:999px;
-            font-size:13px;cursor:pointer}
-  .switcher button.on{background:#20304f;color:#dbe6ff}
-  .switcher button.on.resume{background:#123a2a;color:#7ff0b5}
-  .hero-tools{position:absolute;top:22px;left:26px;display:flex;gap:8px;z-index:5}
-  .tool{width:38px;height:38px;border-radius:50%;background:#151a26;border:1px solid #29303f;
-        display:grid;place-items:center;font-size:14px;color:#aeb6c8;cursor:pointer}
-  .tool:hover{background:#1d2433;color:#fff}
-  .pf{display:flex;gap:26px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);
-      border-radius:16px;padding:16px 22px;margin-bottom:18px}
-  .pf .it{min-width:130px}
-  .pf .it span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;
-               letter-spacing:.07em;margin-bottom:4px}
-  .pf .it b{font-size:20px;font-weight:650}
-  .banner{display:none;margin-bottom:18px;padding:14px 140px 14px 18px;border-radius:14px;
-          background:#2a1218;border:1px solid #5a2430;color:#ffb3bc;font-size:13px;
-          position:relative}
-  .banner.show{display:block}
-  .banner b{color:#ff7d8a}
-  .banner .w{margin-top:6px;color:#e0b7a0;font-size:12px}
-  .banner .ack{position:absolute;top:12px;right:14px;padding:7px 12px;border-radius:9px;
-               border:1px solid #6b2f3c;background:#3a1a22;color:#ffc9d0;font-size:12px;
-               cursor:pointer;white-space:nowrap}
-  .banner .ack:hover{background:#4a2029;border-color:#8a3a4a}
-  .row{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;margin-top:18px}
-  @media(max-width:1100px){.row{grid-template-columns:1fr}}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px 24px}
-  .card h3{margin:0 0 12px;font-size:12.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
-           display:flex;justify-content:space-between;align-items:center;gap:10px}
-  .nums{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
-  .big{font-size:38px;font-weight:650;letter-spacing:-.02em}
-  .chip{font-size:12.5px;padding:4px 10px;border-radius:8px;background:#1b2130;color:#b8c0d4}
-  .chip.up{background:#12301f;color:#63e39b}
-  .chip.down{background:#33161c;color:#ff8792}
-  .ctrls{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-  .seg{display:inline-flex;background:#0f1320;border:1px solid #232b3c;border-radius:9px;overflow:hidden}
-  .seg button{border:0;background:transparent;color:#8d95a8;padding:5px 10px;font-size:11px;cursor:pointer}
-  .seg button.on{background:#1d2740;color:#dbe6ff}
-  .chart{width:100%;height:290px;margin-top:6px;cursor:crosshair;display:block}
-  .trade .dir{display:inline-block;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;
-        letter-spacing:.08em;text-transform:uppercase}
-  .dir.long{background:#12301f;color:#63e39b}
-  .dir.short{background:#3a1219;color:#ff7d8a}
-  .dir.flat{background:#1b2130;color:#98a1b5}
-  .kv{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #1c2230}
-  .kv:last-child{border:0}
-  .kv span{color:var(--muted);font-size:13px}
-  .kv b{font-weight:600}
-  table{width:100%;border-collapse:collapse;font-size:14px}
-  th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;
-     padding:8px 6px;border-bottom:1px solid var(--line);font-weight:500}
-  td{padding:12px 6px;border-bottom:1px solid #181d28}
-  tbody tr{cursor:pointer}
-  tbody tr:hover{background:#161b25}
-  tr:last-child td{border:0}
-  .pos{color:var(--green)} .neg{color:var(--red)}
-  pre{max-height:220px;overflow:auto;margin:0;font:12px/1.5 ui-monospace,Menlo,monospace;
-      color:#9aa4b8;white-space:pre-wrap}
-  .health{display:flex;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:12px}
-  .health b{color:var(--text);font-weight:600}
-  .dot-live{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;
-            background:var(--green);animation:pulse 1.6s infinite}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-  .overlay{position:fixed;inset:0;background:rgba(6,8,12,.72);display:none;place-items:center;z-index:50;
-           backdrop-filter:blur(4px)}
-  .overlay.show{display:grid}
-  .modal{width:520px;max-width:92vw;background:#151922;border:1px solid #252c3b;border-radius:16px;padding:22px}
-  .modal h2{margin:0 0 14px;font-size:17px}
-  .modal .close{float:right;cursor:pointer;color:var(--muted);font-size:18px;line-height:1}
-  .modal .kv{border-color:#1e2534}
-  .btn{border:1px solid #2b3448;background:#1a2130;color:#cfd6e6;padding:9px 16px;border-radius:10px;
-       cursor:pointer;font-size:13px}
-  .btn:hover{background:#212a3c}
-  .detail-overlay{position:fixed;inset:0;background:rgba(6,8,12,.86);display:none;z-index:60;overflow:auto;
-                  backdrop-filter:blur(6px);padding:28px 4vw}
-  .detail-overlay.show{display:block}
-  .detail{max-width:1180px;margin:0 auto}
-  .detail header{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px}
-  .detail header h2{margin:0;font-size:32px;letter-spacing:-.01em}
-  .detail header p{margin:4px 0 0;color:var(--muted);font-size:13px}
-  .detail header .btn{margin-left:auto}
-  .dstats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
-  .dstat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;min-width:140px}
-  .dstat span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
-  .dstat b{font-size:22px;font-weight:650}
-  .tip{position:absolute;background:#0d1119;border:1px solid #2a3244;border-radius:8px;padding:6px 9px;
-       font-size:11px;color:#c9d1e2;pointer-events:none;white-space:nowrap;display:none;z-index:5}
-</style>
+<link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
 <div class="layout">
   <aside class="side">
     <div class="logo"><div class="dot">A</div><b>Autopilot</b></div>
-    <a class="item" href="/robots" style="text-decoration:none"><span class="ico">🤖</span><span class="nm">Роботы и брокеры</span></a>
+    <a class="item" href="/robots"><span class="ico">🤖</span><span class="nm">Роботы и брокеры</span></a>
     <h4>Стратегии</h4>
     <div id="list"></div>
     <div class="grow"></div>
     <div class="user">
       <div class="av"></div>
-      <div><div style="font-size:13px">Юань · песочница</div><small id="upd">—</small></div>
+      <div><div>Юань · песочница</div><small id="upd">—</small></div>
       <button class="power" id="power" title="Стоп-флаг">⏻</button>
     </div>
   </aside>
@@ -191,7 +46,7 @@
       </div>
     </section>
 
-    <div class="row">
+    <div class="grid">
       <section class="card">
         <h3>
           <span>Рынок и позиция</span>
@@ -217,7 +72,7 @@
           <div class="big" id="pnl">0 ₽</div>
           <div class="chip" id="pnl-unreal">0 ₽</div>
           <div class="chip" id="pnl-pct">0%</div>
-          <div style="margin-left:auto;color:var(--muted);font-size:12px" id="live-line">—</div>
+          <div class="muted small ml-auto" id="live-line">—</div>
         </div>
         <svg class="chart" id="chart" viewBox="0 0 800 250" preserveAspectRatio="none"></svg>
         <div class="tip" id="tip"></div>
@@ -226,7 +81,7 @@
       <section class="card trade">
         <h3>В сделке</h3>
         <div id="dir" class="dir flat">ВНЕ РЫНКА</div>
-        <p style="color:var(--muted);font-size:12px;margin:10px 0 6px" id="trade-note"></p>
+        <p class="muted small" id="trade-note"></p>
         <div class="kv"><span>Объём позиции</span><b id="t-qty">0 контрактов</b></div>
         <div class="kv"><span>Счёт (equity)</span><b id="t-equity">—</b></div>
         <div class="kv"><span>Свободно / маржа</span><b id="t-free">—</b></div>
@@ -239,29 +94,29 @@
       </section>
     </div>
 
-    <div class="row">
+    <div class="grid">
       <section class="card">
         <h3>Все конфигурации</h3>
-        <table>
+        <div class="table-wrap"><table>
           <thead><tr><th>конфигурация / инструмент</th><th>позиция</th><th>P&L</th><th>P&L%</th><th>DD%</th><th>сделок</th><th>последний сигнал</th><th></th></tr></thead>
           <tbody id="tbody"></tbody>
-        </table>
+        </table></div>
       </section>
       <section class="card">
         <h3>Метрики счёта</h3>
-        <div id="metrics-body"><div style="color:var(--muted);font-size:12px">снапшота ещё нет — ждём ежедневный отчёт</div></div>
+        <div id="metrics-body"><div class="empty">снапшота ещё нет — ждём ежедневный отчёт</div></div>
       </section>
       <section class="card">
         <h3>Новые роботы против базы</h3>
-        <table>
+        <div class="table-wrap"><table>
           <thead><tr><th>робот</th><th>база</th><th>дней</th><th>дельта ₽</th><th>DD робот/база</th></tr></thead>
           <tbody id="robot-cmp"><tr><td colspan="5">нет данных</td></tr></tbody>
-        </table>
+        </table></div>
       </section>
       <section class="card">
         <h3><span>Здоровье</span><span id="q-line" class="chip">—</span></h3>
         <div class="health" id="health"></div>
-        <h3 style="margin-top:16px">Журнал · 20 строк</h3>
+        <h3 class="mt">Журнал · 20 строк</h3>
         <pre id="log"></pre>
       </section>
     </div>
@@ -271,35 +126,32 @@
 <div class="detail-overlay" id="detail">
   <div class="detail">
     <header>
-      <div><h2 id="d-title">—</h2><p id="d-desc"></p><p id="d-inst" style="color:var(--muted);font-size:12px;margin:4px 0 0"></p></div>
+      <div><h2 id="d-title">—</h2><p id="d-desc"></p><p class="muted small" id="d-inst"></p></div>
       <button class="btn" onclick="closeDetail()">Закрыть ✕</button>
     </header>
     <div class="dstats" id="d-stats"></div>
-    <div class="row" style="margin-top:0">
+    <div class="grid" style="margin-top:0">
       <section class="card"><h3>Эквити по сделкам</h3>
         <svg class="chart" id="d-chart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg></section>
       <section class="card"><h3>Факт против ожидания</h3><div id="d-exp"></div></section>
     </div>
-    <section class="card" style="margin-top:18px"><h3>Сделки</h3>
-      <table><thead><tr><th>вход</th><th>выход</th><th>напр.</th><th>цена входа</th>
-      <th>цена выхода</th><th>P&L</th></tr></thead><tbody id="d-trades"></tbody></table>
+    <section class="card mt"><h3>Сделки</h3>
+      <div class="table-wrap"><table><thead><tr><th>вход</th><th>выход</th><th>напр.</th><th>цена входа</th>
+      <th>цена выхода</th><th>P&L</th></tr></thead><tbody id="d-trades"></tbody></table></div>
     </section>
   </div>
 </div>
 
-<div class="overlay" id="overlay">
-  <div class="modal">
-    <span class="close" id="m-close">✕</span>
-    <h2 id="m-title"></h2>
-    <div id="m-body"></div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px">
-      <button class="btn" id="m-cancel">Закрыть</button>
-    </div>
-  </div>
-</div>
+<div class="modal" id="overlay"><div class="box">
+  <span class="close" id="m-close" role="button" aria-label="Закрыть">✕</span>
+  <h2 id="m-title"></h2>
+  <div id="m-body"></div>
+  <div class="actions"><button class="btn" id="m-cancel">Закрыть</button></div>
+</div></div>
 
 <script>
 let DATA = null, CUR = null, CANDLES = [], PTS = null, MARKS = {trades:[], open:null};
+const CONFIG_FROM_URL = new URLSearchParams(location.search).get("config");
 const SEEN_KEY = "algo.alerts.seen";   // локальная копия отметки «прочитано»
 let ACKED = null;                      // отметка в памяти: работает, даже если storage запрещён
 
@@ -334,9 +186,9 @@ const px = v => Number(v).toFixed(digits());
 function openModal(title, html){
   document.getElementById("m-title").textContent = title;
   document.getElementById("m-body").innerHTML = html;
-  document.getElementById("overlay").classList.add("show");
+  document.getElementById("overlay").classList.add("on");
 }
-const closeModal = () => document.getElementById("overlay").classList.remove("show");
+const closeModal = () => document.getElementById("overlay").classList.remove("on");
 document.getElementById("m-close").onclick = closeModal;
 document.getElementById("m-cancel").onclick = closeModal;
 document.getElementById("overlay").onclick = e => { if(e.target.id === "overlay") closeModal(); };
@@ -345,7 +197,10 @@ async function loadState(){
   const r = await fetch("/api/state", {cache:"no-store"});
   if(!r.ok){ document.getElementById("upd").textContent = "нет доступа к API"; return; }
   DATA = await r.json();
-  if(!CUR) CUR = DATA.strategies[0]?.id;
+  if(!CUR){
+    const wanted = CONFIG_FROM_URL && DATA.strategies.find(x => x.id === CONFIG_FROM_URL);
+    CUR = wanted ? wanted.id : DATA.strategies[0]?.id;
+  }
   QUOTE = DATA.quote;
   render();
   loadCompare();

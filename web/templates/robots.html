@@ -9,6 +9,7 @@
 <meta name="theme-color" content="#0a0c11">
 <title>Autopilot — роботы и брокеры</title>
 <link rel="stylesheet" href="/static/app.css">
+<script src="/static/sidebar.js" defer></script>
 </head>
 <body>
 <div class="layout">
@@ -22,141 +23,170 @@
 </aside>
 <main class="main">
   <div class="navtabs"><a href="/">Тест</a><a href="/trade">Торговля</a><a class="on" href="/robots?mode=live">Роботы</a></div>
-  <span class="muted" id="status"></span>
-  <div class="card">
-    <div class="row"><h2 style="margin:0 auto 0 0">Инстансы роботов</h2>
-      <button class="primary" onclick="openCreate()">+ Добавить из библиотеки</button>
-      <button onclick="loadAll()">Обновить</button></div>
-    <p class="muted">Робот без инстанса не торгует. Новый инстанс создаётся в черновике и запускается вручную.</p>
-    <table><thead><tr><th>id</th><th>тип / инструмент</th><th>режим</th><th>статус</th>
-      <th>счёт / цена</th><th>позиция / equity</th><th>версия</th><th>действия</th></tr></thead>
-      <tbody id="instances"><tr><td colspan="8" class="muted">загрузка…</td></tr></tbody></table>
+  <div class="page-head">
+    <div><h2>Роботы и брокеры</h2>
+      <p>Инстансы, счета и ключи. Правка активного робота ставит его на паузу и создаёт новую версию параметров.</p></div>
+    <div class="actions">
+      <button class="btn primary" onclick="openCreate()">+ Добавить из библиотеки</button>
+      <button class="btn" onclick="loadAll()">Обновить</button>
+    </div>
   </div>
-  <div class="card"><h2>Счета и брокеры</h2>
-    <div class="row" id="accounts"></div>
-    <div class="row" style="margin-top:12px" id="brokers"></div>
-    <div class="row" style="margin-top:12px">
-      <input id="acc-id" placeholder="ID счёта (2102993)">
-      <input id="acc-label" placeholder="Номер счёта (КлФ-2102993)">
-      <input id="acc-code" placeholder="Торговый код (872635RN4O3)">
-      <input id="acc-keyref" placeholder="Секрет Finam для счёта" type="password">
-      <input id="acc-exp" placeholder="экспозиция 0.25–2.0" type="number" step="0.05" value="1.0">
-      <button onclick="addAccount()">Добавить счёт</button>
-      <button onclick="openAccountEdit()">Изменить счёт</button></div>
-    <div class="hint">Экспозиция: 2.0 — правило Силаева (200% номинала), 1.0 — половинный сайз, 0.25 — один контракт на 50 тыс. ₽. Лот = equity × экспозиция / (цена × множитель).</div>
-    <div class="hint">Ключ счёта вставляется сюда один раз: он сохранится в <code>auth.json</code> с правами 600, а в карточке счёта останется только имя. Робот берёт ключ из выбранного счёта.</div>
-    <div class="row" style="margin-top:8px">
-      <input id="service-key" placeholder="Сервисный ключ Finam (каталог, данные, тень)" type="password">
-      <button onclick="saveServiceKey()">Сохранить сервисный ключ</button>
-      <span id="service-status" class="muted"></span>
+  <p class="muted small" id="status"></p>
+  <div class="card">
+    <h3>Инстансы роботов</h3>
+    <p class="muted small">Робот без инстанса не торгует. Новый инстанс создаётся в черновике и запускается вручную.</p>
+    <div class="table-wrap"><table><thead><tr><th>id</th><th>тип / инструмент</th><th>режим</th><th>статус</th>
+      <th>счёт / цена</th><th>позиция / equity</th><th>версия</th><th>действия</th></tr></thead>
+      <tbody id="instances"><tr><td colspan="8" class="muted">загрузка…</td></tr></tbody></table></div>
+  </div>
+  <div class="grid">
+    <div class="card">
+      <h3>Счета</h3>
+      <div class="row" id="accounts"></div>
+      <div class="row mt" id="brokers"></div>
+      <div class="divider"></div>
+      <div class="form-grid">
+        <div class="field"><label for="acc-id">ID счёта</label><input id="acc-id" placeholder="2102993"></div>
+        <div class="field"><label for="acc-label">Номер счёта</label><input id="acc-label" placeholder="КлФ-2102993"></div>
+        <div class="field"><label for="acc-code">Торговый код</label><input id="acc-code" placeholder="872635RN4O3"></div>
+        <div class="field"><label for="acc-keyref">Секрет Finam</label><input id="acc-keyref" type="password" placeholder="ключ счёта"></div>
+        <div class="field"><label for="acc-exp">Экспозиция (0.25–2.0)</label><input id="acc-exp" type="number" step="0.05" value="1.0"></div>
+      </div>
+      <div class="row"><button class="btn" onclick="addAccount()">Добавить счёт</button>
+        <button class="btn" onclick="openAccountEdit()">Изменить счёт</button></div>
+      <p class="hint">Экспозиция: 2.0 — правило Силаева (200% номинала), 1.0 — половинный сайз, 0.25 — один контракт на 50 тыс. ₽. Лот = equity × экспозиция / (цена × множитель).</p>
     </div>
-    <div class="row" style="margin-top:8px">
-      <input id="key-ref" placeholder="Имя ключа">
-      <input id="key-secret" placeholder="Секрет Finam" type="password">
-      <button onclick="saveKey()">Сохранить ключ</button>
-      <span id="key-names" class="muted"></span>
+    <div class="card">
+      <h3>Ключи Finam</h3>
+      <p class="hint mb">Ключ сохраняется один раз в <code>auth.json</code> с правами 600; в карточке счёта остаётся только имя.</p>
+      <div class="field"><label for="service-key">Сервисный ключ (каталог, данные, тень)</label>
+        <div class="row"><input id="service-key" type="password" placeholder="сервисный ключ">
+          <button class="btn" onclick="saveServiceKey()">Сохранить</button></div>
+        <span class="muted small" id="service-status"></span></div>
+      <div class="field"><label>Именной ключ</label>
+        <div class="row"><input id="key-ref" placeholder="имя ключа">
+          <input id="key-secret" type="password" placeholder="секрет Finam">
+          <button class="btn" onclick="saveKey()">Сохранить ключ</button></div>
+        <span class="muted small" id="key-names"></span></div>
     </div>
-    <div class="row" style="margin-top:12px">
-      <button onclick="liveRun(false)">Проверить бой (dry-run)</button>
-      <button class="primary" onclick="liveRun(true)">Пустить в бой (один прогон)</button>
-      <span id="live-run-result" class="muted"></span>
+  </div>
+  <div class="grid">
+    <div class="card">
+      <h3>Ручной запуск боя</h3>
+      <div class="row"><button class="btn" onclick="liveRun(false)">Проверить бой (dry-run)</button>
+        <button class="btn primary" onclick="liveRun(true)">Пустить в бой (один прогон)</button>
+        <span class="muted small" id="live-run-result"></span></div>
+      <p class="hint">Репетиция пишет <code>planned</code>, реальный прогон отправляет заявки с флагом только в дочернем процессе. Постоянный таймер включается отдельно.</p>
     </div>
-    <div class="hint">Ручной запуск: репетиция пишет <code>planned</code>, реальный — отправляет заявки с флагом только в дочернем процессе. Один прогон = одна проверка; постоянный таймер включается отдельно.</div>
-    <div class="row" style="margin-top:8px">
-      <button onclick="refreshInstruments()">Обновить справочник инструментов</button>
-      <button onclick="refreshLiquid()">Топ ликвидных с MOEX</button>
-      <span id="inst-stats" class="muted"></span>
-    </div>
-    <div class="hint">Избранное — инструменты для торговли; показываются первыми. Ликвидные — топ по обороту/открытому интересу с MOEX ISS.</div>
-    <div class="row" style="margin-top:8px">
-      <input id="fav-symbol" placeholder="CNYRUBF@RTSX">
-      <input id="fav-note" placeholder="примечание">
-      <button onclick="addFavorite()">В избранное</button>
-      <span id="fav-list" class="muted"></span>
+    <div class="card">
+      <h3>Справочник инструментов</h3>
+      <div class="row"><button class="btn" onclick="refreshInstruments()">Обновить справочник</button>
+        <button class="btn" onclick="refreshLiquid()">Топ ликвидных с MOEX</button>
+        <span class="muted small" id="inst-stats"></span></div>
+      <div class="divider"></div>
+      <div class="field"><label>Избранное</label>
+        <div class="row"><input id="fav-symbol" placeholder="CNYRUBF@RTSX">
+          <input id="fav-note" placeholder="примечание">
+          <button class="btn" onclick="addFavorite()">В избранное</button></div>
+        <span class="muted small" id="fav-list"></span></div>
+      <p class="hint">Избранное показывается первым; ликвидные — топ по обороту и открытому интересу с MOEX ISS.</p>
     </div>
   </div>
 </main></div>
 
 <div class="modal" id="modal"><div class="box">
+  <span class="close" role="button" aria-label="Закрыть" onclick="closeModal()">✕</span>
   <h2 id="modal-title">Новый робот</h2>
-  <div class="field"><label>Тип робота</label><select id="f-spec" onchange="specChanged()"></select></div>
-  <div class="hint" id="f-spec-note"></div>
-  <div class="field"><label>Имя</label><input id="f-name" placeholder="например: База на юане"></div>
-  <div class="hint">ID создаётся автоматически из имени; имя попадёт в журнал как примечание.</div>
-  <div class="field"><label>Инструмент</label>
-    <select id="f-scope" onchange="$('instrument-list').innerHTML=''">
+  <div class="field"><label for="f-spec">Тип робота</label><select id="f-spec" onchange="specChanged()"></select>
+    <span class="hint" id="f-spec-note"></span></div>
+  <div class="field"><label for="f-name">Имя</label><input id="f-name" placeholder="например: База на юане">
+    <span class="hint">ID создаётся автоматически из имени; имя попадёт в журнал как примечание.</span></div>
+  <div class="field"><label for="f-inst">Инструмент</label>
+    <div class="row"><select id="f-scope" onchange="$('instrument-list').innerHTML=''">
       <option value="liquid">избранное + ликвидные</option>
       <option value="favorites">только избранное</option>
       <option value="all">весь каталог (595 тыс.)</option></select>
-    <input id="f-inst" list="instrument-list" placeholder="CNYRUBF@RTSX">
+      <input id="f-inst" list="instrument-list" placeholder="CNYRUBF@RTSX"></div>
     <datalist id="instrument-list"></datalist></div>
-  <div class="field"><label>Режим</label><select id="f-mode" onchange="modeChanged()">
-      <option value="paper">бумага</option><option value="live">бой</option></select></div>
-  <div class="hint" id="f-mode-note"></div>
+  <div class="field"><label for="f-mode">Режим</label><select id="f-mode" onchange="modeChanged()">
+      <option value="paper">бумага</option><option value="live">бой</option></select>
+    <span class="hint" id="f-mode-note"></span></div>
   <div id="live-fields" style="display:none">
-    <div class="field"><label>Повторяет бумажного конфига</label>
+    <div class="field"><label for="f-source">Повторяет бумажного конфига</label>
       <input id="f-source" list="source-list" placeholder="p-base">
-      <datalist id="source-list"></datalist></div>
-    <div class="hint">Живой робот берёт решения из строк paper.csv с этим id. Бумажный робот с таким id должен быть активен.</div>
-    <div class="field"><label>Счёт</label><select id="f-account"></select></div>
-    <div class="field"><label>Цена заявки</label><select id="f-pricing">
-        <option value="marketable">маркет-лимит</option><option value="signal">цена сигнала</option>
-        <option value="market">рыночная</option></select></div>
+      <datalist id="source-list"></datalist>
+      <span class="hint">Живой робот берёт решения из строк paper.csv с этим id. Бумажный робот с таким id должен быть активен.</span></div>
+    <div class="form-grid">
+      <div class="field"><label for="f-account">Счёт</label><select id="f-account"></select></div>
+      <div class="field"><label for="f-pricing">Цена заявки</label><select id="f-pricing">
+          <option value="marketable">маркет-лимит</option><option value="signal">цена сигнала</option>
+          <option value="market">рыночная</option></select></div>
+    </div>
   </div>
-  <div class="field"><label>Параметры</label><div class="params" id="f-params"></div></div>
-  <div class="hint">Переключатели: включено = <code>true</code>, выключено = <code>false</code>. Подсказка — при наведении.</div>
+  <div class="field"><label>Параметры</label><div class="params" id="f-params"></div>
+    <span class="hint">Переключатели: включено = <code>true</code>, выключено = <code>false</code>. Подсказка — при наведении.</span></div>
   <div class="err" id="err"></div>
-  <div class="row"><button class="primary" onclick="submitCreate()">Создать</button>
-    <button onclick="closeModal()">Отмена</button></div>
+  <div class="actions"><button class="btn primary" onclick="submitCreate()">Создать</button>
+    <button class="btn" onclick="closeModal()">Отмена</button></div>
 </div></div>
 
 <div class="modal" id="promote-modal"><div class="box">
+  <span class="close" role="button" aria-label="Закрыть" onclick="closePromote()">✕</span>
   <h2>Перевод в бой</h2>
-  <p class="muted">Инстанс получит mode=live и статус active. Реальная заявка не уйдёт: нужны ещё `--arm` и `FINAM_ALLOW_TRADING=1`.</p>
-  <div class="field"><label>Повторяет бумажного конфига</label>
+  <p class="muted small">Инстанс получит mode=live и статус active. Реальная заявка не уйдёт: нужны ещё <code>--arm</code> и <code>FINAM_ALLOW_TRADING=1</code>.</p>
+  <div class="field"><label for="p-source">Повторяет бумажного конфига</label>
     <input id="p-source" list="source-list" placeholder="p-base"></div>
-  <div class="field"><label>Счёт</label><select id="p-account"></select></div>
-  <div class="field"><label>Режим цены</label><select id="p-pricing">
-    <option value="marketable">маркет-лимит</option><option value="signal">цена сигнала</option>
-    <option value="market">рыночная</option></select></div>
+  <div class="form-grid">
+    <div class="field"><label for="p-account">Счёт</label><select id="p-account"></select></div>
+    <div class="field"><label for="p-pricing">Режим цены</label><select id="p-pricing">
+      <option value="marketable">маркет-лимит</option><option value="signal">цена сигнала</option>
+      <option value="market">рыночная</option></select></div>
+  </div>
   <div class="err" id="p-err"></div>
-  <div class="row"><button class="primary" onclick="submitPromote()">Перевести</button>
-    <button onclick="closePromote()">Отмена</button></div>
+  <div class="actions"><button class="btn danger" onclick="submitPromote()">Перевести в бой</button>
+    <button class="btn" onclick="closePromote()">Отмена</button></div>
 </div></div>
 
 <div class="modal" id="edit-modal"><div class="box">
+  <span class="close" role="button" aria-label="Закрыть" onclick="closeEdit()">✕</span>
   <h2 id="edit-title">Параметры робота</h2>
-  <p class="muted">Активный робот при сохранении уйдёт на паузу; создаётся новая версия параметров.</p>
-  <div class="field"><label>Счёт</label><select id="e-account"></select></div>
-  <div class="field"><label>Режим цены</label><select id="e-pricing">
-      <option value="signal">цена сигнала</option>
-      <option value="marketable">маркет-лимит</option>
-      <option value="market">рыночная</option></select></div>
-  <div class="field"><label>Повторяет бумажного</label>
-    <input id="e-source" list="e-source-list" placeholder="p-base">
-    <datalist id="e-source-list"></datalist></div>
-  <div class="field"><label>Экспозиция</label><input id="e-exposure" type="number" step="0.05" min="0.01" max="2"></div>
-  <div class="params" id="e-params"></div>
-  <div class="hint">Переключатели: включено = <code>true</code>, выключено = <code>false</code>; `*` — отличается от дефолта.</div>
-  <div class="field"><label>Причина изменения</label><input id="e-reason" placeholder="например: echo CM grid 48→55"></div>
-  <div class="field"><label>Предпросмотр (60 дней)</label><div id="e-preview" class="muted">—</div></div>
+  <p class="muted small">Активный робот при сохранении уйдёт на паузу; создаётся новая версия параметров.</p>
+  <div class="form-grid">
+    <div class="field"><label for="e-account">Счёт</label><select id="e-account"></select></div>
+    <div class="field"><label for="e-pricing">Режим цены</label><select id="e-pricing">
+        <option value="signal">цена сигнала</option>
+        <option value="marketable">маркет-лимит</option>
+        <option value="market">рыночная</option></select></div>
+    <div class="field"><label for="e-source">Повторяет бумажного</label>
+      <input id="e-source" list="e-source-list" placeholder="p-base">
+      <datalist id="e-source-list"></datalist></div>
+    <div class="field"><label for="e-exposure">Экспозиция</label><input id="e-exposure" type="number" step="0.05" min="0.01" max="2"></div>
+  </div>
+  <div class="field"><label>Параметры</label><div class="params" id="e-params"></div>
+    <span class="hint">Переключатели: включено = <code>true</code>, выключено = <code>false</code>; <code>*</code> — отличается от дефолта.</span></div>
+  <div class="field"><label for="e-reason">Причина изменения</label><input id="e-reason" placeholder="например: echo CM grid 48→55"></div>
+  <div class="field"><label>Предпросмотр (60 дней)</label><div id="e-preview" class="muted small">—</div></div>
   <div class="err" id="e-err"></div>
-  <div class="row"><button onclick="previewEdit()">Проверить на истории</button>
-    <button class="primary" onclick="submitEdit()">Сохранить версию</button>
-    <button onclick="closeEdit()">Отмена</button></div>
+  <div class="actions"><button class="btn" onclick="previewEdit()">Проверить на истории</button>
+    <button class="btn primary" onclick="submitEdit()">Сохранить версию</button>
+    <button class="btn" onclick="closeEdit()">Отмена</button></div>
 </div></div>
 
 <div class="modal" id="account-modal"><div class="box">
+  <span class="close" role="button" aria-label="Закрыть" onclick="closeAccountEdit()">✕</span>
   <h2>Редактирование счёта</h2>
-  <div class="field"><label>Счёт</label><select id="a-edit-id" onchange="fillAccountEdit()"></select></div>
-  <div class="field"><label>Метка</label><input id="a-edit-label"></div>
-  <div class="field"><label>Торговый код</label><input id="a-edit-code"></div>
-  <div class="field"><label>Экспозиция (0.25–2.0)</label><input id="a-edit-exp" type="number" step="0.05" min="0.01" max="2"></div>
-  <div class="field"><label>Новый ключ (если меняем)</label><input id="a-edit-key" type="password" placeholder="оставьте пустым, чтобы не менять"></div>
-  <div class="field"><label>Комментарий</label><input id="a-edit-comment"></div>
+  <div class="field"><label for="a-edit-id">Счёт</label><select id="a-edit-id" onchange="fillAccountEdit()"></select></div>
+  <div class="form-grid">
+    <div class="field"><label for="a-edit-label">Метка</label><input id="a-edit-label"></div>
+    <div class="field"><label for="a-edit-code">Торговый код</label><input id="a-edit-code"></div>
+    <div class="field"><label for="a-edit-exp">Экспозиция (0.25–2.0)</label><input id="a-edit-exp" type="number" step="0.05" min="0.01" max="2"></div>
+    <div class="field"><label for="a-edit-comment">Комментарий</label><input id="a-edit-comment"></div>
+  </div>
+  <div class="field"><label for="a-edit-key">Новый ключ (если меняем)</label>
+    <input id="a-edit-key" type="password" placeholder="оставьте пустым, чтобы не менять"></div>
   <div class="err" id="a-edit-err"></div>
-  <div class="row"><button class="primary" onclick="submitAccountEdit()">Сохранить</button>
-    <button onclick="closeAccountEdit()">Отмена</button></div>
+  <div class="actions"><button class="btn primary" onclick="submitAccountEdit()">Сохранить</button>
+    <button class="btn" onclick="closeAccountEdit()">Отмена</button></div>
 </div></div>
 
 <script>

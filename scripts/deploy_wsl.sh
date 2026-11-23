@@ -40,7 +40,7 @@ FILES=(
   algo/*.py algo/broker/*.py algo/strategies/*.py
   scripts/*.py scripts/README.md scripts/deploy_wsl.sh
   tests/*.py
-  web/*.py web/templates/*.html
+  web/*.py web/templates/*.html web/static/*.css web/static/*.js web/static/img/*
   docs/*.md docs/strategies/*.md docs/sources/*.md
   infra/db/memory.py infra/db/schema.sql infra/systemd/*.service
 )
