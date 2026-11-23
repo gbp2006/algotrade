@@ -1,0 +1,23 @@
+{
+  "comment": "ШАБЛОН. Скопируйте на WSL как live_settings.json и заполните реальными счетами. Файл не коммитится и не деплоится.",
+  "max_quote_age_sec": 60,
+  "defaults": {
+    "pricing": "marketable",
+    "trade_on_expiry": false,
+    "max_exposure": 1.0,
+    "max_daily_loss_pct": 0.03,
+    "max_qty": 100
+  },
+  "accounts": {
+    "A111111": {
+      "capital": 200000,
+      "comment": "малый счёт для первого месяца G4"
+    }
+  },
+  "robots": {
+    "p-base": {
+      "account": "A111111",
+      "pricing": "signal"
+    }
+  }
+}

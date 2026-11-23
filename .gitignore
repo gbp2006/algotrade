@@ -18,6 +18,9 @@ results/web-local.log
 results/finam_m5_*.csv
 results/live.csv
 results/live.lock
+results/live_run.lock
+results/live_run.json
+live_settings.json
 results/shadow.json
 results/shadow.log
 INDEX.md.bak-*

@@ -22,7 +22,7 @@ class FakeBroker:
         self.fail = fail
         self.calls = []
 
-    def account(self):
+    def account(self, account=None):
         if self.fail:
             raise RuntimeError("API down")
         return {"positions": self.positions}

@@ -123,9 +123,12 @@ class FinamBroker:
 
     # ---------- торговля ----------
     def place_market(self, symbol: str, side: str, qty: int,
-                     account: str | None = None) -> dict:
+                     account: str | None = None,
+                     client_order_id: str | None = None) -> dict:
         if os.environ.get("FINAM_ALLOW_TRADING") != "1":
             raise FinamError("торговля выключена: не выставлен FINAM_ALLOW_TRADING=1")
+        if client_order_id and len(client_order_id) > 20:
+            raise FinamError("client_order_id длиннее 20 символов")
         acc = account or self.account_id
         body = {
             "symbol": symbol,
@@ -134,6 +137,11 @@ class FinamBroker:
             "type": "ORDER_TYPE_MARKET",
             "time_in_force": "TIME_IN_FORCE_DAY",
         }
+        # client_order_id — общее поле PlaceOrder, применимо и к рыночным заявкам
+        # (проверено по OpenAPI /v1/accounts/{account_id}/orders 23.11.2026),
+        # поэтому идемпотентность работает для всех трёх режимов цены.
+        if client_order_id:
+            body["client_order_id"] = client_order_id
         return self._call("POST", f"/v1/accounts/{acc}/orders", body=body)
 
     def place_limit(self, symbol: str, side: str, qty: int, price: float,

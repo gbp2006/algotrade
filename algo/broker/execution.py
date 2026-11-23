@@ -23,7 +23,8 @@ JOURNAL = ROOT / "results" / "live.csv"
 LOCK = ROOT / "results" / "live.lock"
 
 FIELDS = ["ts", "client_id", "client_order_id", "order_id", "config", "symbol",
-          "side", "qty", "price", "multiplier", "status", "reason", "response"]
+          "side", "qty", "price", "multiplier", "status", "reason", "response",
+          "account", "pricing", "order_type"]
 
 
 class ExecutionError(RuntimeError):
@@ -41,6 +42,9 @@ class Order:
     multiplier: float = 1.0
     daily_pnl: float = 0.0  # уже реализованный P&L счёта за день, ₽
     min_step: float = 0.0   # шаг цены инструмента; 0 = проверка кратности выключена
+    order_type: str = "limit"  # limit / market
+    account: str = ""       # реальный счёт из live_settings.json
+    pricing: str = ""       # signal / marketable / market
 
 
 @dataclass(frozen=True)
@@ -96,15 +100,22 @@ class OrderGateway:
                 "price": f"{order.price:.6f}", "multiplier": order.multiplier,
                 "status": result.status, "reason": result.reason[:200],
                 "response": str(result.response)[:300],
+                "account": order.account, "pricing": order.pricing,
+                "order_type": order.order_type,
             })
         return result
+
+    def log_decision(self, order: Order, status: str, reason: str = "") -> Result:
+        """Записать решение, по которому заявка НЕ отправлялась (skip/reject)."""
+        return self._write(order, Result(status, reason,
+                                         client_order_id=client_order_id(order.client_id)))
 
     def _validate(self, order: Order) -> str:
         if order.qty <= 0:
             return "количество должно быть положительным"
         if order.price <= 0:
             return "цена должна быть положительной"
-        if order.min_step > 0:
+        if order.min_step > 0 and order.order_type == "limit":
             steps = order.price / order.min_step
             if abs(steps - round(steps)) > 1e-6:
                 return f"цена {order.price} не кратна шагу {order.min_step}"
@@ -162,8 +173,14 @@ class OrderGateway:
                     "planned", "dry-run: проверено, заявка не отправлена",
                     client_order_id=cid))
             try:
-                response = self.broker.place_limit(
-                    order.symbol, order.side, order.qty, order.price, account, cid)
+                acc = account or order.account
+                if order.order_type == "market":
+                    # client_order_id — общее поле PlaceOrder, применимо и к market
+                    response = self.broker.place_market(
+                        order.symbol, order.side, order.qty, acc, cid)
+                else:
+                    response = self.broker.place_limit(
+                        order.symbol, order.side, order.qty, order.price, acc, cid)
             except Exception as exc:  # noqa: BLE001 — ответ мог потеряться после отправки
                 found = None
                 finder = getattr(self.broker, "find_order", None)

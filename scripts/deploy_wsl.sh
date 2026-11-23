@@ -36,7 +36,7 @@ for arg in "$@"; do
 done
 
 FILES=(
-  run.sh requirements.txt AGENTS.md PROGRESS.md README.md
+  run.sh requirements.txt AGENTS.md PROGRESS.md README.md live_settings.example.json
   algo/*.py algo/broker/*.py algo/strategies/*.py
   scripts/*.py scripts/README.md scripts/deploy_wsl.sh
   tests/*.py

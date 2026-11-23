@@ -1,0 +1,93 @@
+"""Библиотека типов роботов (spec-ов). Неизменяемые описания из кода.
+
+Инстанс со своим набором параметров создаётся из spec через `robot_store`;
+здесь же параметры проверяются до записи.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any
+
+from .configs import CONFIGS
+from .robot_configs import ROBOT_CONFIGS
+
+
+@dataclass(frozen=True)
+class RobotSpec:
+    id: str
+    strategy: str
+    defaults: dict = field(default_factory=dict)
+    schema: dict[str, str] = field(default_factory=dict)
+    instruments: tuple[str, ...] = ()
+    description: str = ""
+    source: str = ""           # base / robot
+    examples: tuple[str, ...] = ()
+
+
+def _type_name(value: Any) -> str:
+    if isinstance(value, bool):
+        return "bool"
+    if isinstance(value, int):
+        return "int"
+    if isinstance(value, float):
+        return "float"
+    return "str"
+
+
+def _build() -> dict[str, RobotSpec]:
+    grouped: dict[str, list] = {}
+    for cfg in CONFIGS:
+        grouped.setdefault(cfg.strategy, []).append((cfg, "base"))
+    for cfg in ROBOT_CONFIGS:
+        grouped.setdefault(cfg.strategy, []).append((cfg, "robot"))
+
+    specs: dict[str, RobotSpec] = {}
+    for strategy, items in grouped.items():
+        first, source = items[0]
+        defaults = dict(first.params)
+        specs[strategy] = RobotSpec(
+            id=strategy,
+            strategy=strategy,
+            defaults=defaults,
+            schema={k: _type_name(v) for k, v in defaults.items()},
+            instruments=tuple(sorted({cfg.instrument for cfg, _ in items})),
+            description=first.comment or first.display,
+            source=source,
+            examples=tuple(cfg.id for cfg, _ in items[:5]),
+        )
+    return specs
+
+
+SPECS = _build()
+
+
+def list_specs() -> list[RobotSpec]:
+    return list(SPECS.values())
+
+
+def get_spec(spec_id: str) -> RobotSpec:
+    spec = SPECS.get(spec_id)
+    if spec is None:
+        raise ValueError(f"нет типа робота {spec_id!r}; доступны: {', '.join(SPECS)}")
+    return spec
+
+
+def validate_params(spec_id: str, overrides: dict[str, Any] | None) -> dict:
+    """Объединить дефолты spec с переопределениями и проверить типы."""
+    spec = get_spec(spec_id)
+    out = dict(spec.defaults)
+    for key, value in (overrides or {}).items():
+        if key not in spec.schema:
+            raise ValueError(f"{spec_id}: неизвестный параметр {key!r}")
+        expected = spec.schema[key]
+        ok = {
+            "bool": lambda v: isinstance(v, bool),
+            "int": lambda v: isinstance(v, int) and not isinstance(v, bool),
+            "float": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
+            "str": lambda v: isinstance(v, str),
+        }[expected](value)
+        if not ok:
+            raise ValueError(f"{spec_id}.{key}: ожидался {expected}, получено {value!r}")
+        out[key] = value
+    return out

@@ -20,6 +20,8 @@ case "${1:-help}" in
   broker) "$PY" scripts/30_broker_check.py ;;
   paper-live) shift; "$PY" scripts/31_paper_live.py "$@" ;;
   shadow) "$PY" scripts/33_shadow_live.py ;;
+  live-dry) "$PY" scripts/34_live_execute.py "$@" ;;
+  live) shift; "$PY" scripts/34_live_execute.py --arm "$@" ;;
   report) "$PY" scripts/32_paper_report.py ;;
   store) shift; "$PY" scripts/00_store.py "$@" ;;
   sweep)  "$PY" scripts/15_sweep_full.py ;;
@@ -67,6 +69,8 @@ usage: ./run.sh <команда>
   paper-live  бумажная торговля по живым котировкам (6 конфигураций)
   report   отчёт: факт против бэктеста
   shadow   теневой прогон G3: плановые заявки без отправки
+  live-dry боевой контур в репетиции: заявки НЕ уходят (по умолчанию)
+  live     боевой контур с --arm; требует FINAM_ALLOW_TRADING=1 и live_settings.json
   store    хранилище баров: init|import-txt|import-finam|export|import-csv|stats
   sweep    полная сетка параметров Простушки
   all      прогоны Простушки на Si + Универсалки
