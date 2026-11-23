@@ -94,7 +94,7 @@ class TestRisk(unittest.TestCase):
 
     def test_robots_have_risk_and_unique_ids(self):
         ids = [c.id for c in ROBOT_CONFIGS]
-        self.assertEqual(len(ids), 6)
+        self.assertEqual(len(ids), 8)
         self.assertEqual(len(ids), len(set(ids)))
         self.assertFalse(set(ids) & {c.id for c in CONFIGS})
         idx = pd.date_range("2026-11-18 09:00", "2026-11-20 14:00", freq="5min")
@@ -106,7 +106,8 @@ class TestRisk(unittest.TestCase):
                 from algo.channel_live import channel_decision
                 self.assertIsNotNone(channel_decision(cfg.params, m5), cfg.id)
             else:
-                self.assertIsNotNone(decision(cfg, m5, idx[0].date()), cfg.id)
+                # день с предыдущей историей: d20-* решает по бару прошлой даты
+                self.assertIsNotNone(decision(cfg, m5, idx[-1].date()), cfg.id)
         idx = pd.date_range("2026-11-20 10:00", "2026-11-20 14:00", freq="5min")
         close = pd.Series(np.linspace(12.20, 12.40, len(idx)), index=idx)
         m5 = pd.DataFrame({"open": close, "high": close, "low": close,

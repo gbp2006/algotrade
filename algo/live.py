@@ -55,7 +55,7 @@ def decision_configs(configs) -> list:
     `hold="morning"` тоже решает (вход 13:30), просто выходит отдельной фазой
     в 10:25 — раньше её ошибочно пропускали и она не могла открыть позицию.
     """
-    return [c for c in configs if c.strategy in ("prostushka", "universal")]
+    return [c for c in configs if c.strategy in ("prostushka", "universal", "donchian")]
 
 
 def decision(cfg: Config, m5: pd.DataFrame, day) -> Decision | None:
@@ -97,6 +97,28 @@ def decision(cfg: Config, m5: pd.DataFrame, day) -> Decision | None:
         if sig == -1 and day.weekday() == 4 and not params.get("short_friday", False):
             sig = 0
         return Decision(sig, close, ts, f"close {close:.3f} vs MA{bars} {ma_val:.4f}")
+
+    if cfg.strategy == "donchian":
+        # Решение 13:55,..., по дневному бару ПРЕДЫДУЩЕЙ календарной даты:
+        # дневной close включает вечернюю сессию до ~23:50, поэтому брать
+        # сегодняшний день нельзя (look-ahead). Логика та же, что в бэктесте.
+        from .strategies.candidates import daily_bars, donchian_signal
+
+        prev = m5[m5.index.normalize() < pd.Timestamp(day).normalize()]
+        if prev.empty:
+            return None
+        entry = int(params.get("entry", 20))
+        exit_ = int(params.get("exit", 10))
+        sig = donchian_signal(daily_bars(prev), entry, exit_,
+                              bool(params.get("allow_short", True)))
+        ts = _first_at(today, params.get("entry_time", "13:55"))
+        if ts is None or sig.empty:
+            return None
+        target = int(sig.iloc[-1])
+        close = float(m5.loc[ts, "close"])
+        return Decision(target, close, ts,
+                        f"Donchian {entry}/{exit_}: сигнал {target:+d} "
+                        f"по дню {sig.index[-1]:%Y-%m-%d}")
 
     if cfg.strategy == "universal":
         ts_ref = _first_at(today, params["ref"])

@@ -18,4 +18,6 @@ CNY 2022-04-26…20.11 (784k M1), Si 2009…2026 (3.6M), GL/MIX с ISS. Живо
 ## Ворота и вопросы
 Подробности — `docs/live-gates.md`, `docs/live-execution.md`, `docs/strategies/risk.md`. Открыто: Самурай (широкие оффсеты PF 1.05–1.69 на 2023–25, но OOS не подтверждён — `reports/samurai-research.md`), активация ATR-сайзинга, шорт по пятницам на Si, набор 30 дней бумаги и 10 дней тени. Поиск параметров 2025–2026 (`reports/param-search-2025-2026.md`, `reports/entry-time-validation.md`): train-оптимумы на OOS не подтвердились; кандидаты — Простушка MA48–55 (CNY OOS PF 1.60–1.70, Si 1.57–1.65) и Универсалка с входом 13:40 (CNY OOS 2.15 против 1.83, но Si 2026 1.57 против 1.64). В `CONFIGS` не менялось; на WSL выложены 4 дополнительных робота (`p-ma50`, `p-fast2`, `u-1340`, `p-train` — контроль подгонки) с ATR-резкой сайза, сухой прогон успешен (`docs/strategies/robots.md`).
 
+Поиск стратегий (21.11): каталог ~78 идей (`reports/strategy-catalog.md`), 17 прототипов, шорт-лист 7 после train→OOS (`reports/strategy-research-summary.md`); в бумажный контур не выложено.
+
 Архив прежних разделов: `reports/PROGRESS-archive-2026-11-20.md`.

@@ -288,3 +288,63 @@ ts,strategy,instrument,period,params,trades,net,pf,avg,dd,in_market,note
 2026-11-21 00:23,channel_break,CNY,grid OOS 2026,start=23:40;switch=13:00;mode=day;direction=long;sl=tight,48,765.69,2.099359373337749,,-210.99,,"deep grid, notice: proxy boundary"
 2026-11-21 00:23,channel_break,CNY,grid OOS 2026,start=01:00;switch=13:00;mode=day;direction=long;sl=tight,47,715.31,2.168614713734877,,-130.0,,"deep grid, notice: proxy boundary"
 2026-11-21 00:23,channel_break,CNY,grid OOS 2026,start=22:00;switch=15:00;mode=day;direction=short;sl=sl,27,332.96,2.5048080030192392,,-134.05,,"deep grid, notice: proxy boundary"
+2026-11-21 06:12,cand_tsmom12,CNY,oos 2026,source=strategy-catalog;prototype=70_candidates,23,-502.11,0.82,-21.83,-1741.23,100.0,первый прототип; дневной сигнал на 13:55; без сайзинга
+2026-11-21 06:12,cand_tsmom6,CNY,oos 2026,source=strategy-catalog;prototype=70_candidates,21,-1108.06,0.61,-52.76,-2532.02,100.0,первый прототип; дневной сигнал на 13:55; без сайзинга
+2026-11-21 06:12,cand_donchian20,CNY,oos 2026,source=strategy-catalog;prototype=70_candidates,6,934.96,1.91,155.83,-625.97,68.3,первый прототип; дневной сигнал на 13:55; без сайзинга
+2026-11-21 06:12,cand_ewmac8,CNY,oos 2026,source=strategy-catalog;prototype=70_candidates,10,669.69,1.42,66.97,-1018.92,89.0,первый прототип; дневной сигнал на 13:55; без сайзинга
+2026-11-21 06:12,cand_sma50,CNY,oos 2026,source=strategy-catalog;prototype=70_candidates,3,-4189.8,0.0,-1396.6,-4189.8,100.0,первый прототип; дневной сигнал на 13:55; без сайзинга
+2026-11-21 06:12,cand_bollrev,CNY,oos 2026,source=strategy-catalog;prototype=70_candidates,6,-1285.95,0.34,-214.33,-1911.81,53.9,первый прототип; дневной сигнал на 13:55; без сайзинга
+2026-11-21 06:12,cand_rsi2,CNY,oos 2026,source=strategy-catalog;prototype=70_candidates,17,-955.77,0.5,-56.22,-1333.85,25.3,первый прототип; дневной сигнал на 13:55; без сайзинга
+2026-11-21 06:12,cand_orb30,CNY,oos 2026,source=strategy-catalog;prototype=70_candidates,220,1985.19,1.37,9.02,-620.09,69.3,первый прототип; дневной сигнал на 13:55; без сайзинга
+2026-11-21 06:12,cand_tom,CNY,oos 2026,source=strategy-catalog;prototype=70_candidates,11,357.39,1.41,32.49,-379.92,17.7,первый прототип; дневной сигнал на 13:55; без сайзинга
+2026-11-21 06:12,cand_tsmom12,Si,oos 2026,source=strategy-catalog;prototype=70_candidates,5,-103.7,0.98,-20.74,-3821.94,100.0,первый прототип; дневной сигнал на 13:55; без сайзинга
+2026-11-21 06:12,cand_tsmom6,Si,oos 2026,source=strategy-catalog;prototype=70_candidates,19,6464.39,1.92,340.23,-3884.19,100.0,первый прототип; дневной сигнал на 13:55; без сайзинга
+2026-11-21 06:12,cand_donchian20,Si,oos 2026,source=strategy-catalog;prototype=70_candidates,5,7013.41,2.04,1402.68,-6720.52,77.1,первый прототип; дневной сигнал на 13:55; без сайзинга
+2026-11-21 06:12,cand_ewmac8,Si,oos 2026,source=strategy-catalog;prototype=70_candidates,6,9152.79,3.76,1525.47,-2034.25,94.0,первый прототип; дневной сигнал на 13:55; без сайзинга
+2026-11-21 06:12,cand_sma50,Si,oos 2026,source=strategy-catalog;prototype=70_candidates,1,-1524.52,0.0,-1524.52,-1524.52,100.0,первый прототип; дневной сигнал на 13:55; без сайзинга
+2026-11-21 06:12,cand_bollrev,Si,oos 2026,source=strategy-catalog;prototype=70_candidates,6,-9873.88,0.17,-1645.65,-11870.62,68.4,первый прототип; дневной сигнал на 13:55; без сайзинга
+2026-11-21 06:12,cand_rsi2,Si,oos 2026,source=strategy-catalog;prototype=70_candidates,14,-5363.59,0.4,-383.11,-6422.52,21.8,первый прототип; дневной сигнал на 13:55; без сайзинга
+2026-11-21 06:12,cand_orb30,Si,oos 2026,source=strategy-catalog;prototype=70_candidates,208,6944.97,1.16,33.39,-8631.55,71.3,первый прототип; дневной сигнал на 13:55; без сайзинга
+2026-11-21 06:12,cand_tom,Si,oos 2026,source=strategy-catalog;prototype=70_candidates,10,1123.29,1.16,112.33,-2614.49,17.7,первый прототип; дневной сигнал на 13:55; без сайзинга
+2026-11-21 06:13,cand_turtle2,CNY,oos 2026,source=strategy-catalog;prototype=72_more,4,98.92,1.12,24.73,-836.7,76.8,вторая партия прототипов; без сайзинга
+2026-11-21 06:13,cand_sma10,CNY,oos 2026,source=strategy-catalog;prototype=72_more,8,1628.34,2.62,203.54,-760.43,100.0,вторая партия прототипов; без сайзинга
+2026-11-21 06:13,cand_sma20,CNY,oos 2026,source=strategy-catalog;prototype=72_more,6,-251.56,0.81,-41.93,-1356.9,100.0,вторая партия прототипов; без сайзинга
+2026-11-21 06:13,cand_roc5,CNY,oos 2026,source=strategy-catalog;prototype=72_more,47,2300.69,2.03,48.95,-568.41,100.0,вторая партия прототипов; без сайзинга
+2026-11-21 06:13,cand_vma5,CNY,oos 2026,source=strategy-catalog;prototype=72_more,26,1260.67,1.47,48.49,-862.92,100.0,вторая партия прототипов; без сайзинга
+2026-11-21 06:13,cand_macd5,CNY,oos 2026,source=strategy-catalog;prototype=72_more,16,1512.62,1.72,94.54,-824.1,100.0,вторая партия прототипов; без сайзинга
+2026-11-21 06:13,cand_hallow,CNY,oos 2026,source=strategy-catalog;prototype=72_more,1,-210.22,0.0,-210.22,-210.22,39.3,вторая партия прототипов; без сайзинга
+2026-11-21 06:13,cand_rsi14rev,CNY,oos 2026,source=strategy-catalog;prototype=72_more,4,-2953.04,0.17,-738.26,-3558.69,100.0,вторая партия прототипов; без сайзинга
+2026-11-21 06:13,cand_turtle2,Si,oos 2026,source=strategy-catalog;prototype=72_more,3,213.56,1.05,71.19,-4733.07,72.0,вторая партия прототипов; без сайзинга
+2026-11-21 06:13,cand_sma10,Si,oos 2026,source=strategy-catalog;prototype=72_more,7,4028.78,1.47,575.54,-4636.69,100.0,вторая партия прототипов; без сайзинга
+2026-11-21 06:13,cand_sma20,Si,oos 2026,source=strategy-catalog;prototype=72_more,6,-12352.49,0.32,-2058.75,-18289.22,100.0,вторая партия прототипов; без сайзинга
+2026-11-21 06:13,cand_roc5,Si,oos 2026,source=strategy-catalog;prototype=72_more,41,4281.14,1.18,104.42,-7166.05,100.0,вторая партия прототипов; без сайзинга
+2026-11-21 06:13,cand_vma5,Si,oos 2026,source=strategy-catalog;prototype=72_more,26,1812.12,1.08,69.7,-11554.63,100.0,вторая партия прототипов; без сайзинга
+2026-11-21 06:13,cand_macd5,Si,oos 2026,source=strategy-catalog;prototype=72_more,22,-2407.43,0.88,-109.43,-10497.25,100.0,вторая партия прототипов; без сайзинга
+2026-11-21 06:13,cand_hallow,Si,oos 2026,source=strategy-catalog;prototype=72_more,1,-4999.77,0.0,-4999.77,-4999.77,35.1,вторая партия прототипов; без сайзинга
+2026-11-21 06:13,cand_rsi14rev,Si,oos 2026,source=strategy-catalog;prototype=72_more,4,-12142.59,0.13,-3035.65,-13911.55,100.0,вторая партия прототипов; без сайзинга
+2026-11-23 16:45,h2h_base_ma40,CNY,oos 2026,comparison=head-to-head;prototype=74_head_to_head,106,1805.88,1.43,17.04,-641.63,78.2,"база в том же прогоне, 1 контракт"
+2026-11-23 16:45,h2h_base_ma48,CNY,oos 2026,comparison=head-to-head;prototype=74_head_to_head,111,2263.78,1.53,20.39,-621.43,78.1,"база в том же прогоне, 1 контракт"
+2026-11-23 16:45,h2h_base_ma40,Si,oos 2026,comparison=head-to-head;prototype=74_head_to_head,105,14300.96,1.43,136.2,-5090.24,76.8,"база в том же прогоне, 1 контракт"
+2026-11-23 16:45,h2h_base_ma48,Si,oos 2026,comparison=head-to-head;prototype=74_head_to_head,110,16271.43,1.48,147.92,-5495.73,81.1,"база в том же прогоне, 1 контракт"
+2026-11-23 16:54,capital10y_donchian20,Si,2016-2026,capital=1000000.0;sizing=100% экспозиции на входе,68,494119.99,0,,-472075.89,,реинвестирование; 1M стартовый капитал
+2026-11-23 16:54,capital10y_ewmac8,Si,2016-2026,capital=1000000.0;sizing=100% экспозиции на входе,94,1202400.88,0,,-277001.75,,реинвестирование; 1M стартовый капитал
+2026-11-23 16:54,capital10y_sma10,Si,2016-2026,capital=1000000.0;sizing=100% экспозиции на входе,116,203572.05,0,,-494086.36,,реинвестирование; 1M стартовый капитал
+2026-11-23 16:54,capital10y_roc5,Si,2016-2026,capital=1000000.0;sizing=100% экспозиции на входе,519,1080897.46,0,,-404587.56,,реинвестирование; 1M стартовый капитал
+2026-11-23 16:54,capital10y_vma5,Si,2016-2026,capital=1000000.0;sizing=100% экспозиции на входе,258,955257.13,0,,-457860.87,,реинвестирование; 1M стартовый капитал
+2026-11-23 16:54,capital10y_orb30,Si,2016-2026,capital=1000000.0;sizing=100% экспозиции на входе,2464,767908.79,0,,-608245.61,,реинвестирование; 1M стартовый капитал
+2026-11-23 16:54,capital10y_tom,Si,2016-2026,capital=1000000.0;sizing=100% экспозиции на входе,120,139281.67,0,,-156230.83,,реинвестирование; 1M стартовый капитал
+2026-11-23 16:54,capital10y_donchian20,CNY,2022-2026,capital=1000000.0;sizing=100% экспозиции на входе,21,932725.5,0,,-171922.02,,реинвестирование; 1M стартовый капитал
+2026-11-23 16:54,capital10y_ewmac8,CNY,2022-2026,capital=1000000.0;sizing=100% экспозиции на входе,39,559704.29,0,,-236787.01,,реинвестирование; 1M стартовый капитал
+2026-11-23 16:54,capital10y_sma10,CNY,2022-2026,capital=1000000.0;sizing=100% экспозиции на входе,41,526619.72,0,,-183485.43,,реинвестирование; 1M стартовый капитал
+2026-11-23 16:54,capital10y_roc5,CNY,2022-2026,capital=1000000.0;sizing=100% экспозиции на входе,242,951962.89,0,,-200850.38,,реинвестирование; 1M стартовый капитал
+2026-11-23 16:54,capital10y_vma5,CNY,2022-2026,capital=1000000.0;sizing=100% экспозиции на входе,124,948482.89,0,,-232221.24,,реинвестирование; 1M стартовый капитал
+2026-11-23 16:54,capital10y_orb30,CNY,2022-2026,capital=1000000.0;sizing=100% экспозиции на входе,1115,1038792.38,0,,-164134.86,,реинвестирование; 1M стартовый капитал
+2026-11-23 16:54,capital10y_tom,CNY,2022-2026,capital=1000000.0;sizing=100% экспозиции на входе,55,325243.37,0,,-162589.79,,реинвестирование; 1M стартовый капитал
+2026-11-23 16:58,multi10_donchian20,PORTFOLIO10,2016-2025,"capital=1000000.0;sizing=100% экспозиции на входе;instruments=Si,Eu,ED,RTS,MIX,BR,GOLD,SILV,SBRF,GAZR",718,4839514,0,,0,,"сумма 10 инструментов, по 1M на каждый"
+2026-11-23 16:58,multi10_ewmac8,PORTFOLIO10,2016-2025,"capital=1000000.0;sizing=100% экспозиции на входе;instruments=Si,Eu,ED,RTS,MIX,BR,GOLD,SILV,SBRF,GAZR",952,6520035,0,,0,,"сумма 10 инструментов, по 1M на каждый"
+2026-11-23 16:58,multi10_sma10,PORTFOLIO10,2016-2025,"capital=1000000.0;sizing=100% экспозиции на входе;instruments=Si,Eu,ED,RTS,MIX,BR,GOLD,SILV,SBRF,GAZR",984,915695,0,,0,,"сумма 10 инструментов, по 1M на каждый"
+2026-11-23 16:58,multi10_roc5,PORTFOLIO10,2016-2025,"capital=1000000.0;sizing=100% экспозиции на входе;instruments=Si,Eu,ED,RTS,MIX,BR,GOLD,SILV,SBRF,GAZR",5212,973841,0,,0,,"сумма 10 инструментов, по 1M на каждый"
+2026-11-23 16:58,multi10_vma5,PORTFOLIO10,2016-2025,"capital=1000000.0;sizing=100% экспозиции на входе;instruments=Si,Eu,ED,RTS,MIX,BR,GOLD,SILV,SBRF,GAZR",2659,2416102,0,,0,,"сумма 10 инструментов, по 1M на каждый"
+2026-11-23 16:58,multi10_orb30,PORTFOLIO10,2016-2025,"capital=1000000.0;sizing=100% экспозиции на входе;instruments=Si,Eu,ED,RTS,MIX,BR,GOLD,SILV,SBRF,GAZR",24655,-2764885,0,,0,,"сумма 10 инструментов, по 1M на каждый"
+2026-11-23 16:58,multi10_tom,PORTFOLIO10,2016-2025,"capital=1000000.0;sizing=100% экспозиции на входе;instruments=Si,Eu,ED,RTS,MIX,BR,GOLD,SILV,SBRF,GAZR",1199,1316009,0,,0,,"сумма 10 инструментов, по 1M на каждый"
+2026-11-23 16:58,multi10_base_ma48,PORTFOLIO10,2016-2025,"capital=1000000.0;sizing=100% экспозиции на входе;instruments=Si,Eu,ED,RTS,MIX,BR,GOLD,SILV,SBRF,GAZR",12555,37600469,0,,0,,"сумма 10 инструментов, по 1M на каждый"

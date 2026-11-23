@@ -62,6 +62,28 @@ ROBOT_CONFIGS: list[Config] = [
         "DD −1 157 ₽; тот же режим day/long, стоп 1000 п. + ATR-резка",
         "Пробой канала · Si риск", instrument="Si",
     ),
+    # --- 23.11.2026: диверсификаторы (не замена базы) ---
+    # Решение по дневному бару предыдущей даты, публикация в 13:55.
+    # Отбор: reports/strategy-diversifiers.md — корреляция с базой 0.16,
+    # +6.65% в её худшей квартили; одиночный SS не заменяет базу.
+    Config(
+        "d20-cn", "donchian",
+        dict(entry=20, exit=10, entry_time="13:55", allow_short=True,
+             risk_vol=True),
+        "диверсификатор: Donchian HH20/LL20 → выход LL10/HH10; "
+        "корр 0.16 с базой, +6.65% в её худшие годы (36% плюса); "
+        "OOS 2026 CNY PF 1.91 против 1.53 у базы; 200% номинала, DD ~17% счёта",
+        "Donchian 20/10 · CNY риск", capital=200_000, exposure=2.0,
+    ),
+    Config(
+        "d20-si", "donchian",
+        dict(entry=20, exit=10, entry_time="13:55", allow_short=True,
+             risk_vol=True),
+        "диверсификатор на Si: OOS 2026 PF 2.04 против 1.48 у базы; "
+        "10-летняя DD 30.9% номинала → потолок 100%, DD ~25% счёта",
+        "Donchian 20/10 · Si риск", instrument="Si",
+        capital=200_000, exposure=1.0,
+    ),
 ]
 
 ROBOT_BY_ID = {c.id: c for c in ROBOT_CONFIGS}
