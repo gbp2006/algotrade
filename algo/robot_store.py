@@ -70,7 +70,9 @@ class RobotStore:
                   max_daily_loss_pct REAL NOT NULL DEFAULT 0.03,
                   max_qty INTEGER NOT NULL DEFAULT 100,
                   comment TEXT DEFAULT '', key_ref TEXT DEFAULT '',
-                  trading_code TEXT DEFAULT '', created_at TEXT, updated_at TEXT);
+                  trading_code TEXT DEFAULT '', capital_usage REAL DEFAULT 0.7,
+                  capital_per_lot REAL DEFAULT 18000, min_lots INTEGER DEFAULT 0,
+                  max_lots INTEGER DEFAULT 10, created_at TEXT, updated_at TEXT);
                 CREATE TABLE IF NOT EXISTS instances (
                   id TEXT PRIMARY KEY, spec_id TEXT NOT NULL, instrument TEXT NOT NULL,
                   params_json TEXT NOT NULL, mode TEXT NOT NULL, status TEXT NOT NULL,
@@ -109,9 +111,15 @@ class RobotStore:
             """)
             # миграция существующих баз: ключ счёта и торговый код
             cols = {r[1] for r in c.execute("PRAGMA table_info(accounts)")}
-            for name in ("key_ref", "trading_code"):
+            new_cols = {
+                "key_ref": "TEXT DEFAULT ''", "trading_code": "TEXT DEFAULT ''",
+                "capital_usage": "REAL DEFAULT 0.7",
+                "capital_per_lot": "REAL DEFAULT 18000",
+                "min_lots": "INTEGER DEFAULT 0", "max_lots": "INTEGER DEFAULT 10",
+            }
+            for name, ddl in new_cols.items():
                 if name not in cols:
-                    c.execute(f"ALTER TABLE accounts ADD COLUMN {name} TEXT DEFAULT ''")
+                    c.execute(f"ALTER TABLE accounts ADD COLUMN {name} {ddl}")
             icols = {r[1] for r in c.execute("PRAGMA table_info(instances)")}
             if "key_ref" not in icols:
                 c.execute("ALTER TABLE instances ADD COLUMN key_ref TEXT DEFAULT ''")
@@ -159,12 +167,16 @@ class RobotStore:
             c.execute(
                 "INSERT INTO accounts (id, label, capital, max_exposure, "
                 "max_daily_loss_pct, max_qty, comment, key_ref, trading_code, "
-                "created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                "capital_usage, capital_per_lot, min_lots, max_lots, "
+                "created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (acc_id, data.get("label", acc_id), capital,
                  float(data.get("max_exposure", 1.0)),
                  float(data.get("max_daily_loss_pct", 0.03)),
                  int(data.get("max_qty", 100)), data.get("comment", ""),
                  str(data.get("key_ref") or ""), str(data.get("trading_code") or ""),
+                 float(data.get("capital_usage") or 0.7),
+                 float(data.get("capital_per_lot") or 18000),
+                 int(data.get("min_lots") or 0), int(data.get("max_lots") or 10),
                  now, now),
             )
         return {"id": acc_id, "capital": capital}

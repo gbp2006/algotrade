@@ -14,6 +14,10 @@
       "label": "КлФ-A111111",
       "trading_code": "XXXXXXXXXX",
       "key_ref": "КлФ-A111111",
+      "capital_usage": 0.7,
+      "capital_per_lot": 18000,
+      "min_lots": 0,
+      "max_lots": 10,
       "comment": "малый счёт для первого месяца G4; секрет — только в auth.json -> finam -> key_ref"
     }
   },

@@ -165,6 +165,30 @@ def battle_limits(capital: float, max_exposure: float = 2.0,
     )
 
 
+def account_equity(broker: Any, account: str | None = None) -> float | None:
+    """Equity счёта из ответа брокера. None = данных нет, торговать нельзя."""
+    try:
+        value = broker.account(account).get("equity")
+    except Exception:  # noqa: BLE001 — отсутствие данных = отказ, а не автопилот
+        return None
+    if isinstance(value, dict):
+        value = value.get("value")
+    try:
+        return float(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def lots_for_equity(equity: float, capital_usage: float,
+                    capital_per_lot: float, min_lots: int = 0,
+                    max_lots: int = 10) -> int:
+    """Лот из реального счёта: направление даёт бумага, размер — equity."""
+    if equity <= 0 or capital_per_lot <= 0:
+        return 0
+    raw = int((equity * capital_usage) // capital_per_lot)
+    return max(min_lots, min(raw, max_lots)) if raw > 0 else min_lots
+
+
 def assert_stop_clear(stop: Path = STOP_REAL) -> None:
     """STOP перед заявкой. Флаг выставлен — торговля немедленно прекращается."""
     if stop.exists():

@@ -32,6 +32,21 @@ class FakeBroker:
         return {"order_id": "1"}
 
 
+class TestEquitySizing(unittest.TestCase):
+    def test_lots_from_equity(self):
+        self.assertEqual(lg.lots_for_equity(50_000, 0.7, 18_000), 1)
+        self.assertEqual(lg.lots_for_equity(100_000, 1.0, 18_000), 5)
+        self.assertEqual(lg.lots_for_equity(26_000, 0.7, 18_000), 1)
+        self.assertEqual(lg.lots_for_equity(20_000, 0.7, 18_000), 0)
+
+    def test_caps(self):
+        self.assertEqual(lg.lots_for_equity(1_000_000, 1.5, 18_000, max_lots=10), 10)
+        self.assertEqual(lg.lots_for_equity(1_000, 2.0, 18_000, min_lots=1), 1)
+
+    def test_no_equity(self):
+        self.assertEqual(lg.lots_for_equity(0, 0.7, 18_000), 0)
+
+
 class TestBattleLimits(unittest.TestCase):
     def test_from_capital(self):
         lim = lg.battle_limits(2_000_000, max_exposure=1.5, max_qty=40)

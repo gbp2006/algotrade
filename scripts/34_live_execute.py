@@ -31,8 +31,9 @@ from algo.broker.execution import Order, OrderGateway, positions_from_response  
 from algo.broker.finam import FinamBroker  # noqa: E402
 from algo.broker.secrets import resolve_secret  # noqa: E402
 from algo.broker.live_guard import (  # noqa: E402
-    STOP_REAL, assert_stop_clear, battle_limits, decision_client_id,
-    expiry_allows, price_for, quote_age_sec, reconcile_guard,
+    STOP_REAL, account_equity, assert_stop_clear, battle_limits,
+    decision_client_id, expiry_allows, lots_for_equity, price_for,
+    quote_age_sec, reconcile_guard,
 )
 from algo.configs import CONFIGS  # noqa: E402
 from algo.instance_configs import live_settings_from_store  # noqa: E402
@@ -179,6 +180,14 @@ def main(argv: list[str] | None = None) -> int:
             except Exception as exc:  # noqa: BLE001 — без ключа счёт не трогаем
                 print(f"{acc_id}: ключ счёта недоступен — {exc}")
                 return 2
+            equity = account_equity(broker, acc_id)
+            if equity is None or equity <= 0:
+                print(f"{acc_id}: нет equity счёта — заявок нет")
+                return 2
+            lots = lots_for_equity(equity, acc.capital_usage, acc.capital_per_lot,
+                                   acc.min_lots, acc.max_lots)
+            notes.append(f"{acc_id}: equity {equity:.0f} ₽, usage "
+                         f"{acc.capital_usage}, лот {lots}")
             model, uncertain = journal_positions(acc_id)
             if uncertain:
                 note = f"{acc_id}: {uncertain} неопределённых заявок — ручная сверка"
@@ -198,7 +207,7 @@ def main(argv: list[str] | None = None) -> int:
             gateway = OrderGateway(
                 broker,
                 limits=battle_limits(
-                    acc.capital, max_exposure=acc.max_exposure,
+                    equity, max_exposure=acc.max_exposure,
                     max_qty=acc.max_qty,
                 ).as_limits(),
                 journal=LIVE, lock=ROOT / "results" / "live.lock",
@@ -206,9 +215,11 @@ def main(argv: list[str] | None = None) -> int:
 
             for sym, plan in symbols.items():
                 ids = "+".join(plan["robots"])
+                direction = (plan["target"] > 0) - (plan["target"] < 0)
+                target = direction * lots  # бумага даёт направление, счёт — размер
                 client_id = decision_client_id(
-                    ids, day, "buy" if plan["target"] >= actual.get(sym, 0) else "sell",
-                    now, abs(plan["target"]))
+                    ids, day, "buy" if target >= actual.get(sym, 0) else "sell",
+                    now, abs(target))
                 status = reason = note = ""
                 delta = 0
                 order = None
@@ -216,7 +227,7 @@ def main(argv: list[str] | None = None) -> int:
                 if len(plan["pricings"]) > 1:
                     status, reason = "rejected", "конфликт режимов цены на счёте/символе"
                 else:
-                    delta = plan["target"] - actual.get(sym, 0)
+                    delta = target - actual.get(sym, 0)
                     if delta != 0:
                         side = "buy" if delta > 0 else "sell"
                         if not expiry_allows(day, sym, delta, plan["expiry"]):

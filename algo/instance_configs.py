@@ -138,6 +138,10 @@ def live_settings_from_store(store: RobotStore | None = None) -> LiveSettings:
             key_ref=row.get("key_ref") or "{env:FINAM_SECRET}",
             trading_code=row.get("trading_code") or "",
             label=row.get("label") or "",
+            capital_usage=float(row.get("capital_usage") or 0.7),
+            capital_per_lot=float(row.get("capital_per_lot") or 18000),
+            min_lots=int(row.get("min_lots") or 0),
+            max_lots=int(row.get("max_lots") or 10),
         )
     robots: dict[str, RobotSettings] = {}
     for row in st.list_instances(mode="live", status="active"):

@@ -43,6 +43,11 @@ class AccountSettings:
     key_ref: str = "{env:FINAM_SECRET}"  # ссылка на ключ, не сам секрет
     trading_code: str = ""              # торговый код Финама (не секрет)
     label: str = ""                     # номер счёта в интерфейсе Финама
+    # Сайзинг из реального equity: лот = floor(equity × usage / capital_per_lot)
+    capital_usage: float = 0.7          # 0.7 консервативно, 1.0 база, 1.5 агрессивно
+    capital_per_lot: float = 18000.0    # CNY: DD 1767 ₽ / 10% бюджета просадки
+    min_lots: int = 0
+    max_lots: int = 10
 
 
 @dataclass(frozen=True)
@@ -118,6 +123,14 @@ def parse_settings(data: dict[str, Any]) -> LiveSettings:
             key_ref=str(raw.get("key_ref") or "{env:FINAM_SECRET}").strip(),
             trading_code=str(raw.get("trading_code", "")).strip(),
             label=str(raw.get("label", "")).strip(),
+            capital_usage=_number(raw.get("capital_usage", 0.7),
+                                  f"accounts.{acc_id}.capital_usage", 0.01, 2.0),
+            capital_per_lot=_number(raw.get("capital_per_lot", 18000),
+                                    f"accounts.{acc_id}.capital_per_lot", 1, 1e8),
+            min_lots=int(_number(raw.get("min_lots", 0),
+                                 f"accounts.{acc_id}.min_lots", 0, 1000)),
+            max_lots=int(_number(raw.get("max_lots", 10),
+                                 f"accounts.{acc_id}.max_lots", 1, 10000)),
         )
 
     robots: dict[str, RobotSettings] = {}
