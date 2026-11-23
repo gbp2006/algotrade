@@ -81,7 +81,7 @@ class TestApiViews(unittest.TestCase):
                 self.assertEqual(orders[0]["config"], "p-base")
                 state = api.live_state_view()
                 self.assertFalse(state["stop_real"])
-                self.assertEqual(state["shadow_days"], 1)
+                self.assertEqual(state["shadow_days"], 0)  # в тесте только sent
                 api.stop_real_view("set")
                 self.assertTrue(api.live_state_view()["stop_real"])
                 api.stop_real_view("clear")
