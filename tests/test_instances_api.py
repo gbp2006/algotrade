@@ -53,7 +53,7 @@ class TestApiViews(unittest.TestCase):
 
     def test_backtest_preview(self):
         r = api.backtest_preview_view({
-            "spec_id": "prostushka", "instrument": "RTS",
+            "spec_id": "prostushka", "instrument": "CNY",
             "params": {"ma_window": 48}, "days": 5,
         })
         self.assertTrue(r["ok"], r)

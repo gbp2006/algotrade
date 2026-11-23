@@ -13,7 +13,7 @@ import pandas as pd
 
 from . import engine, store
 from .data import DATA_ROOT, load_txt, to_timeframe
-from .instruments import DEFAULT, INSTRUMENTS
+from .instruments import DEFAULT, INSTRUMENTS, symbol as instrument_symbol
 from .strategies import channel_break, prostushka, universal
 from .strategies.candidates import donchian
 
@@ -59,7 +59,12 @@ FILES = {
 def load_m5(instrument: str, days: int = 60) -> pd.DataFrame | None:
     path = FILES.get(instrument)
     if path is None or not path.exists():
-        return None
+        # на WSL cache/iss не выкладывается — пробуем базу баров (finam_live)
+        try:
+            df = store.read(instrument_symbol(INSTRUMENTS.get(instrument, DEFAULT)), "M5")
+            return df.iloc[-days * 288:] if len(df) > days * 288 else df
+        except Exception:  # noqa: BLE001
+            return None
     df = load_txt(path)
     if len(df) > days * 288:  # M5: ~288 баров в сутки
         df = df.iloc[-days * 288:]
