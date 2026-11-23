@@ -414,3 +414,7 @@ ts,strategy,instrument,period,params,trades,net,pf,avg,dd,in_market,note
 2026-11-23 19:15,ru02_ts10,BASKET5,oos 2024-2026,"source=t-j.ru;universe=GOLD,SILV,BR,NG,CNY",189,-2700.0,1.02,,-35.5,,"RU-02 исследовательский прототип, 1M на инструмент"
 2026-11-23 19:15,ru02_ts20,BASKET5,oos 2024-2026,"source=t-j.ru;universe=GOLD,SILV,BR,NG,CNY",141,35855.85,1.31,,-26.8,,"RU-02 исследовательский прототип, 1M на инструмент"
 2026-11-23 19:15,ru02_ts10v,BASKET5,oos 2024-2026,"source=t-j.ru;universe=GOLD,SILV,BR,NG,CNY",94,-15971.78,0.9,,-33.5,,"RU-02 исследовательский прототип, 1M на инструмент"
+2026-11-23 19:30,ru05_xs_252_21_3,STOCKS10,oos 2024-2025,source=Finjournal 2023;lookback=252;skip=21;top=3;step=21,24,-0.97,0,,-10.1,,RU-05 исследовательский прототип; net = CAGR
+2026-11-23 19:30,ru05_xs_126_21_3,STOCKS10,oos 2024-2025,source=Finjournal 2023;lookback=126;skip=21;top=3;step=21,24,-6.8,0,,-10.9,,RU-05 исследовательский прототип; net = CAGR
+2026-11-23 19:30,ru05_xs_63_10_3,STOCKS10,oos 2024-2025,source=Finjournal 2023;lookback=63;skip=10;top=3;step=21,24,-4.94,0,,-13.2,,RU-05 исследовательский прототип; net = CAGR
+2026-11-23 19:30,ru05_xs_252_21_2,STOCKS10,oos 2024-2025,source=Finjournal 2023;lookback=252;skip=21;top=2;step=21,24,1.26,0,,-11.6,,RU-05 исследовательский прототип; net = CAGR
