@@ -10,6 +10,9 @@ import csv
 import json
 import os
 import re
+import subprocess
+import sys
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -434,6 +437,43 @@ def mm_close(iid: str, store: RobotStore = Depends(get_store)):
             symbol=str(fund) if fund else None)
     except pos.OpError as exc:
         raise HTTPException(400, str(exc))
+
+
+def _live_run_view(payload: dict) -> dict:
+    """Ручной прогон боевого контура. Флаг выставляется только в дочернем процессе."""
+    if STOP_REAL.exists():
+        raise HTTPException(400, "установлен STOP_REAL — снимите перед запуском")
+    arm = bool(payload.get("arm"))
+    day = str(payload.get("day") or date.today().isoformat())
+    cmd = [sys.executable, str(ROOT / "scripts" / "34_live_execute.py")]
+    if arm:
+        cmd.append("--arm")
+    cmd += ["--day", day]
+    env = dict(os.environ)
+    env["FINAM_ALLOW_TRADING"] = "1" if arm else "0"
+    try:
+        proc = subprocess.run(cmd, cwd=ROOT, env=env, capture_output=True,
+                              text=True, timeout=180)
+    except subprocess.TimeoutExpired:
+        raise HTTPException(504, "боевой раннер не ответил за 180 с")
+    summary: dict = {}
+    path = ROOT / "results" / "live_run.json"
+    if path.exists():
+        try:
+            summary = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            pass
+    log = ROOT / "results" / "live_manual.log"
+    with log.open("a", encoding="utf-8") as f:
+        f.write(f"{datetime.now().isoformat(timespec='seconds')} arm={arm} "
+                f"day={day} rc={proc.returncode} {proc.stdout.strip()[:160]}\n")
+    return {"ok": proc.returncode == 0, "arm": arm, "summary": summary,
+            "stdout": proc.stdout.strip()[-800:], "stderr": proc.stderr.strip()[-400:]}
+
+
+@router.post("/live-run")
+def live_run(payload: dict | None = None):
+    return _live_run_view(payload or {})
 
 
 @router.get("/journal")
