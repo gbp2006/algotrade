@@ -151,17 +151,20 @@ class RobotStore:
         return [dict(r) for r in rows]
 
     def list_accounts(self) -> list[dict]:
+        # capital не отдаётся: размер боевого счёта знает только брокер
+        cols = ("id, label, max_exposure, max_daily_loss_pct, max_qty, comment, "
+                "key_ref, trading_code, capital_usage, capital_per_lot, "
+                "min_lots, max_lots, created_at, updated_at")
         with self._conn() as c:
-            return [dict(r) for r in c.execute("SELECT * FROM accounts ORDER BY id")]
+            return [dict(r) for r in c.execute(f"SELECT {cols} FROM accounts ORDER BY id")]
 
     # ---------- запись ----------
     def create_account(self, data: dict) -> dict:
         acc_id = str(data.get("id", "")).strip()
         if not acc_id:
             raise StoreError("не задан id счёта")
-        capital = float(data.get("capital") or 0)
-        if capital <= 0:
-            raise StoreError("капитал счёта должен быть положительным")
+        # Капитал боевого счёта не хранится: размер берётся из equity брокера.
+        # Колонка остаётся только для совместимости со старыми строками/бумагой.
         now = _now()
         with self._conn() as c:
             c.execute(
@@ -169,7 +172,7 @@ class RobotStore:
                 "max_daily_loss_pct, max_qty, comment, key_ref, trading_code, "
                 "capital_usage, capital_per_lot, min_lots, max_lots, "
                 "created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                (acc_id, data.get("label", acc_id), capital,
+                (acc_id, data.get("label", acc_id), 0,
                  float(data.get("max_exposure", 1.0)),
                  float(data.get("max_daily_loss_pct", 0.03)),
                  int(data.get("max_qty", 100)), data.get("comment", ""),
@@ -179,7 +182,7 @@ class RobotStore:
                  int(data.get("min_lots") or 0), int(data.get("max_lots") or 10),
                  now, now),
             )
-        return {"id": acc_id, "capital": capital}
+        return {"id": acc_id}
 
     def create_instance(self, data: dict, actor: str = "panel") -> dict:
         iid = str(data.get("id", "")).strip()
@@ -409,8 +412,6 @@ class RobotStore:
             raise StoreError("боевой инстанс требует счёт (account)")
         if not data.get("pricing") or data["pricing"] not in PRICING:
             raise StoreError(f"боевой инстанс требует режим цены из {PRICING}")
-        if not data.get("capital") or float(data["capital"]) <= 0:
-            raise StoreError("боевой инстанс требует положительный капитал")
 
     @staticmethod
     def _event(c, iid, action, before, after, reason, actor, now) -> None:

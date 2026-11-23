@@ -87,14 +87,13 @@ class TestExpiry(unittest.TestCase):
 class TestSettings(unittest.TestCase):
     DATA = {
         "defaults": {"pricing": "marketable"},
-        "accounts": {"A1": {"capital": 200000}},
+        "accounts": {"A1": {}},
         "robots": {"p-base": {"account": "A1", "pricing": "signal"}},
     }
 
     def test_valid(self):
         s = lc.parse_settings(self.DATA)
         self.assertEqual(s.robots["p-base"].pricing, lg.PricingMode.SIGNAL)
-        self.assertEqual(s.accounts["A1"].capital, 200000)
         self.assertEqual(s.accounts["A1"].max_exposure, 1.0)
 
     def test_whitelist_and_bad_account(self):

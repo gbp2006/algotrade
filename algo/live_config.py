@@ -35,7 +35,6 @@ class SettingsError(ValueError):
 @dataclass(frozen=True)
 class AccountSettings:
     id: str
-    capital: float
     comment: str = ""
     max_exposure: float = 1.0
     max_daily_loss_pct: float = 0.03
@@ -110,7 +109,6 @@ def parse_settings(data: dict[str, Any]) -> LiveSettings:
             raise SettingsError(f"accounts.{acc_id}: ожидался объект")
         accounts[str(acc_id)] = AccountSettings(
             id=str(acc_id),
-            capital=_number(raw.get("capital"), f"accounts.{acc_id}.capital", 1, 1e9),
             comment=str(raw.get("comment", "")),
             max_exposure=_number(raw.get("max_exposure", d_exposure),
                                  f"accounts.{acc_id}.max_exposure", 0.01, 2.0),

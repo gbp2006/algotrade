@@ -30,7 +30,7 @@ except Exception:
 from algo.broker.execution import Order, OrderGateway, positions_from_response  # noqa: E402
 from algo.broker.finam import FinamBroker  # noqa: E402
 from algo.broker.live_guard import (  # noqa: E402
-    PricingMode, STOP_REAL, battle_limits, decision_client_id,
+    PricingMode, STOP_REAL, account_equity, battle_limits, decision_client_id,
     price_for, quote_age_sec, reconcile_guard,
 )
 from algo.instance_configs import live_settings_from_store  # noqa: E402
@@ -104,9 +104,10 @@ def main(argv: list[str] | None = None) -> int:
             except Exception as exc:  # noqa: BLE001 — информационно
                 notes.append(f"{acc_id}: сверка {type(exc).__name__}: {exc}")
 
+            equity = account_equity(broker, acc_id) or 0
             gateway = OrderGateway(
                 broker,
-                limits=battle_limits(acc.capital, max_exposure=acc.max_exposure,
+                limits=battle_limits(equity or 1, max_exposure=acc.max_exposure,
                                      max_qty=acc.max_qty).as_limits(),
                 journal=LIVE, lock=ROOT / "results" / "live.lock")
 

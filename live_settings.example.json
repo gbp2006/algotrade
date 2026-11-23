@@ -10,7 +10,6 @@
   },
   "accounts": {
     "A111111": {
-      "capital": 200000,
       "label": "КлФ-A111111",
       "trading_code": "XXXXXXXXXX",
       "key_ref": "КлФ-A111111",

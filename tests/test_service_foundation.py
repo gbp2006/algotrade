@@ -80,7 +80,7 @@ class TestStore(unittest.TestCase):
         self.db.init_db()
 
     def test_create_and_read(self):
-        self.db.create_account({"id": "A1", "capital": 200000})
+        self.db.create_account({"id": "A1"})
         inst = self.db.create_instance({
             "id": "p-test", "spec_id": "prostushka", "instrument": "CNY",
             "params": {"ma_window": 55}, "mode": "paper",
@@ -104,14 +104,13 @@ class TestStore(unittest.TestCase):
         self.assertGreaterEqual(len(self.db.history("p-test")), 4)
 
     def test_live_requires_fields(self):
-        self.db.create_account({"id": "A1", "capital": 200000})
+        self.db.create_account({"id": "A1"})
         with self.assertRaises(store.StoreError):
             self.db.create_instance({"id": "live-bad", "spec_id": "prostushka",
                                      "mode": "live", "status": "active"})
         inst = self.db.create_instance({
             "id": "live-ok", "spec_id": "prostushka", "mode": "live",
             "status": "active", "account": "A1", "pricing": "marketable",
-            "capital": 200000,
         })
         self.assertEqual(inst["status"], "active")
 

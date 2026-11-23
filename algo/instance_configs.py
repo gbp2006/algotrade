@@ -130,7 +130,7 @@ def live_settings_from_store(store: RobotStore | None = None) -> LiveSettings:
     accounts: dict[str, AccountSettings] = {}
     for row in st.list_accounts():
         accounts[row["id"]] = AccountSettings(
-            id=row["id"], capital=float(row["capital"]),
+            id=row["id"],
             comment=row.get("label") or row.get("comment") or "",
             max_exposure=float(row["max_exposure"]),
             max_daily_loss_pct=float(row["max_daily_loss_pct"]),

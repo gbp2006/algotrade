@@ -58,16 +58,15 @@ class TestInstanceConfigs(unittest.TestCase):
         self.assertIn("2026-11-23", st["last_decision"])
 
     def test_live_settings_from_store(self):
-        self.db.create_account({"id": "A1", "capital": 200000})
+        self.db.create_account({"id": "A1"})
         self.db.create_instance({
             "id": "live-1", "spec_id": "prostushka", "mode": "live",
             "status": "active", "account": "A1", "pricing": "marketable",
-            "capital": 200000,
         })
         s = ic.live_settings_from_store(self.db)
         self.assertEqual(list(s.robots), ["live-1"])
         self.assertEqual(s.robots["live-1"].pricing.value, "marketable")
-        self.assertEqual(s.accounts["A1"].capital, 200000)
+        self.assertEqual(s.accounts["A1"].id, "A1")
 
 
 if __name__ == "__main__":

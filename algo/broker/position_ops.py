@@ -22,8 +22,9 @@ from .. import trade_journal as tj
 from ..instruments import DEFAULT, INSTRUMENTS
 from .execution import Order, OrderGateway, positions_from_response
 from .finam import FinamBroker
-from .live_guard import (STOP_REAL, battle_limits, decision_client_id,
-                         parse_pricing, price_for, quote_age_sec)
+from .live_guard import (STOP_REAL, account_equity, battle_limits,
+                         decision_client_id, parse_pricing, price_for,
+                         quote_age_sec)
 from .secrets import resolve_secret
 
 ROOT = Path(__file__).resolve().parent.parent.parent
@@ -56,9 +57,12 @@ def _context(store: Any, iid: str) -> dict[str, Any]:
         params = json.loads(inst.get("params_json") or "{}")
     except (TypeError, json.JSONDecodeError):
         params = {}
+    equity = account_equity(broker, acc_id)
+    if not equity or equity <= 0:
+        raise OpError("нет equity счёта — операция недоступна")
     return {"inst": inst, "acc": row, "acc_id": acc_id, "broker": broker,
             "runtime": runtime, "symbol": symbol, "params": params,
-            "capital": float(row.get("capital") or 50000)}
+            "capital": equity}
 
 
 def _gateway(ctx: dict[str, Any]) -> OrderGateway:

@@ -88,7 +88,6 @@
       <input id="acc-label" placeholder="Номер счёта (КлФ-2102993)">
       <input id="acc-code" placeholder="Торговый код (872635RN4O3)">
       <input id="acc-keyref" placeholder="Секрет Finam для счёта" type="password">
-      <input id="acc-cap" placeholder="капитал" type="number">
       <input id="acc-exp" placeholder="экспозиция 0.25–2.0" type="number" step="0.05" value="1.0">
       <button onclick="addAccount()">Добавить счёт</button></div>
     <div class="hint">Экспозиция: 2.0 — правило Силаева (200% номинала), 1.0 — половинный сайз, 0.25 — один контракт на 50 тыс. ₽. Лот = equity × экспозиция / (цена × множитель).</div>
@@ -155,7 +154,6 @@
   <div class="field"><label>Режим цены</label><select id="p-pricing">
     <option value="marketable">маркет-лимит</option><option value="signal">цена сигнала</option>
     <option value="market">рыночная</option></select></div>
-  <div class="field"><label>Капитал счёта</label><input id="p-capital" type="number" placeholder="200000"></div>
   <div class="err" id="p-err"></div>
   <div class="row"><button class="primary" onclick="submitPromote()">Перевести</button>
     <button onclick="closePromote()">Отмена</button></div>
@@ -305,7 +303,7 @@ async function loadAll() {
         <td>v${i.version}</td><td><div class="row">${acts.join('')}</div></td></tr>`;
     }).join('') : '<tr><td colspan="7" class="muted">инстансов нет</td></tr>';
     $('accounts').innerHTML = accounts.map(a =>
-      `<span class="badge">${esc(a.id)}: ${Number(a.capital).toLocaleString('ru')} ₽</span>`).join('') || 'нет счетов';
+      `<span class="badge">${esc(a.id)}${a.label ? ' · ' + esc(a.label) : ''}</span>`).join('') || 'нет счетов';
     $('brokers').innerHTML = br.map(b =>
       `<button onclick="checkBroker('${esc(b.name)}')">проверить ${esc(b.name)}</button>`).join('');
     $('status').textContent = `${insts.length} роботов${modeFilter?' ('+modeFilter+')':''}, ${accounts.length} счетов`;
@@ -328,7 +326,7 @@ function modeChanged() {
   if (live && !accounts.length) { $('f-mode').value = 'paper'; live = false; }
   $('live-fields').style.display = live ? 'block' : 'none';
   $('f-mode-note').textContent = accounts.length
-    ? 'Для боя нужны счёт и капитал; заявка всё равно требует --arm и FINAM_ALLOW_TRADING=1.'
+    ? 'Для боя нужен счёт; заявка всё равно требует --arm и FINAM_ALLOW_TRADING=1.'
     : 'Счетов нет — добавьте счёт ниже, режим «бой» недоступен.';
 }
 
@@ -359,7 +357,6 @@ async function submitCreate() {
   if (mode === 'live') {
     payload.account = $('f-account').value;
     payload.pricing = $('f-pricing').value;
-    payload.capital = Number((accounts.find(a=>a.id===payload.account)||{}).capital||0);
   }
   try { await api('/instances', {method:'POST', body:JSON.stringify(payload)});
         closeModal(); await loadAll(); }
@@ -380,11 +377,11 @@ async function closePositions(id) {
 }
 async function addAccount() {
   try { await api('/accounts', {method:'POST', body:JSON.stringify({
-        id:$('acc-id').value.trim(), capital:Number($('acc-cap').value),
+        id:$('acc-id').value.trim(),
         label:$('acc-label').value.trim(), trading_code:$('acc-code').value.trim(),
         key_ref:$('acc-keyref').value.trim(),
         max_exposure:Number($('acc-exp').value) || 1.0})});
-        ['acc-id','acc-cap','acc-label','acc-code','acc-keyref'].forEach(k=>$(k).value='');
+        ['acc-id','acc-label','acc-code','acc-keyref'].forEach(k=>$(k).value='');
         await loadAll(); }
   catch(e) { $('status').textContent = 'ошибка: ' + e.message; }
 }
@@ -417,20 +414,17 @@ function openPromote(id){
   promoting = id;
   $('p-err').textContent = '';
   $('p-account').innerHTML = accounts.map(a =>
-    `<option value="${esc(a.id)}">${esc(a.id)} — ${Number(a.capital).toLocaleString('ru')} ₽</option>`).join('');
+    `<option value="${esc(a.id)}">${esc(a.id)}${a.label ? ' · ' + esc(a.label) : ''}</option>`).join('');
   const first = accounts[0];
-  $('p-capital').value = first ? first.capital : '';
   $('promote-modal').classList.add('on');
 }
 function closePromote(){ $('promote-modal').classList.remove('on'); }
 async function submitPromote(){
   const accId = $('p-account').value;
-  const acc = accounts.find(a => a.id === accId) || {};
   try{
     await api('/instances/' + encodeURIComponent(promoting) + '/promote', {
       method:'POST',
-      body:JSON.stringify({account:accId, pricing:$('p-pricing').value,
-                           capital:Number($('p-capital').value) || acc.capital || 0})
+      body:JSON.stringify({account:accId, pricing:$('p-pricing').value})
     });
     closePromote(); await loadAll();
   }catch(e){ $('p-err').textContent = e.message; }
