@@ -17,7 +17,8 @@
     }
   },
   "robots": {
-    "p-base": {
+    "p-base-live": {
+      "source_config": "p-base",
       "account": "A111111",
       "pricing": "signal"
     }

@@ -56,7 +56,9 @@ class RobotSettings:
     max_exposure: float
     max_daily_loss_pct: float
     max_qty: int
-    key_ref: str = ""  # свой ключ робота; пустой → ключ счёта
+    key_ref: str = ""          # свой ключ; пустой → ключ счёта
+    source_config: str = ""    # id бумажного конфига, решения которого повторяем
+    exposure: float = 0.0      # экспозиция инстанса (0 → из конфига/счёта)
 
 
 @dataclass(frozen=True)
@@ -139,6 +141,8 @@ def parse_settings(data: dict[str, Any]) -> LiveSettings:
             max_daily_loss_pct=acc.max_daily_loss_pct,
             max_qty=acc.max_qty,
             key_ref=str(raw.get("key_ref", "")).strip(),
+            source_config=str(raw.get("source_config", "")).strip(),
+            exposure=float(raw.get("exposure", 0) or 0),
         )
     return LiveSettings(accounts=accounts, robots=robots, max_quote_age_sec=age)
 

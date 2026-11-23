@@ -62,10 +62,13 @@ class TestInstanceConfigs(unittest.TestCase):
         self.db.create_instance({
             "id": "live-1", "spec_id": "prostushka", "mode": "live",
             "status": "active", "account": "A1", "pricing": "marketable",
+            "source_config": "p-base", "exposure": 2.0,
         })
         s = ic.live_settings_from_store(self.db)
         self.assertEqual(list(s.robots), ["live-1"])
         self.assertEqual(s.robots["live-1"].pricing.value, "marketable")
+        self.assertEqual(s.robots["live-1"].source_config, "p-base")
+        self.assertEqual(s.robots["live-1"].exposure, 2.0)
         self.assertEqual(s.accounts["A1"].id, "A1")
 
 

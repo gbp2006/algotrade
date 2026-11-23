@@ -112,6 +112,28 @@ class TestSettings(unittest.TestCase):
             lc.parse_settings(bad)
 
 
+class TestSourceConfig(unittest.TestCase):
+    def test_live_robot_follows_paper_config(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "live_exec", Path(__file__).resolve().parent.parent /
+            "scripts" / "34_live_execute.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        settings = lc.parse_settings({
+            "accounts": {"A1": {}},
+            "robots": {"live-1": {"account": "A1", "pricing": "marketable",
+                                  "source_config": "p-base", "exposure": 2.0}},
+        })
+        rows = [{"config": "p-base", "symbol": "CNYRUBF@RTSX",
+                 "price": "12.3", "target": "32"}]
+        plans = mod.plan_targets(rows, settings, date(2026, 11, 23))
+        plan = plans[("A1", "")]["CNYRUBF@RTSX"]
+        self.assertEqual(plan["target"], 32)
+        self.assertEqual(plan["robots"], ["live-1"])
+        self.assertEqual(plan["exposures"], [2.0])
+
+
 class TestMarketOrderGateway(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

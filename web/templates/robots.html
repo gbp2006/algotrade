@@ -135,6 +135,10 @@
       <option value="paper">бумага</option><option value="live">бой</option></select></div>
   <div class="hint" id="f-mode-note"></div>
   <div id="live-fields" style="display:none">
+    <div class="field"><label>Повторяет бумажного конфига</label>
+      <input id="f-source" list="source-list" placeholder="p-base">
+      <datalist id="source-list"></datalist></div>
+    <div class="hint">Живой робот берёт решения из строк paper.csv с этим id. Бумажный робот с таким id должен быть активен.</div>
     <div class="field"><label>Счёт</label><select id="f-account"></select></div>
     <div class="field"><label>Цена заявки</label><select id="f-pricing">
         <option value="marketable">маркет-лимит</option><option value="signal">цена сигнала</option>
@@ -150,6 +154,8 @@
 <div class="modal" id="promote-modal"><div class="box">
   <h2>Перевод в бой</h2>
   <p class="muted">Инстанс получит mode=live и статус active. Реальная заявка не уйдёт: нужны ещё `--arm` и `FINAM_ALLOW_TRADING=1`.</p>
+  <div class="field"><label>Повторяет бумажного конфига</label>
+    <input id="p-source" list="source-list" placeholder="p-base"></div>
   <div class="field"><label>Счёт</label><select id="p-account"></select></div>
   <div class="field"><label>Режим цены</label><select id="p-pricing">
     <option value="marketable">маркет-лимит</option><option value="signal">цена сигнала</option>
@@ -175,7 +181,7 @@
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let specs = [], accounts = [];
+let specs = [], accounts = [], paperIds = [];
 const PARAM_LABELS = {
   ma_window: 'Период MA, баров', entry: 'Вход, время',
   filter_bars: 'Фильтр, баров', short_friday: 'Шорт в пятницу',
@@ -265,6 +271,8 @@ async function loadAll() {
       api('/instances'), api('/specs'), api('/accounts'), api('/brokers'),
       api('/runtime'), api('/keys')]);
     specs = sp; accounts = acc;
+     paperIds = insts.filter(i => i.mode === 'paper' && i.status === 'active').map(i => i.id);
+     $('source-list').innerHTML = paperIds.map(x => `<option value="${esc(x)}"></option>`).join('');
     $('key-names').textContent = keys.names.length
       ? 'ключи: ' + keys.names.join(', ') : 'ключей нет';
     loadStats(); loadFavorites(); loadServiceKey();
@@ -355,6 +363,7 @@ async function submitCreate() {
   const payload = {name:$('f-name').value.trim(), spec_id:s.id,
                    instrument:$('f-inst').value, mode, params};
   if (mode === 'live') {
+    payload.source_config = $('f-source').value.trim();
     payload.account = $('f-account').value;
     payload.pricing = $('f-pricing').value;
   }
@@ -415,7 +424,7 @@ function openPromote(id){
   $('p-err').textContent = '';
   $('p-account').innerHTML = accounts.map(a =>
     `<option value="${esc(a.id)}">${esc(a.id)}${a.label ? ' · ' + esc(a.label) : ''}</option>`).join('');
-  const first = accounts[0];
+  if (!$('p-source').value && paperIds.length) $('p-source').value = paperIds[0];
   $('promote-modal').classList.add('on');
 }
 function closePromote(){ $('promote-modal').classList.remove('on'); }
@@ -424,7 +433,8 @@ async function submitPromote(){
   try{
     await api('/instances/' + encodeURIComponent(promoting) + '/promote', {
       method:'POST',
-      body:JSON.stringify({account:accId, pricing:$('p-pricing').value})
+      body:JSON.stringify({account:accId, pricing:$('p-pricing').value,
+                           source_config:$('p-source').value.trim()})
     });
     closePromote(); await loadAll();
   }catch(e){ $('p-err').textContent = e.message; }

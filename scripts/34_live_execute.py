@@ -62,11 +62,14 @@ def plan_targets(rows: list[dict], settings, day: date) -> dict:
     """Целевые позиции по счёту и символу. Одна строка на пару (счёт, символ)."""
     plans: dict[str, dict[str, dict]] = {}
     for cfg_id, rs in settings.robots.items():
-        cfg = BY_ID.get(cfg_id)
-        if cfg is None:
-            print(f"ВНИМАНИЕ: {cfg_id} нет в реестре конфигураций — пропущен")
+        # живой инстанс может повторять решение бумажного конфига с другим id
+        src = rs.source_config or cfg_id
+        cfg = BY_ID.get(src)
+        exposure = exposure_of(cfg) if cfg is not None else rs.exposure
+        if not exposure:
+            print(f"ВНИМАНИЕ: {src} нет в реестре и экспозиция не задана — пропущен")
             continue
-        mine = [r for r in rows if r["config"] == cfg_id]
+        mine = [r for r in rows if r["config"] == src]
         if not mine:
             continue
         last = mine[-1]
@@ -77,7 +80,7 @@ def plan_targets(rows: list[dict], settings, day: date) -> dict:
         })
         plan["target"] += int(last["target"])
         # expositions из самих конфигов: 2.0 база, 0.6 RTS, 0.7 золото (ADR 24)
-        plan["exposures"].append(exposure_of(cfg))
+        plan["exposures"].append(exposure)
         plan["robots"].append(cfg_id)
         plan["pricings"].add(rs.pricing)
         plan["expiry"] = plan["expiry"] and rs.trade_on_expiry
