@@ -45,8 +45,20 @@
        padding:22px;width:min(620px,92vw);max-height:88vh;overflow:auto}
   .field{display:grid;grid-template-columns:170px 1fr;gap:10px;align-items:center;margin:8px 0}
   .field label{color:var(--muted)}
+  .hint{font-size:11px;color:var(--muted);margin-top:4px}
   .params{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .params label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+  .params label.flag{flex-direction:row;align-items:center;justify-content:space-between;
+       gap:8px;padding:7px 9px;border:1px solid #2a3142;border-radius:8px;cursor:pointer}
+  .params label.flag:hover{border-color:var(--accent)}
+  .params input[type=checkbox]{appearance:none;width:34px;height:18px;min-width:34px;margin:0;
+       border-radius:999px;background:#263044;border:1px solid #35415a;position:relative;cursor:pointer;
+       transition:background .15s}
+  .params input[type=checkbox]:after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;
+       border-radius:50%;background:#9aa3b8;transition:transform .15s,background .15s}
+  .params input[type=checkbox]:checked{background:#1d5a3a;border-color:#2f9b63}
+  .params input[type=checkbox]:checked:after{transform:translateX(16px);background:#7ff0b5}
+  code.id-hint{color:#9fb3e0}
   .err{color:#ff8e9a;font-size:12px;min-height:18px}
   code{font-size:11px;color:#9fb3e0}
 </style>
@@ -80,10 +92,13 @@
 <div class="modal" id="modal"><div class="box">
   <h2 id="modal-title">Новый робот</h2>
   <div class="field"><label>Тип робота</label><select id="f-spec" onchange="specChanged()"></select></div>
-  <div class="field"><label>id инстанса</label><input id="f-id" placeholder="p-base-2"></div>
+  <div class="hint" id="f-spec-note"></div>
+  <div class="field"><label>Имя</label><input id="f-name" placeholder="например: База на юане"></div>
+  <div class="hint">ID создаётся автоматически из имени; имя попадёт в журнал как примечание.</div>
   <div class="field"><label>Инструмент</label><select id="f-inst"></select></div>
   <div class="field"><label>Режим</label><select id="f-mode" onchange="modeChanged()">
       <option value="paper">бумага</option><option value="live">бой</option></select></div>
+  <div class="hint" id="f-mode-note"></div>
   <div id="live-fields" style="display:none">
     <div class="field"><label>Счёт</label><select id="f-account"></select></div>
     <div class="field"><label>Цена заявки</label><select id="f-pricing">
@@ -91,6 +106,7 @@
         <option value="market">рыночная</option></select></div>
   </div>
   <div class="field"><label>Параметры</label><div class="params" id="f-params"></div></div>
+  <div class="hint">Переключатели: включено = <code>true</code>, выключено = <code>false</code>. Подсказка — при наведении.</div>
   <div class="err" id="err"></div>
   <div class="row"><button class="primary" onclick="submitCreate()">Создать</button>
     <button onclick="closeModal()">Отмена</button></div>
@@ -113,6 +129,7 @@
   <h2 id="edit-title">Параметры робота</h2>
   <p class="muted">Активный робот при сохранении уйдёт на паузу; создаётся новая версия параметров.</p>
   <div class="params" id="e-params"></div>
+  <div class="hint">Переключатели: включено = <code>true</code>, выключено = <code>false</code>; `*` — отличается от дефолта.</div>
   <div class="field"><label>Причина изменения</label><input id="e-reason" placeholder="например: echo CM grid 48→55"></div>
   <div class="field"><label>Предпросмотр (60 дней)</label><div id="e-preview" class="muted">—</div></div>
   <div class="err" id="e-err"></div>
@@ -125,6 +142,30 @@
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let specs = [], accounts = [];
+const PARAM_LABELS = {
+  ma_window: 'Период MA, баров', entry: 'Вход, время',
+  filter_bars: 'Фильтр, баров', short_friday: 'Шорт в пятницу',
+  timeframe: 'Таймфрейм, мин', close_friday: 'Закрытие в пятницу',
+  risk_vol: 'ATR-резка сайза'
+};
+const PARAM_HINTS = {
+  short_friday: 'true — разрешить шорт в пятницу; по ADR 19.11 запрещён',
+  close_friday: 'true — принудительное закрытие в 18:45',
+  risk_vol: 'true — резка сайза по волатильности; на старте боя выключена по ADR 19.11',
+  ma_window: 'Период скользящей средней; описание типа справочное, смотрите дефолты',
+  timeframe: '60 = H1, 5 = M5; описание типа справочное, смотрите дефолты'
+};
+const paramLabel = k => PARAM_LABELS[k] || k;
+function paramInput(k, v, type, changed = false) {
+  const hint = esc((changed ? 'изменено · ' : '') + (PARAM_HINTS[k] || ''));
+  const name = esc(paramLabel(k)) + (changed ? ' *' : '');
+  if (type === 'bool') {
+    return `<label class="flag" title="${hint}"><span>${name}</span>` +
+      `<input type="checkbox" data-p="${esc(k)}" data-type="bool" ${v ? 'checked' : ''}></label>`;
+  }
+  return `<label title="${hint}">${name}` +
+    `<input data-p="${esc(k)}" data-type="${esc(type)}" value="${esc(v)}"></label>`;
+}
 
 async function api(path, opts) {
   const r = await fetch('/api' + path, Object.assign({headers:{'Content-Type':'application/json'}}, opts||{}));
@@ -177,14 +218,25 @@ async function loadAll() {
 function specChanged() {
   const s = specs.find(x => x.id === $('f-spec').value); if (!s) return;
   $('f-inst').innerHTML = s.instruments.map(x => `<option>${esc(x)}</option>`).join('');
-  $('f-params').innerHTML = Object.entries(s.defaults).map(([k,v]) =>
-    `<label>${esc(k)}<input data-p="${esc(k)}" value="${esc(v)}"></label>`).join('');
+  $('f-spec-note').textContent = 'Описание: ' + (s.description || '—') +
+    '. Дефолты: ' + Object.entries(s.defaults).map(([k,v]) => `${k}=${esc(v)}`).join(', ');
+  $('f-params').innerHTML = Object.entries(s.defaults)
+    .map(([k,v]) => paramInput(k, v, s.schema[k])).join('');
 }
 
-function modeChanged() { $('live-fields').style.display = $('f-mode').value==='live'?'block':'none'; }
+function modeChanged() {
+  let live = $('f-mode').value === 'live';
+  const opt = $('f-mode').querySelector('option[value="live"]');
+  opt.disabled = !accounts.length;
+  if (live && !accounts.length) { $('f-mode').value = 'paper'; live = false; }
+  $('live-fields').style.display = live ? 'block' : 'none';
+  $('f-mode-note').textContent = accounts.length
+    ? 'Для боя нужны счёт и капитал; заявка всё равно требует --arm и FINAM_ALLOW_TRADING=1.'
+    : 'Счетов нет — добавьте счёт ниже, режим «бой» недоступен.';
+}
 
 function openCreate() {
-  $('modal').classList.add('on'); $('err').textContent='';
+  $('modal').classList.add('on'); $('err').textContent=''; $('f-name').value='';
   $('f-spec').innerHTML = specs.map(s => `<option value="${esc(s.id)}">${esc(s.id)} — ${esc(s.description||'')}</option>`).join('');
   $('f-account').innerHTML = accounts.map(a => `<option value="${esc(a.id)}">${esc(a.id)}</option>`).join('');
   specChanged(); modeChanged();
@@ -194,17 +246,19 @@ function closeModal() { $('modal').classList.remove('on'); }
 async function submitCreate() {
   const s = specs.find(x => x.id === $('f-spec').value);
   const params = {};
-  document.querySelectorAll('#f-params input[data-p]').forEach(inp => {
-    const type = s.schema[inp.dataset.p];
-    let v = inp.value;
+  document.querySelectorAll('#f-params [data-p]').forEach(inp => {
+    const type = inp.dataset.type || s.schema[inp.dataset.p];
+    let v = type === 'bool' ? inp.checked : inp.value;
     if (type === 'int') v = parseInt(v, 10);
     else if (type === 'float') v = parseFloat(v);
-    else if (type === 'bool') v = v === 'true';
     params[inp.dataset.p] = v;
   });
   const mode = $('f-mode').value;
-  const payload = {id:$('f-id').value.trim(), spec_id:s.id, instrument:$('f-inst').value,
-                   mode, params};
+  if (mode === 'live' && !accounts.length) {
+    $('err').textContent = 'Сначала добавьте счёт: без него бой недоступен'; return;
+  }
+  const payload = {name:$('f-name').value.trim(), spec_id:s.id,
+                   instrument:$('f-inst').value, mode, params};
   if (mode === 'live') {
     payload.account = $('f-account').value;
     payload.pricing = $('f-pricing').value;
@@ -265,18 +319,17 @@ async function openEdit(id){
   $('e-params').innerHTML = spec ? Object.keys(spec.defaults).map(k=>{
     const v = inst.params[k];
     const changed = String(v) !== String(spec.defaults[k]);
-    return `<label>${esc(k)}${changed?' *':''}<input data-p="${esc(k)}" data-type="${esc(spec.schema[k])}" value="${esc(v)}"></label>`;
+    return paramInput(k, v, spec.schema[k], changed);
   }).join('') : '<span class="muted">нет spec</span>';
   $('edit-modal').classList.add('on');
 }
 function closeEdit(){ $('edit-modal').classList.remove('on'); }
 function editPayload(){
   const params = {};
-  document.querySelectorAll('#e-params input[data-p]').forEach(inp=>{
-    const t = inp.dataset.type; let v = inp.value;
+  document.querySelectorAll('#e-params [data-p]').forEach(inp=>{
+    const t = inp.dataset.type; let v = t === 'bool' ? inp.checked : inp.value;
     if (t === 'int') v = parseInt(v,10);
     else if (t === 'float') v = parseFloat(v);
-    else if (t === 'bool') v = v === 'true';
     params[inp.dataset.p] = v;
   });
   return {params};

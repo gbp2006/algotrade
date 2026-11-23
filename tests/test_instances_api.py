@@ -52,6 +52,28 @@ class TestApiViews(unittest.TestCase):
     def test_brokers_list(self):
         self.assertIn("finam", [b["name"] for b in api.brokers()])
 
+    def test_generated_id_from_name(self):
+        payload = {"name": "База на юане", "spec_id": "prostushka",
+                   "instrument": "CNY", "mode": "paper"}
+        first = api.create_view(self.store, payload)
+        self.assertEqual(first["id"], "baza-na-yuane")
+        self.assertEqual(first["note"], "База на юане")
+        second = api.create_view(self.store, payload)
+        self.assertEqual(second["id"], "baza-na-yuane-2")
+
+    def test_generated_id_fallback(self):
+        inst = api.create_view(self.store, {"spec_id": "prostushka",
+                                            "instrument": "CNY", "mode": "paper"})
+        self.assertEqual(inst["id"], "prostushka-cny")
+
+    def test_form_uses_name_and_toggles(self):
+        html = (Path(__file__).resolve().parent.parent / "web" / "templates"
+                / "robots.html").read_text(encoding="utf-8")
+        self.assertIn('id="f-name"', html)
+        self.assertNotIn('id="f-id"', html)
+        self.assertIn('type="checkbox"', html)
+        self.assertIn('data-type="bool"', html)
+
     def test_backtest_preview(self):
         r = api.backtest_preview_view({
             "spec_id": "prostushka", "instrument": "CNY",

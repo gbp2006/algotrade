@@ -9,6 +9,7 @@ from __future__ import annotations
 import csv
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -93,9 +94,42 @@ def instances(mode: str | None = None, status: str | None = None,
     return instances_view(store, mode, status)
 
 
+_TRANSLIT = {
+    "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e", "ё": "e",
+    "ж": "zh", "з": "z", "и": "i", "й": "y", "к": "k", "л": "l", "м": "m",
+    "н": "n", "о": "o", "п": "p", "р": "r", "с": "s", "т": "t", "у": "u",
+    "ф": "f", "х": "h", "ц": "ts", "ч": "ch", "ш": "sh", "щ": "sch",
+    "ъ": "", "ы": "y", "ь": "", "э": "e", "ю": "yu", "я": "ya",
+}
+
+
+def _slug(value: str) -> str:
+    """Имя → латинский идентификатор, пригодный для журналов."""
+    text = "".join(_TRANSLIT.get(ch, ch) for ch in value.strip().lower())
+    return re.sub(r"[^a-z0-9]+", "-", text).strip("-")[:40]
+
+
+def generated_instance_id(name: str, spec_id: str, instrument: str,
+                          store: RobotStore) -> str:
+    """Внутренний генератор id: по имени, с уникальным суффиксом."""
+    base = _slug(name) or _slug(f"{spec_id}-{instrument}")
+    candidate, suffix = base, 2
+    while store.get_instance(candidate) is not None:
+        candidate, suffix = f"{base}-{suffix}", suffix + 1
+    return candidate
+
+
 def create_view(store: RobotStore, payload: dict) -> dict:
+    data = dict(payload)
+    name = str(data.pop("name", "") or "").strip()
+    if not data.get("id"):
+        data["id"] = generated_instance_id(
+            name, str(data.get("spec_id", "")),
+            str(data.get("instrument", "CNY")), store)
+    if name:
+        data["note"] = name
     try:
-        return store.create_instance(payload)
+        return store.create_instance(data)
     except (StoreError, ValueError) as exc:
         _fail(exc)
 
