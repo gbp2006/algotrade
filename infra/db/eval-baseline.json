@@ -1,0 +1,228 @@
+{
+  "cases": 22,
+  "hit_at_1": 1.0,
+  "hit_at_3": 1.0,
+  "mrr": 1.0,
+  "details": [
+    {
+      "query": "робот по торговым системам Силаева четыре системы",
+      "expected": "2026-11-18_17-10_silayev-robot-research",
+      "rank": 1,
+      "top": [
+        "2026-11-18_17-10_silayev-robot-research",
+        "2026-11-18_17-10_silayev-robot-research",
+        "2026-11-18_17-10_silayev-robot-research"
+      ]
+    },
+    {
+      "query": "реверс стратегии автора по истории счёта последователя",
+      "expected": "2026-11-19_12-16_author-strategy-reverse",
+      "rank": 1,
+      "top": [
+        "2026-11-19_12-16_author-strategy-reverse",
+        "2026-11-19_12-16_author-strategy-reverse",
+        "2026-11-19_12-16_author-strategy-reverse"
+      ]
+    },
+    {
+      "query": "Простушка на пуле ликвидных фьючерсов 12 инструментов",
+      "expected": "2026-11-19_12-23_prostushka-multi-futures",
+      "rank": 1,
+      "top": [
+        "2026-11-19_12-23_prostushka-multi-futures",
+        "2026-11-19_12-23_prostushka-multi-futures",
+        "reports"
+      ]
+    },
+    {
+      "query": "первый прогон бумажного контура девять конфигураций",
+      "expected": "2026-11-19_14-00_paper-first-run",
+      "rank": 1,
+      "top": [
+        "2026-11-19_14-00_paper-first-run",
+        "2026-11-19_14-00_paper-first-run",
+        "2026-11-19_14-00_paper-first-run"
+      ]
+    },
+    {
+      "query": "бесплатные модели отбор избранные",
+      "expected": "2026-11-20_15-33_free-models-favorites",
+      "rank": 1,
+      "top": [
+        "2026-11-20_15-33_free-models-favorites",
+        "2026-11-20_15-33_free-models-favorites",
+        "2026-11-20_15-33_free-models-favorites"
+      ]
+    },
+    {
+      "query": "аудит сделок бумажного контура на WSL восстановление сверки",
+      "expected": "2026-11-20_16-02_wsl-paper-audit",
+      "rank": 1,
+      "top": [
+        "2026-11-20_16-02_wsl-paper-audit",
+        "2026-11-20_16-02_wsl-paper-audit",
+        "2026-11-20_16-02_wsl-paper-audit"
+      ]
+    },
+    {
+      "query": "общее хранилище баров песочница и WSL market.db",
+      "expected": "2026-11-20_16-24_two-env-bar-store",
+      "rank": 1,
+      "top": [
+        "2026-11-20_16-24_two-env-bar-store",
+        "2026-11-20_16-24_two-env-bar-store",
+        "2026-11-20_16-24_two-env-bar-store"
+      ]
+    },
+    {
+      "query": "автоматическая запись новых баров в хранилище",
+      "expected": "2026-11-20_16-35_live-ticks-to-db",
+      "rank": 1,
+      "top": [
+        "2026-11-20_16-35_live-ticks-to-db",
+        "2026-11-20_16-35_live-ticks-to-db",
+        "2026-11-20_16-35_live-ticks-to-db"
+      ]
+    },
+    {
+      "query": "динамический путь ISS-архива отчёт архивный файл",
+      "expected": "2026-11-20_16-40_iss-month-path",
+      "rank": 1,
+      "top": [
+        "2026-11-20_16-40_iss-month-path",
+        "2026-11-20_16-40_iss-month-path",
+        "2026-11-20_16-40_iss-month-path"
+      ]
+    },
+    {
+      "query": "статус соседней сессии прототип торговых роботов WSL",
+      "expected": "2026-11-20_16-50_neighbor-session-status",
+      "rank": 1,
+      "top": [
+        "2026-11-20_16-50_neighbor-session-status",
+        "2026-11-20_16-50_neighbor-session-status",
+        "2026-11-20_16-50_neighbor-session-status"
+      ]
+    },
+    {
+      "query": "укрепление цикла песочница бумага бой whitelist",
+      "expected": "2026-11-20_17-08_cycle-hardening",
+      "rank": 1,
+      "top": [
+        "2026-11-20_17-08_cycle-hardening",
+        "2026-11-20_17-08_cycle-hardening",
+        "2026-11-20_17-08_cycle-hardening"
+      ]
+    },
+    {
+      "query": "G3 безопасное исполнение заявок шлюз лимиты",
+      "expected": "2026-11-20_17-35_g3-execution",
+      "rank": 1,
+      "top": [
+        "2026-11-20_17-35_g3-execution",
+        "2026-11-20_17-35_g3-execution",
+        "2026-11-20_17-35_g3-execution"
+      ]
+    },
+    {
+      "query": "риск-модуль и чистка документации ATR экспозиция",
+      "expected": "2026-11-20_18-45_risk-and-docs",
+      "rank": 1,
+      "top": [
+        "2026-11-20_18-45_risk-and-docs",
+        "2026-11-20_18-45_risk-and-docs",
+        "2026-11-20_18-45_risk-and-docs"
+      ]
+    },
+    {
+      "query": "авторская вариация Самурая TIME_MA",
+      "expected": "2026-11-20_19-31_samurai-author-variant",
+      "rank": 1,
+      "top": [
+        "2026-11-20_19-31_samurai-author-variant",
+        "2026-11-20_19-31_samurai-author-variant",
+        "2026-11-20_19-31_samurai-author-variant"
+      ]
+    },
+    {
+      "query": "поиск входных параметров 2025 2026 плато MA50",
+      "expected": "2026-11-20_22-35_param-search-2025-2026",
+      "rank": 1,
+      "top": [
+        "2026-11-20_22-35_param-search-2025-2026",
+        "2026-11-20_22-35_param-search-2025-2026",
+        "2026-11-20_22-35_param-search-2025-2026"
+      ]
+    },
+    {
+      "query": "режим против подгонки новые роботы риск WSL",
+      "expected": "2026-11-20_23-00_regime-and-robots",
+      "rank": 1,
+      "top": [
+        "2026-11-20_23-00_regime-and-robots",
+        "2026-11-20_23-00_regime-and-robots",
+        "2026-11-20_23-00_regime-and-robots"
+      ]
+    },
+    {
+      "query": "большой поиск стратегий ликвидные инструменты РФ каталог",
+      "expected": "2026-11-21_00-42_strategy-search",
+      "rank": 1,
+      "top": [
+        "2026-11-21_00-42_strategy-search",
+        "2026-11-21_00-42_strategy-search",
+        "2026-11-21_00-42_strategy-search"
+      ]
+    },
+    {
+      "query": "добавление Donchian 20/10 в бумажный тест",
+      "expected": "2026-11-23_17-22_donchian-paper",
+      "rank": 1,
+      "top": [
+        "2026-11-23_17-22_donchian-paper",
+        "2026-11-23_17-22_donchian-paper",
+        "2026-11-23_17-22_donchian-paper"
+      ]
+    },
+    {
+      "query": "поиск стратегий Коваль-Зайцева KZ-02",
+      "expected": "2026-11-23_17-53_kz-strategy-search",
+      "rank": 1,
+      "top": [
+        "2026-11-23_17-53_kz-strategy-search",
+        "2026-11-23_17-53_kz-strategy-search",
+        "2026-11-23_17-53_kz-strategy-search"
+      ]
+    },
+    {
+      "query": "готовность к реальной торговле FINAM MOEX переключатель",
+      "expected": "2026-11-23_18-02_live-readiness",
+      "rank": 1,
+      "top": [
+        "2026-11-23_18-02_live-readiness",
+        "2026-11-23_18-02_live-readiness",
+        "2026-11-23_18-02_live-readiness"
+      ]
+    },
+    {
+      "query": "идеи с нормальной доходностью РФ рынок RU-01",
+      "expected": "2026-11-23_18-43_ru-market-ideas",
+      "rank": 1,
+      "top": [
+        "2026-11-23_18-43_ru-market-ideas",
+        "2026-11-23_18-43_ru-market-ideas",
+        "2026-11-23_18-43_ru-market-ideas"
+      ]
+    },
+    {
+      "query": "доходность роботов и портфеля по депозитам",
+      "expected": "2026-11-23_18-45_portfolio-returns-deposit",
+      "rank": 1,
+      "top": [
+        "2026-11-23_18-45_portfolio-returns-deposit",
+        "2026-11-23_18-45_portfolio-returns-deposit",
+        "reports"
+      ]
+    }
+  ]
+}
