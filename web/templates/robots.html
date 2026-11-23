@@ -89,7 +89,9 @@
       <input id="acc-code" placeholder="Торговый код (872635RN4O3)">
       <input id="acc-keyref" placeholder="Секрет Finam для счёта" type="password">
       <input id="acc-cap" placeholder="капитал" type="number">
+      <input id="acc-exp" placeholder="экспозиция 0.25–2.0" type="number" step="0.05" value="1.0">
       <button onclick="addAccount()">Добавить счёт</button></div>
+    <div class="hint">Экспозиция: 2.0 — правило Силаева (200% номинала), 1.0 — половинный сайз, 0.25 — один контракт на 50 тыс. ₽. Лот = equity × экспозиция / (цена × множитель).</div>
     <div class="hint">Ключ счёта вставляется сюда один раз: он сохранится в <code>auth.json</code> с правами 600, а в карточке счёта останется только имя. Робот берёт ключ из выбранного счёта.</div>
     <div class="row" style="margin-top:8px">
       <input id="service-key" placeholder="Сервисный ключ Finam (каталог, данные, тень)" type="password">
@@ -380,7 +382,8 @@ async function addAccount() {
   try { await api('/accounts', {method:'POST', body:JSON.stringify({
         id:$('acc-id').value.trim(), capital:Number($('acc-cap').value),
         label:$('acc-label').value.trim(), trading_code:$('acc-code').value.trim(),
-        key_ref:$('acc-keyref').value.trim()})});
+        key_ref:$('acc-keyref').value.trim(),
+        max_exposure:Number($('acc-exp').value) || 1.0})});
         ['acc-id','acc-cap','acc-label','acc-code','acc-keyref'].forEach(k=>$(k).value='');
         await loadAll(); }
   catch(e) { $('status').textContent = 'ошибка: ' + e.message; }

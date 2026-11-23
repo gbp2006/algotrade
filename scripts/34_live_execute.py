@@ -32,9 +32,10 @@ from algo.broker.finam import FinamBroker  # noqa: E402
 from algo.broker.secrets import resolve_secret  # noqa: E402
 from algo.broker.live_guard import (  # noqa: E402
     STOP_REAL, account_equity, assert_stop_clear, battle_limits,
-    decision_client_id, expiry_allows, lots_for_equity, price_for,
-    quote_age_sec, reconcile_guard,
+    decision_client_id, expiry_allows, price_for, quote_age_sec,
+    reconcile_guard,
 )
+from algo.portfolio import exposure_of, size_contracts  # noqa: E402
 from algo.configs import CONFIGS  # noqa: E402
 from algo.instance_configs import live_settings_from_store  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS  # noqa: E402
@@ -72,9 +73,11 @@ def plan_targets(rows: list[dict], settings, day: date) -> dict:
         sym = last["symbol"]
         plan = plans.setdefault((rs.account, rs.key_ref), {}).setdefault(sym, {
             "target": 0, "price": float(last["price"]), "robots": [],
-            "pricings": set(), "expiry": True,
+            "pricings": set(), "expiry": True, "exposures": [],
         })
         plan["target"] += int(last["target"])
+        # expositions из самих конфигов: 2.0 база, 0.6 RTS, 0.7 золото (ADR 24)
+        plan["exposures"].append(exposure_of(cfg))
         plan["robots"].append(cfg_id)
         plan["pricings"].add(rs.pricing)
         plan["expiry"] = plan["expiry"] and rs.trade_on_expiry
@@ -184,10 +187,8 @@ def main(argv: list[str] | None = None) -> int:
             if equity is None or equity <= 0:
                 print(f"{acc_id}: нет equity счёта — заявок нет")
                 return 2
-            lots = lots_for_equity(equity, acc.capital_usage, acc.capital_per_lot,
-                                   acc.min_lots, acc.max_lots)
-            notes.append(f"{acc_id}: equity {equity:.0f} ₽, usage "
-                         f"{acc.capital_usage}, лот {lots}")
+            notes.append(f"{acc_id}: equity {equity:.0f} ₽, экспозиции "
+                         f"{sorted(set().union(*(p['exposures'] for p in symbols.values())))}")
             model, uncertain = journal_positions(acc_id)
             if uncertain:
                 note = f"{acc_id}: {uncertain} неопределённых заявок — ручная сверка"
@@ -216,6 +217,10 @@ def main(argv: list[str] | None = None) -> int:
             for sym, plan in symbols.items():
                 ids = "+".join(plan["robots"])
                 direction = (plan["target"] > 0) - (plan["target"] < 0)
+                exposure = min(plan["exposures"]) if plan["exposures"] else 1.0
+                exposure = min(exposure, acc.max_exposure)  # потолок счёта (консервативно)
+                # сайзинг Силаева: лот = equity × экспозиция / (цена × множитель)
+                lots = size_contracts(equity, plan["price"], mult_for(sym), exposure)
                 target = direction * lots  # бумага даёт направление, счёт — размер
                 client_id = decision_client_id(
                     ids, day, "buy" if target >= actual.get(sym, 0) else "sell",
