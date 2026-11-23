@@ -26,13 +26,13 @@ except ImportError:
 
 from algo.configs import CONFIGS  # noqa: E402
 from algo.robot_configs import ROBOT_CONFIGS  # noqa: E402
+from algo import risk  # noqa: E402
 from algo import store  # noqa: E402
 from algo.data import load_cached, to_timeframe  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS  # noqa: E402
 from algo.instruments import symbol as contract_symbol  # noqa: E402
 from algo.live import decision  # noqa: E402
-from algo.portfolio import (CAPITAL, drawdown_stats,  # noqa: E402
-                            exposure_of, size_contracts)
+from algo.portfolio import CAPITAL, drawdown_stats  # noqa: E402
 
 PAPER = Path(__file__).resolve().parent.parent / "results" / "paper.csv"
 
@@ -69,7 +69,10 @@ def ledger(rows: list[dict], mult: float) -> tuple[int, float, int]:
 
 def expected(cfg, m5: pd.DataFrame, start: str, end: str,
              mult: float, capital: float, tick: float = 0.0) -> tuple[int, float]:
-    """Что та же конфигурация дала бы на архиве за тот же период."""
+    """Что та же конфигурация дала бы на архиве за тот же период.
+
+    Лот считается живым risk.contracts_for_config, включая ATR-резку сайза.
+    """
     days = sorted({d for d in m5.index.date
                    if str(d) >= start and str(d) <= end and d.weekday() < 5})
     pos = 0
@@ -82,8 +85,15 @@ def expected(cfg, m5: pd.DataFrame, start: str, end: str,
         if dec is None:
             continue
         decisions += 1
-        contracts = size_contracts(capital + pnl, dec.price, mult,
-                                              exposure_of(cfg)) if dec.target != 0 else 0
+        if dec.target != 0:
+            # Ожидание обязано повторять живой лот: новые роботы режут сайз по ATR,
+            # иначе tracking error показывает разницу лотности, а не исполнения.
+            risk_bars = m5[(m5.index.date <= day)
+                           & (m5.index <= dec.ts + pd.Timedelta(minutes=5))]
+            contracts, _ = risk.contracts_for_config(
+                cfg, capital + pnl, dec.price, mult, risk_bars, [], day, capital)
+        else:
+            contracts = 0
         target = dec.target * contracts
         if target != pos:
             if pos != 0:
@@ -178,7 +188,10 @@ def build_rows() -> tuple[list[dict], str, str]:
             cache[inst.code] = expected_bars(inst)
         e_pnl = None
         if cache[inst.code] is not None:
-            e_trades, e_pnl = expected(cfg, cache[inst.code], start, end,
+            # Окно ожидания — по датам самого конфигурации: новые роботы вошли
+            # в журнал позже базы, и сравнение с её 3 днями давало ложный error.
+            c_start, c_end = mine[0]["date"], mine[-1]["date"]
+            e_trades, e_pnl = expected(cfg, cache[inst.code], c_start, c_end,
                                        mult, capital, tick=inst.tick)
         dd = _dd_stats(mine, mult, capital)
         out.append({"config": cfg.id, "instrument": inst.code, "days": days,

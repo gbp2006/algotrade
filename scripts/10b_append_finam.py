@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import datetime as dt
 import sys
+import time
 from pathlib import Path
 
 import pandas as pd
@@ -31,6 +32,20 @@ TF = "TIME_FRAME_M5"
 MINUTES = 5
 LOOKBACK_DAYS = 7
 MSK = dt.timezone(dt.timedelta(hours=3))
+RETRY_DELAYS = (5, 15)  # 503/таймаут Финама чаще transient
+
+
+def fetch_bars(broker, symbol: str, tf: str, start: str, end: str):
+    """Добор баров с повтором: API Финама иногда отдаёт 503/таймаут."""
+    for attempt, delay in enumerate((*RETRY_DELAYS, None), start=1):
+        try:
+            return broker.bars(symbol, tf, start, end)
+        except Exception:  # noqa: BLE001 — сетевая ошибка transient на 10 мин
+            if delay is None:
+                raise
+            print(f"Финам: запрос {attempt}/{len(RETRY_DELAYS) + 1} не удался, "
+                  f"повтор через {delay} с")
+            time.sleep(delay)
 
 
 def main() -> int:
@@ -39,7 +54,7 @@ def main() -> int:
     start = (now - dt.timedelta(days=LOOKBACK_DAYS)).strftime("%Y-%m-%dT%H:%M:%SZ")
     end = now.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    fresh = FinamBroker().bars(SYMBOL, TF, start, end)
+    fresh = fetch_bars(FinamBroker(), SYMBOL, TF, start, end)
     if fresh.empty:
         print("Финам: баров нет")
         return 0
