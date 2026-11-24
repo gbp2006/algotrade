@@ -161,6 +161,16 @@ class TestApiViews(unittest.TestCase):
         self.assertIn("робот", str(ctx.exception))
         self.assertIn("acc-1", [a["id"] for a in api.accounts(self.store)])
 
+    def test_analytics_skips_local_test_accounts(self):
+        api.create_account({"id": "paper-x", "label": "Локальный", "mode": "TEST",
+                            "capital": 200_000}, self.store)
+        self.store.create_instance({"id": "x", "spec_id": "prostushka",
+                                    "instrument": "CNY", "mode": "paper",
+                                    "account": "paper-x", "capital": 200_000})
+        data = api.account_analytics(self.store)
+        self.assertEqual(data["real"], [])
+        self.assertIn("x", {row["id"] for row in data["virtual"]})
+
     def test_generated_id_fallback(self):
         inst = api.create_view(self.store, {"spec_id": "prostushka",
                                             "instrument": "CNY", "mode": "paper"})

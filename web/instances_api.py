@@ -734,6 +734,8 @@ def account_analytics(store: RobotStore) -> dict:
     for acc in store.list_accounts():
         if not acc.get("enabled", True):
             continue
+        if str(acc.get("mode") or "LIVE").upper() == "TEST":
+            continue  # локальные TEST-счета показываются в virtual по инстансам
         row = {"id": acc["id"], "label": acc.get("label") or acc["id"],
                "mode": str(acc.get("mode") or "LIVE").lower(),
                "equity": None, "positions": [],
