@@ -45,6 +45,16 @@ class TestGuiV2Api(unittest.TestCase):
         entries = ia.logs_aggregate(self.store)
         self.assertTrue(any(x["source"] == "instances" and "old-bot" in x["text"]
                             for x in entries))
+        feed = self.store.events_feed(limit=5)
+        self.assertTrue(any(x["instance_id"] == "old-bot" for x in feed))
+
+    def test_analytics_cache_and_invalidation(self):
+        ia._analytics_cache = None
+        self.addCleanup(lambda: setattr(ia, "_analytics_cache", None))
+        first = ia.cached_analytics(self.store)
+        self.assertIs(ia.cached_analytics(self.store), first)
+        ia.invalidate_analytics()
+        self.assertIsNone(ia._analytics_cache)
 
     def test_descriptions_in_api(self):
         specs = {s["id"]: s for s in ia.specs_view()}

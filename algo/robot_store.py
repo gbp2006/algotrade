@@ -157,6 +157,15 @@ class RobotStore:
                 (instance_id,)).fetchall()
         return [dict(r) for r in rows]
 
+    def events_feed(self, limit: int = 100) -> list[dict]:
+        """Последние события всех инстансов одним запросом (для лога панели)."""
+        with self._conn() as c:
+            rows = c.execute(
+                "SELECT e.instance_id, e.action, e.reason, e.actor, e.created_at "
+                "FROM instance_events e ORDER BY e.id DESC LIMIT ?",
+                (int(limit),)).fetchall()
+        return [dict(r) for r in rows]
+
     def list_accounts(self) -> list[dict]:
         # capital не отдаётся: размер боевого счёта знает только брокер
         cols = ("id, label, max_exposure, max_daily_loss_pct, max_qty, comment, "

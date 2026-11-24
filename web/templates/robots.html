@@ -601,6 +601,14 @@ async function submitEdit(){
     closeEdit(); await loadAll();
   }catch(e){ $('e-err').textContent = e.message; }
 }
+// Запоминаем фильтр режима, чтобы повторное открытие вернулось на ту же вкладку.
+document.querySelectorAll('#mode-tabs a').forEach(a =>
+  a.addEventListener('click', () => UIState.set('robotsMode', a.dataset.mode)));
+if(!location.search.includes('mode=')){
+  const saved = UIState.get('robotsMode', '');
+  if(['live','paper','all'].includes(saved) && saved !== 'all')
+    location.replace('/robots?mode=' + saved);
+}
 loadAll();
 </script>
 </body>

@@ -12,6 +12,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
@@ -285,6 +286,7 @@ def create_account(payload: dict, store: RobotStore = Depends(get_store)):
             ref = f"acc:{data.get('id', '')}"
             _write_key(ref, key)  # секрет → auth.json, в счёте только имя
             data["key_ref"] = ref
+        invalidate_analytics()
         return store.create_account(data)
     except (StoreError, ValueError) as exc:
         _fail(exc)
@@ -349,7 +351,9 @@ def update_account(acc_id: str, payload: dict,
         except ValueError as exc:
             _fail(exc)
     try:
-        return store.update_account(acc_id, data)
+        result = store.update_account(acc_id, data)
+        invalidate_analytics()
+        return result
     except (StoreError, ValueError) as exc:
         _fail(exc)
 
@@ -358,9 +362,11 @@ def update_account(acc_id: str, payload: dict,
 def save_key(payload: dict):
     """Записать именованный ключ в auth.json (600). В ответе — только имя."""
     try:
-        return {"key_ref": _write_key(payload.get("key_ref"),
-                                      str(payload.get("secret") or "")),
-                "saved": True}
+        result = {"key_ref": _write_key(payload.get("key_ref"),
+                                        str(payload.get("secret") or "")),
+                  "saved": True}
+        invalidate_analytics()
+        return result
     except ValueError as exc:
         _fail(exc)
 
@@ -722,9 +728,29 @@ def account_analytics(store: RobotStore) -> dict:
     return {"real": real, "virtual": virtual}
 
 
+_ANALYTICS_TTL = 30.0
+_analytics_cache: tuple[float, dict] | None = None
+
+
+def invalidate_analytics() -> None:
+    global _analytics_cache
+    _analytics_cache = None
+
+
+def cached_analytics(store: RobotStore) -> dict:
+    """Кэш на 30 с: страницы «Счета» и «Торговля» не дёргают брокера на каждый клик."""
+    global _analytics_cache
+    now = time.monotonic()
+    if _analytics_cache and now - _analytics_cache[0] < _ANALYTICS_TTL:
+        return _analytics_cache[1]
+    data = account_analytics(store)
+    _analytics_cache = (now, data)
+    return data
+
+
 @router.get("/accounts/analytics")
 def api_accounts_analytics(store: RobotStore = Depends(get_store)):
-    return account_analytics(store)
+    return cached_analytics(store)
 
 
 def logs_aggregate(store: RobotStore, limit: int = 80) -> list[dict]:
@@ -734,11 +760,10 @@ def logs_aggregate(store: RobotStore, limit: int = 80) -> list[dict]:
         out.append({"ts": r["ts"], "source": "orders",
                     "text": f"{r['config']} {r['side']} {r['qty']} "
                             f"@{r['price']} — {r['status']}"})
-    for inst in store.list_instances():
-        for e in store.history(inst["id"])[-limit:]:
-            out.append({"ts": e.get("created_at") or "", "source": "instances",
-                        "text": f"{inst['id']}: {e.get('action')} "
-                                f"{e.get('reason') or ''}".strip()})
+    for e in store.events_feed(limit=limit):
+        out.append({"ts": e.get("created_at") or "", "source": "instances",
+                    "text": f"{e.get('instance_id')}: {e.get('action')} "
+                            f"{e.get('reason') or ''}".strip()})
     for r in store.list_runs(limit=limit):
         out.append({"ts": r.get("started") or "", "source": "scheduler",
                     "text": f"{r.get('job_id')}: {r.get('status')} "
