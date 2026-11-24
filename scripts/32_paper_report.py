@@ -125,6 +125,22 @@ def expected_bars(inst) -> pd.DataFrame | None:
     return _expected_bars(inst)
 
 
+def decision_times(rows: list[dict], day: str) -> dict[str, str]:
+    """Время решения по конфигу — без закрытий 18:45 и утренних выходов."""
+    last: dict[str, str] = {}
+    for r in rows:
+        if r["date"] == day and r.get("action") in {"решение", "канал"}:
+            cid = r["config"]
+            if r["time"] > last.get(cid, ""):
+                last[cid] = r["time"]
+    for r in rows:
+        if r["date"] == day:
+            cid = r["config"]
+            if cid not in last and r["time"] > last.get(cid, ""):
+                last[cid] = r["time"]
+    return last
+
+
 def build_rows() -> tuple[list[dict], str, str]:
     """Сводка факт/ожидание для отчёта и для стража (одна логика, без парсинга вывода)."""
     if not PAPER.exists():
@@ -149,12 +165,7 @@ def build_rows() -> tuple[list[dict], str, str]:
         # Время решения из журнала: параметр, изменённый после него, не должен
         # применяться к уже записанному решению (версия создана в 19:30,
         # а решение было в 13:50 — использовалась ещё старая логика).
-        last_time: dict[str, str] = {}
-        for r in rows:
-            if r["date"] == day:
-                cid = r["config"]
-                if r["time"] > last_time.get(cid, ""):
-                    last_time[cid] = r["time"]
+        last_time = decision_times(rows, day)
         for cid, when in last_time.items():
             try:
                 found = {c.id: c for c in configs_at(day, at=when)}

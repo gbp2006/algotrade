@@ -30,6 +30,18 @@ def m5() -> pd.DataFrame:
     return pd.concat(parts)
 
 
+class TestDecisionTimes(unittest.TestCase):
+    def test_later_closure_does_not_shift_decision_time(self):
+        rows = [
+            {"date": "2026-11-20", "time": "13:50", "config": "p-friday", "action": "решение"},
+            {"date": "2026-11-20", "time": "18:45", "config": "p-friday", "action": "пятница"},
+            {"date": "2026-11-20", "time": "10:20", "config": "u-morning", "action": "закрыть"},
+        ]
+        got = report.decision_times(rows, "2026-11-20")
+        self.assertEqual(got["p-friday"], "13:50")
+        self.assertEqual(got["u-morning"], "10:20")
+
+
 class TestFridayExpectation(unittest.TestCase):
     def test_friday_close_modelled(self):
         bars = m5()
