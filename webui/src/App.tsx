@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api, keys } from './lib/api';
+import { hydrate, offline, offlineRead } from './lib/offline';
 import { money } from './lib/format';
 import type { Section } from './lib/types';
 import { useUi } from './store/ui';
@@ -37,12 +38,35 @@ export function App() {
   const ui = useUi();
   const queryClient = useQueryClient();
   const [confirmStop, setConfirmStop] = useState(false);
+  const [offlineCount, setOfflineCount] = useState(0);
   const health = useQuery({ queryKey: keys.health, queryFn: api.health, refetchInterval: 60_000 });
   const analytics = useQuery({ queryKey: keys.analytics, queryFn: api.analytics, refetchInterval: 30_000 });
   const stopAll = useMutation({
     mutationFn: api.stopAll,
     onSuccess: () => void queryClient.invalidateQueries(),
   });
+
+  useEffect(() => {
+    const data = analytics.data;
+    if (!data) return;
+    const cached = [
+      ...data.real.map((account) => ({
+        id: account.id, label: account.label, mode: 'live' as const,
+        equity: account.equity, cachedAt: 0,
+      })),
+      ...data.virtual.map((account) => ({
+        id: account.id, label: account.label, mode: 'paper' as const,
+        equity: account.equity, cachedAt: 0,
+      })),
+    ];
+    void hydrate({ accounts: cached });
+  }, [analytics.data]);
+
+  useEffect(() => {
+    if (!analytics.error) return;
+    void offlineRead(() => offline.accounts.count()).then((count) => setOfflineCount(count ?? 0));
+  }, [analytics.error]);
+
   const Account = content[ui.section];
 
   const equity = (analytics.data?.real ?? []).reduce((sum, item) => sum + (item.equity ?? 0), 0);
@@ -92,6 +116,9 @@ export function App() {
             ))}
           </select>
           <span className="num text-xs text-muted">Equity: {money(equity)} ₽</span>
+          {analytics.error && (
+            <span className="text-[11px] text-warn">Нет связи · кэш: {offlineCount} счетов</span>
+          )}
           <span className="ml-auto text-[11px] text-muted">
             {problems ? `${problems} предупреждений` : 'Связь в норме'} · {health.data?.checked ?? '—'}
           </span>
