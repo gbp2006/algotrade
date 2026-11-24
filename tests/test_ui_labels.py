@@ -34,6 +34,14 @@ class TestUILabels(unittest.TestCase):
             self.assertNotIn('JSON.stringify(r.by_type)', html, page)
             self.assertNotIn('JSON.stringify(s.counts)', html, page)
 
+    def test_risk_and_comparative_panels(self):
+        trade = (TEMPLATES / "trade.html").read_text(encoding="utf-8")
+        self.assertIn('id="risk-card"', trade)
+        self.assertIn('renderRisk(analytics)', trade)
+        accounts = (TEMPLATES / "accounts.html").read_text(encoding="utf-8")
+        self.assertIn('id="compare-body"', accounts)
+        self.assertIn('Портфель против депозита', accounts)
+
     def test_instrument_grouping(self):
         js = (STATIC / "ui-labels.js").read_text(encoding="utf-8")
         for group in ("Валютные фьючерсы", "Индексы", "Сырьё и золото",

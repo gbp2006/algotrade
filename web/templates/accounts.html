@@ -24,6 +24,8 @@
       <div><h2>Счета</h2><p>Реальные счета брокера и виртуальные депозиты бумажных роботов — в одном месте.</p></div>
     </div>
     <div class="pf" id="kpi"></div>
+    <div class="card mt"><h3>Портфель против депозита</h3>
+      <div id="compare-body" class="small muted">Загрузка…</div></div>
     <div class="cols-2 mt">
       <div class="card"><h3>Реальные счета</h3>
         <div class="table-wrap"><table class="table"><thead><tr>
@@ -58,9 +60,16 @@ async function load(){
       <td>${esc(names[v.id] || v.id)}</td><td>${L.money(v.equity)}</td><td>${L.qty(v.position)}</td>
       <td class="muted small">${esc(L.decision(v.last_decision))}</td></tr>`).join('') : '<tr><td colspan="4" class="muted">Нет бумажных инстансов</td></tr>';
     const eq = j.real.filter(a=>a.equity).reduce((s,a)=>s+a.equity,0);
+    const virtEq = j.virtual.reduce((s,a)=>s+Number(a.equity||0),0);
     $('kpi').innerHTML = `<div class="it"><span>Реальных счетов</span><b>${j.real.length}</b></div>
       <div class="it"><span>Equity реальных</span><b>${num(eq)} ₽</b></div>
       <div class="it"><span>Виртуальных</span><b>${j.virtual.length}</b></div>`;
+    $('compare-body').innerHTML = `<div class="kpi-mini mb">
+      <span>Депозит брокера <b>${L.money(eq)}</b></span>
+      <span>Бумажный капитал <b>${L.money(virtEq)}</b></span>
+      <span>Разница <b>${L.money(virtEq-eq)}</b></span>
+      <span>Во сколько раз <b>${eq ? (virtEq/eq).toFixed(1)+'×' : '—'}</b></span></div>
+      <p class="muted small">Бумажный капитал — сумма виртуальных депозитов роботов, а не деньги на счёте.</p>`;
   }catch(e){
     $('real-rows').innerHTML = '<tr><td colspan="4" class="muted">Нет данных: '+esc(e.message)+'</td></tr>';
   }

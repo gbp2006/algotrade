@@ -43,6 +43,7 @@
       <div><h2>Торговля</h2><p>Роботы слева, счета справа. Клик по строке показывает детали: позиции, equity, решения и заявки.</p></div>
     </div>
     <div class="pf" id="kpi"></div>
+    <p class="muted small mt" id="kpi-sub"></p>
     <div class="cols-2" id="trade-panels" style="display:{% if mode == 'archive' %}none{% else %}grid{% endif %}">
       <div class="card"><h3>{% if mode == 'test' %}Роботы · тест{% else %}Роботы · бой{% endif %}</h3>
         <div id="robot-list" class="pick-list"><div class="muted small">загрузка…</div></div></div>
@@ -51,6 +52,8 @@
     </div>
     <div class="card mt" id="detail-card"><h3 id="detail-title">Детали</h3>
       <div id="detail-body" class="small muted">Выберите робота или счёт выше.</div></div>
+    <div class="card mt" id="risk-card"><h3>Риск · одним взглядом</h3>
+      <div id="risk-body" class="small muted">Загрузка…</div></div>
     <div class="card" id="stop-card"><h3>Управление</h3>
       <div class="row"><button class="btn danger" onclick="stopReal('set')">Глобальный STOP</button>
         <button class="btn" onclick="stopReal('clear')">Снять STOP</button>
@@ -158,6 +161,30 @@ function renderRobotDetail(){
       mine.length ? mine.map(o=>`<tr><td>${esc(String(o.ts||'').replace('T',' ').slice(0,16))}</td><td>${esc(o.symbol||'')}</td><td>${esc(L.side(o.side))}</td><td>${L.qty(o.qty)}</td><td>${L.num(o.price,4)}</td><td>${esc(L.orderStatus(o.status))}</td></tr>`).join('') : '<tr><td colspan="6" class="muted">заявок сегодня не было</td></tr>'
     }</tbody></table>`;
 }
+function renderRisk(analytics){
+  const box = $('risk-body');
+  if(!box) return;
+  const real = (analytics && analytics.real) || [];
+  const virt = (analytics && analytics.virtual) || [];
+  const eqReal = real.reduce((s,a)=>s+Number(a.equity||0), 0);
+  const eqVirt = virt.reduce((s,a)=>s+Number(a.equity||0), 0);
+  const positions = real.flatMap(a => (a.positions||[]).map(p=>({
+    symbol:p.symbol, qty:Number(p.qty||0), pnl:Number(p.pnl||0)})));
+  virt.forEach(v => { if(Number(v.position||0)) positions.push({
+    symbol: v.symbol || v.id, qty: Number(v.position||0), pnl: 0}); });
+  const exposure = positions.reduce((s,p)=>s+Math.abs(p.qty), 0);
+  const top = positions.slice().sort((a,b)=>Math.abs(b.qty)-Math.abs(a.qty))[0];
+  const pnl = positions.reduce((s,p)=>s+p.pnl, 0);
+  box.innerHTML = `<div class="kpi-mini mb">
+      <span>Депозит <b>${L.money(eqReal)}</b></span>
+      <span>Бумажный капитал <b>${L.money(eqVirt)}</b></span>
+      <span>Открытых позиций <b>${positions.length}</b></span>
+      <span>Экспозиция <b>${L.qty(exposure)} конт.</b></span>
+      <span>Нереализованный P&L <b class="${pnl>=0?'pos':'neg'}">${L.money(pnl)}</b></span></div>
+    <p class="muted small">${top
+      ? `Крупнейшая: ${esc(top.symbol)} · ${L.qty(top.qty)} контрактов`
+      : 'Открытых позиций нет — риск по позициям отсутствует'}</p>`;
+}
 function renderAccountDetail(){
   const key = UIState.get('tradeAccount', '');
   const a = ACCS.find(x=>x.key===key);
@@ -185,13 +212,15 @@ async function load(){
     ACCS = (mode === 'test' ? analytics.virtual : analytics.real).map(x=>({...x, key:x.id}));
     ORDERS = orders; ALLOW = !!st.allow_trading;
     $('orders-title').textContent = ALLOW ? 'Заявки' : 'Заявки · dry-run, не сделки';
+    // Полоса — 4 числа, остальное в подстроке: так она не превращается в шум
     $('kpi').innerHTML = `
       <div class="it"><span>Торговля</span><b>${st.allow_trading?'ВКЛ':'ВЫКЛ'}</b></div>
       <div class="it"><span>STOP боя</span><b>${st.stop_real?'УСТАНОВЛЕН':'снят'}</b></div>
       <div class="it"><span>Роботов в бою</span><b>${robots.filter(x=>x.status==='active').length}</b></div>
-      <div class="it"><span>Дней бумаги</span><b>${st.paper_days}/30</b></div>
-      <div class="it"><span>Дней тени</span><b>${st.shadow_days ?? 0}/10</b></div>
-      <div class="it"><span>${ALLOW?'Заявок в журнале':'Сухих заявок (не отправлялись)'}</span><b>${orders.length}</b></div>`;
+      <div class="it"><span>${ALLOW?'Заявок':'Сухих заявок'}</span><b>${orders.length}</b></div>`;
+    $('kpi-sub').textContent = `Бумага ${st.paper_days}/30 · Тень ${st.shadow_days ?? 0}/10`
+      + (ALLOW ? '' : ' · заявки брокеру не отправляются');
+    renderRisk(analytics);
     $('robot-list').innerHTML = robots.length ? robots.map(i=>{
       const s = RUNTIME[i.id]||{};
       return `<button class="pick" data-id="${esc(i.id)}" onclick="pickRobot('${esc(i.id)}')">
