@@ -100,9 +100,23 @@ def _health_refresh_loop() -> None:
             pass
         time.sleep(300)
 
+def _warm_cache() -> None:
+    """Подогреть тяжёлые вызовы `/api/state`, чтобы первый запрос не ждал сеть."""
+    jobs = [quote, price_series,
+            lambda: timer_state("algotrading-morning.timer"),
+            lambda: timer_state("algotrading-daily.timer"),
+            lambda: timer_state("algotrading-web.service")]
+    for job in jobs:
+        try:
+            job()
+        except Exception:  # noqa: BLE001 — панель должна подняться без сети
+            pass
+
+
 @app.on_event("startup")
 def _startup_health() -> None:
     threading.Thread(target=_health_refresh_loop, daemon=True).start()
+    threading.Thread(target=_warm_cache, daemon=True).start()
 
 REMOTE = os.environ.get("ALGO_PANEL_REMOTE", "").rstrip("/")
 
