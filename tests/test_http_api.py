@@ -107,6 +107,12 @@ class TestHTTPApi(unittest.TestCase):
         self.assertIn('id="flow-rows"', html)
         self.assertIn('id="virtual-rows"', html)  # старый блок на месте
 
+    def test_webui_route_is_additive(self):
+        status, html = request(web_app.app, "GET", "/ui")
+        self.assertIn(status, (200, 404))
+        if status == 200:
+            self.assertIn('id="root"', html)
+
     def test_logs_limit_clamped(self):
         status, data = request(web_app.app, "GET", "/api/logs?limit=99999")
         self.assertEqual(status, 200)

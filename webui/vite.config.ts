@@ -11,5 +11,5 @@ export default defineConfig({
       '/api': { target, changeOrigin: true },
     },
   },
-  build: { outDir: 'dist', sourcemap: true },
+  build: { outDir: 'dist', sourcemap: false },
 });

@@ -32,6 +32,7 @@ LOG = ROOT / "results" / "daily.log"
 STOP = ROOT / "results" / "STOP"
 HEALTH = ROOT / "results" / "health.json"
 ALERTS = ROOT / "results" / "alerts_seen.json"
+WEBUI_DIST = ROOT / "webui" / "dist"
 MSK = timezone(timedelta(hours=3))
 MULT = 1000.0
 
@@ -82,6 +83,8 @@ app.include_router(instances_router)
 app.include_router(cash_flows_router)
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
 app.mount("/static", StaticFiles(directory=str(Path(__file__).resolve().parent / "static")), name="static")
+if (WEBUI_DIST / "assets").is_dir():
+    app.mount("/ui/assets", StaticFiles(directory=str(WEBUI_DIST / "assets")), name="ui-assets")
 
 _cache: dict[str, tuple[float, object]] = {}
 _refresh_q: queue.Queue = queue.Queue()
@@ -703,3 +706,15 @@ def ack_alerts():
                                   "at": datetime.now(MSK).isoformat()},
                                  ensure_ascii=False), encoding="utf-8")
     return {"digest": digest, "dismissed": True}
+
+
+@app.get("/ui")
+@app.get("/ui/{path:path}")
+def webui_index(path: str = ""):
+    """Параллельный React/TS-фронт на той же точке входа; старые страницы не тронуты."""
+    index = WEBUI_DIST / "index.html"
+    if not index.exists():
+        return HTMLResponse(
+            "<h3>React-сборка отсутствует</h3><p>Выполните <code>cd webui && npm run build</code></p>",
+            status_code=404)
+    return HTMLResponse(index.read_text(encoding="utf-8"))

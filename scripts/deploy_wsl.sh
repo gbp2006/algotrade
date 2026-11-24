@@ -41,6 +41,7 @@ FILES=(
   scripts/*.py scripts/README.md scripts/deploy_wsl.sh
   tests/*.py
   web/*.py web/templates/*.html web/static/*.css web/static/*.js web/static/img/*
+  webui/dist/* webui/dist/assets/*
   docs/*.md docs/strategies/*.md docs/sources/*.md
   infra/db/memory.py infra/db/schema.sql infra/systemd/*.service infra/systemd/*.timer
   infra/systemd/*.conf infra/logrotate/*

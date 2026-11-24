@@ -117,7 +117,9 @@ update-live и channel каждые 10 минут. Они запускают с�
   TanStack Query/Zustand, RHF/Zod, lightweight-charts, react-table) работает
   с теми же API через прокси и не заменяет старую панель. Доменные расчёты
   остаются на Python: в TS нет второй формулы лотности. Сборка — `npm run build`
-  в `webui/`, тесты — `npm test`.
+  в `webui/`, тесты — `npm test`. Готовый `webui/dist/` отдаётся тем же сервером
+  по `/ui` (ассеты — `/ui/assets`); старые страницы остаются на своих адресах.
+  В `scripts/deploy_wsl.sh` добавлены `webui/dist/*` и `webui/dist/assets/*`.
 
 Детали: `docs/service-design.md`, `docs/robot-registry-design.md`,
 `docs/live-design.md`, `docs/live-execution.md`, `docs/rollover-design.md`,
