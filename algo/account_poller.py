@@ -214,7 +214,7 @@ def sync_accounts(accounts: Iterable[dict], flows: CashFlowStore,
     factory = broker_factory or _default_factory
     results: list[PollOutcome] = []
     for account in accounts:
-        if not account.get("key_ref"):
+        if not account.get("key_ref") or not account.get("enabled", True):
             continue
         try:
             broker = factory(account)

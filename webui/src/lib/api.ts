@@ -67,6 +67,15 @@ export const api = {
     open: { dir: string; in: string; in_px: number } | null;
   }>(`/api/trades${config ? `?config=${encodeURIComponent(config)}` : ''}`),
   accounts: () => get<Record<string, unknown>[]>('/api/accounts'),
+  createAccount: (payload: Record<string, unknown>) =>
+    post<{ id: string }>('/api/accounts', payload),
+  updateAccount: (id: string, payload: Record<string, unknown>) =>
+    patchRequest<Record<string, unknown>>(`/api/accounts/${encodeURIComponent(id)}`, payload),
+  deleteAccount: (id: string) =>
+    del<{ deleted: boolean }>(`/api/accounts/${encodeURIComponent(id)}`),
+  saveKey: (key_ref: string, secret: string) =>
+    post<{ key_ref: string; saved: boolean }>('/api/keys', { key_ref, secret }),
+  keys: () => get<{ names: string[] }>('/api/keys'),
   stopAll: () => post<{ stop_real: boolean }>('/api/stop-real', { action: 'set' }),
   tradingAudit: (limit = 50) => get<{ items: {
     ts: string; action: string; detail: string;

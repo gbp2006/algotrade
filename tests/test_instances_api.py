@@ -132,6 +132,35 @@ class TestApiViews(unittest.TestCase):
         second = api.create_view(self.store, payload)
         self.assertEqual(second["id"], "baza-na-yuane-2")
 
+    def test_account_lifecycle(self):
+        created = api.create_account(
+            {"id": "paper-2", "label": "Второй виртуальный", "mode": "TEST",
+             "capital": 200_000}, self.store)
+        self.assertEqual(created["id"], "paper-2")
+        acc = next(a for a in api.accounts(self.store) if a["id"] == "paper-2")
+        self.assertEqual(acc["mode"], "TEST")
+        self.assertEqual(acc["capital"], 200_000)
+        self.assertEqual(acc["enabled"], 1)
+
+        api.update_account("paper-2", {"label": "Переименован",
+                                       "enabled": False}, self.store)
+        acc = next(a for a in api.accounts(self.store) if a["id"] == "paper-2")
+        self.assertEqual(acc["label"], "Переименован")
+        self.assertEqual(acc["enabled"], 0)
+
+        self.assertEqual(api.delete_account("paper-2", self.store)["deleted"], True)
+        self.assertNotIn("paper-2", [a["id"] for a in api.accounts(self.store)])
+
+    def test_account_delete_guarded_by_robots(self):
+        api.create_account({"id": "acc-1", "label": "Счёт"}, self.store)
+        api.create_view(self.store, {"id": "r-1", "spec_id": "prostushka",
+                                     "instrument": "CNY", "mode": "paper",
+                                     "account": "acc-1"})
+        with self.assertRaises(Exception) as ctx:
+            api.delete_account("acc-1", self.store)
+        self.assertIn("робот", str(ctx.exception))
+        self.assertIn("acc-1", [a["id"] for a in api.accounts(self.store)])
+
     def test_generated_id_fallback(self):
         inst = api.create_view(self.store, {"spec_id": "prostushka",
                                             "instrument": "CNY", "mode": "paper"})

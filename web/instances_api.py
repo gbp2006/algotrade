@@ -358,6 +358,8 @@ def _robot_key(payload: dict, iid: str) -> str:
 def update_account(acc_id: str, payload: dict,
                    store: RobotStore = Depends(get_store)):
     data = dict(payload)
+    if "enabled" in data:
+        data["enabled"] = bool(data["enabled"])
     key = str(data.get("key_ref") or "").strip()
     if key.startswith("tapi_sk_"):
         try:
@@ -370,6 +372,17 @@ def update_account(acc_id: str, payload: dict,
         return result
     except (StoreError, ValueError) as exc:
         _fail(exc)
+
+
+@router.delete("/accounts/{acc_id}")
+def delete_account(acc_id: str, store: RobotStore = Depends(get_store)):
+    """Удалить счёт можно только если к нему не привязаны роботы."""
+    try:
+        result = store.delete_account(acc_id)
+        invalidate_analytics()
+        return {"deleted": result, "id": acc_id}
+    except StoreError as exc:
+        raise HTTPException(400, str(exc))
 
 
 @router.post("/keys", status_code=201)
@@ -719,8 +732,11 @@ def account_analytics(store: RobotStore) -> dict:
     """Аналитика реальных и виртуальных счетов (без вывода секретов)."""
     real = []
     for acc in store.list_accounts():
+        if not acc.get("enabled", True):
+            continue
         row = {"id": acc["id"], "label": acc.get("label") or acc["id"],
-               "mode": "live", "equity": None, "positions": [],
+               "mode": str(acc.get("mode") or "LIVE").lower(),
+               "equity": None, "positions": [],
                "status": "нет ключа"}
         try:
             broker = FinamBroker(secret=resolve_secret(acc["key_ref"]),

@@ -109,6 +109,28 @@ export function ConfirmDialog({ open, title, message, onConfirm, onCancel }: {
   );
 }
 
+export function FormDialog({ title, message, onConfirm, onCancel, children }: {
+  title: string; message?: string; onConfirm: () => void; onCancel: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <DialogPrimitive.Root open onOpenChange={(next) => { if (!next) onCancel(); }}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/60" />
+        <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[min(440px,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-card border border-line bg-surface p-6 shadow-2xl">
+          <DialogPrimitive.Title className="text-base font-semibold">{title}</DialogPrimitive.Title>
+          {message && <DialogPrimitive.Description className="mt-1 text-xs text-muted">{message}</DialogPrimitive.Description>}
+          <div className="mt-4 grid gap-3">{children}</div>
+          <div className="mt-5 flex justify-end gap-2">
+            <button type="button" className="btn" onClick={onCancel}>Отмена</button>
+            <button type="button" className="btn-primary" onClick={onConfirm}>Сохранить</button>
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
+  );
+}
+
 export function JsonDialog({ title, value, onClose }: {
   title: string; value: Record<string, unknown> | null; onClose: () => void;
 }) {

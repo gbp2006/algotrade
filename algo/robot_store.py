@@ -137,6 +137,7 @@ class RobotStore:
             cols = {r[1] for r in c.execute("PRAGMA table_info(accounts)")}
             new_cols = {
                 "key_ref": "TEXT DEFAULT ''", "trading_code": "TEXT DEFAULT ''",
+                "mode": "TEXT DEFAULT 'LIVE'", "enabled": "INTEGER DEFAULT 1",
             }
             for name, ddl in new_cols.items():
                 if name not in cols:
@@ -193,8 +194,9 @@ class RobotStore:
 
     def list_accounts(self) -> list[dict]:
         # capital не отдаётся: размер боевого счёта знает только брокер
-        cols = ("id, label, max_exposure, max_daily_loss_pct, max_qty, comment, "
-                "key_ref, trading_code, created_at, updated_at")
+        cols = ("id, label, mode, enabled, capital, max_exposure, "
+                "max_daily_loss_pct, max_qty, comment, key_ref, trading_code, "
+                "created_at, updated_at")
         with self._conn() as c:
             return [dict(r) for r in c.execute(f"SELECT {cols} FROM accounts ORDER BY id")]
 
@@ -207,11 +209,16 @@ class RobotStore:
         # Колонка остаётся только для совместимости со старыми строками/бумагой.
         now = _now()
         with self._conn() as c:
+            mode = str(data.get("mode") or "LIVE").upper()
+            if mode not in ("TEST", "LIVE"):
+                raise StoreError("режим счёта: TEST или LIVE")
+            capital = float(data.get("capital") or 0) if mode == "TEST" else 0
             c.execute(
-                "INSERT INTO accounts (id, label, capital, max_exposure, "
-                "max_daily_loss_pct, max_qty, comment, key_ref, trading_code, "
-                "created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                (acc_id, data.get("label", acc_id), 0,
+                "INSERT INTO accounts (id, label, capital, mode, enabled, "
+                "max_exposure, max_daily_loss_pct, max_qty, comment, key_ref, "
+                "trading_code, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (acc_id, data.get("label", acc_id), capital, mode,
+                 int(bool(data.get("enabled", True))),
                  float(data.get("max_exposure", 1.0)),
                  float(data.get("max_daily_loss_pct", 0.03)),
                  int(data.get("max_qty", 100)), data.get("comment", ""),
@@ -229,8 +236,15 @@ class RobotStore:
         old = self.get_account(acc_id)
         if old is None:
             raise StoreError(f"нет счёта {acc_id}")
+        mode = str(data.get("mode") or old.get("mode") or "LIVE").upper()
+        if mode not in ("TEST", "LIVE"):
+            raise StoreError("режим счёта: TEST или LIVE")
         fields = {
             "label": str(data.get("label", old["label"])),
+            "mode": mode,
+            "enabled": int(bool(data.get("enabled", old.get("enabled", 1)))),
+            "capital": (float(data.get("capital") or 0)
+                        if mode == "TEST" else 0),
             "max_exposure": float(data.get("max_exposure", old["max_exposure"])),
             "max_daily_loss_pct": float(
                 data.get("max_daily_loss_pct", old["max_daily_loss_pct"])),
@@ -243,12 +257,25 @@ class RobotStore:
             raise StoreError("экспозиция счёта должна быть положительной")
         with self._conn() as c:
             c.execute(
-                "UPDATE accounts SET label=?, max_exposure=?, max_daily_loss_pct=?, "
-                "max_qty=?, comment=?, key_ref=?, trading_code=?, updated_at=? "
-                "WHERE id=?",
+                "UPDATE accounts SET label=?, mode=?, enabled=?, capital=?, "
+                "max_exposure=?, max_daily_loss_pct=?, max_qty=?, comment=?, "
+                "key_ref=?, trading_code=?, updated_at=? WHERE id=?",
                 (*fields.values(), _now(), acc_id),
             )
         return next(a for a in self.list_accounts() if a["id"] == acc_id)
+
+    def delete_account(self, acc_id: str) -> bool:
+        """Безопасное удаление: счёт не должен быть привязан к роботам."""
+        with self._conn() as c:
+            if c.execute("SELECT 1 FROM accounts WHERE id=?", (acc_id,)).fetchone() is None:
+                raise StoreError(f"нет счёта {acc_id}")
+            used = c.execute(
+                "SELECT COUNT(*) FROM instances WHERE account=?", (acc_id,)).fetchone()[0]
+            if used:
+                raise StoreError(
+                    f"счёт {acc_id} используют {used} робот(ов): сначала отвяжите их")
+            c.execute("DELETE FROM accounts WHERE id=?", (acc_id,))
+        return True
 
     def create_instance(self, data: dict, actor: str = "panel") -> dict:
         iid = str(data.get("id", "")).strip()

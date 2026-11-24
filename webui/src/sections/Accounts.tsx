@@ -6,7 +6,7 @@ import { money, time } from '../lib/format';
 import type { CashFlowPreview, CashFlowRow, LotImpact } from '../lib/types';
 import { useUi } from '../store/ui';
 import {
-  Badge, Card, ConfirmDialog, DataTable, ErrorBox, Loading, TabPanel, Tabs,
+  Badge, Card, ConfirmDialog, DataTable, ErrorBox, FormDialog, Loading, TabPanel, Tabs,
 } from '../components/ui';
 
 const tabs = [
@@ -22,6 +22,8 @@ interface AccountRow {
   equity: number | null;
   status: string;
   robots: number;
+  enabled: boolean;
+  keyRef: string;
 }
 
 export function Accounts() {
@@ -34,6 +36,15 @@ export function Accounts() {
   const [amount, setAmount] = useState(100_000);
   const [robotId, setRobotId] = useState('');
   const [confirmKey, setConfirmKey] = useState<string | null>(null);
+  const [newId, setNewId] = useState('');
+  const [newLabel, setNewLabel] = useState('');
+  const [newMode, setNewMode] = useState('TEST');
+  const [newCapital, setNewCapital] = useState(200_000);
+  const [newSecret, setNewSecret] = useState('');
+  const [keyAccount, setKeyAccount] = useState<string | null>(null);
+  const [keySecret, setKeySecret] = useState('');
+  const [editAccount, setEditAccount] = useState<Record<string, unknown> | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const analytics = useQuery({ queryKey: keys.analytics, queryFn: api.analytics, refetchInterval: 30_000 });
   const flows = useQuery({
@@ -41,6 +52,9 @@ export function Accounts() {
   });
   const tradingAudit = useQuery({
     queryKey: ['trading-audit'], queryFn: () => api.tradingAudit(20), refetchInterval: 60_000,
+  });
+  const accQuery = useQuery({
+    queryKey: keys.accounts, queryFn: api.accounts, refetchInterval: 30_000,
   });
   const preview = useMutation({
     mutationFn: () => api.preview({
@@ -66,28 +80,87 @@ export function Accounts() {
     },
   });
 
+  const invalidateAccounts = () => {
+    void queryClient.invalidateQueries({ queryKey: keys.accounts });
+    void queryClient.invalidateQueries({ queryKey: keys.analytics });
+  };
+  const createAcc = useMutation({
+    mutationFn: async () => {
+      const id = newId.trim();
+      const created = await api.createAccount({
+        id, label: newLabel || id, mode: newMode,
+        capital: newMode === 'TEST' ? newCapital : 0,
+      });
+      if (newSecret.trim()) {
+        const ref = `acc:${created.id}`;
+        await api.saveKey(ref, newSecret.trim());
+        await api.updateAccount(created.id, { key_ref: ref });
+      }
+      return created;
+    },
+    onSuccess: () => {
+      invalidateAccounts();
+      setNewId(''); setNewLabel(''); setNewSecret('');
+    },
+  });
+  const updateAcc = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Record<string, unknown> }) =>
+      api.updateAccount(id, payload),
+    onSuccess: () => { invalidateAccounts(); setEditAccount(null); setKeyAccount(null); },
+  });
+  const removeAcc = useMutation({
+    mutationFn: (id: string) => api.deleteAccount(id),
+    onSuccess: () => { invalidateAccounts(); setDeleteId(null); },
+  });
+  const saveKey = useMutation({
+    mutationFn: async ({ id, secret }: { id: string; secret: string }) => {
+      const ref = `acc:${id}`;
+      await api.saveKey(ref, secret);
+      return api.updateAccount(id, { key_ref: ref });
+    },
+    onSuccess: () => { invalidateAccounts(); setKeyAccount(null); setKeySecret(''); },
+  });
+
   if (analytics.isLoading) return <Loading />;
   if (analytics.error) return <ErrorBox error={analytics.error} />;
 
-  const rows: AccountRow[] = [
-    ...(analytics.data?.real ?? []).map((a) => ({
-      id: a.id, label: a.label, mode: 'live' as const,
-      equity: a.equity, status: a.status, robots: 0,
-    })),
-    ...(analytics.data?.virtual ?? []).map((v) => ({
-      id: v.id, label: v.label, mode: 'paper' as const,
-      equity: v.equity, status: 'виртуальный', robots: 1,
-    })),
-  ];
+  const realById = new Map((analytics.data?.real ?? []).map((a) => [a.id, a]));
+  const rows: AccountRow[] = (accQuery.data ?? []).map((acc) => {
+    const id = String(acc.id);
+    const real = realById.get(id);
+    return {
+      id,
+      label: String(acc.label ?? id),
+      mode: String(acc.mode ?? 'LIVE').toLowerCase() === 'test' ? 'paper' : 'live',
+      equity: real?.equity ?? (acc.mode === 'TEST' ? Number(acc.capital ?? 0) : null),
+      status: real?.status ?? (acc.enabled === 0 ? 'отключён' : 'локальный'),
+      robots: 0,
+      enabled: acc.enabled !== 0,
+      keyRef: String(acc.key_ref ?? ''),
+    };
+  });
 
   const columns: ColumnDef<AccountRow, unknown>[] = [
     { header: 'Счёт', cell: ({ row }) => <div><b>{row.original.label}</b>
       <div className="text-[10px] text-muted">{row.original.id}</div></div> },
     { header: 'Режим', cell: ({ row }) => <Badge live={row.original.mode === 'live'} /> },
+    { header: 'Работа', cell: ({ row }) => (
+      <button className={row.original.enabled ? 'btn' : 'btn-danger'} onClick={() =>
+        updateAcc.mutate({ id: row.original.id, payload: { enabled: !row.original.enabled } })}>
+        {row.original.enabled ? 'Вкл' : 'Выкл'}
+      </button>
+    ) },
     { header: 'Equity', cell: ({ row }) => <span className="num">{money(row.original.equity)} ₽</span> },
-    { header: 'Роботов', cell: ({ row }) => row.original.robots },
+    { header: 'Ключ', cell: ({ row }) => <span className="text-[11px] text-muted">{row.original.keyRef || 'не задан'}</span> },
     { header: 'Статус', cell: ({ row }) => <span className="text-[11px] text-muted">{row.original.status}</span> },
-    { id: 'select', header: ' ', cell: ({ row }) => <button className="btn" onClick={() => setAccount(row.original.id)}>Выбрать</button> },
+    { id: 'actions', header: ' ', cell: ({ row }) => (
+      <div className="flex gap-1">
+        <button className="btn" onClick={() => { setKeyAccount(row.original.id); setKeySecret(''); }}>Ключ</button>
+        <button className="btn" onClick={() => setEditAccount(accQuery.data?.find((a) => String(a.id) === row.original.id) ?? null)}>Изменить</button>
+        <button className="btn-danger" onClick={() => setDeleteId(row.original.id)}>Удалить</button>
+        <button className="btn" onClick={() => setAccount(row.original.id)}>Выбрать</button>
+      </div>
+    ) },
   ];
 
   const flowColumns: ColumnDef<CashFlowRow, unknown>[] = [
@@ -119,7 +192,38 @@ export function Accounts() {
       {sync.error && <div className="mt-2"><ErrorBox error={sync.error} /></div>}
       <Tabs tabs={tabs} value={tab} onChange={setTab}>
         <TabPanel value="list">
-          <Card title="Все счета">
+          <Card title="Добавить счёт">
+            <div className="grid gap-3 md:grid-cols-5">
+              <label className="text-xs">ID счёта
+                <input className="input mt-1" value={newId} onChange={(e) => setNewId(e.target.value)} placeholder="paper-2" />
+              </label>
+              <label className="text-xs">Название
+                <input className="input mt-1" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} />
+              </label>
+              <label className="text-xs">Режим
+                <select className="input mt-1" value={newMode} onChange={(e) => setNewMode(e.target.value)}>
+                  <option value="TEST">TEST</option><option value="LIVE">LIVE</option>
+                </select>
+              </label>
+              <label className="text-xs">Капитал (TEST)
+                <input className="input mt-1" type="number" value={newCapital}
+                  onChange={(e) => setNewCapital(Number(e.target.value))} />
+              </label>
+              <label className="text-xs">API-ключ (опц.)
+                <input className="input mt-1" type="password" value={newSecret}
+                  onChange={(e) => setNewSecret(e.target.value)} placeholder="tapi_sk_..." />
+              </label>
+            </div>
+            <div className="mt-3 flex gap-2">
+              <button className="btn-primary" disabled={!newId.trim() || createAcc.isPending}
+                onClick={() => createAcc.mutate()}>Добавить счёт</button>
+              {createAcc.error && <ErrorBox error={createAcc.error} />}
+            </div>
+            <p className="mt-2 text-[11px] text-muted">Ключ сохраняется в auth.json на сервере; в списке видно только имя ссылки. Каждый робот привязывается к одному счёту в мастере робота.</p>
+          </Card>
+          <Card title="Все счета" className="mt-4">
+            {updateAcc.error && <div className="mb-2"><ErrorBox error={updateAcc.error} /></div>}
+            {removeAcc.error && <div className="mb-2"><ErrorBox error={removeAcc.error} /></div>}
             <DataTable data={rows} columns={columns} />
           </Card>
         </TabPanel>
@@ -195,6 +299,48 @@ export function Accounts() {
           />
         </TabPanel>
       </Tabs>
+
+      {keyAccount !== null && (
+        <FormDialog title={`API-ключ счёта ${keyAccount}`}
+          message="Секрет пишется в auth.json на сервере (600). В ответе и таблице — только имя ссылки."
+          onCancel={() => setKeyAccount(null)}
+          onConfirm={() => saveKey.mutate({ id: keyAccount, secret: keySecret })}>
+          <input className="input" type="password" value={keySecret}
+            onChange={(e) => setKeySecret(e.target.value)} placeholder="tapi_sk_..." />
+        </FormDialog>
+      )}
+      {editAccount !== null && (
+        <FormDialog title="Редактирование счёта"
+          onCancel={() => setEditAccount(null)}
+          onConfirm={() => updateAcc.mutate({
+            id: String(editAccount.id),
+            payload: {
+              label: String(editAccount.label ?? ''),
+              mode: String(editAccount.mode ?? 'LIVE'),
+              capital: Number(editAccount.capital ?? 0),
+              enabled: editAccount.enabled !== 0,
+            },
+          })}>
+          <label className="text-xs">Название
+            <input className="input mt-1" value={String(editAccount.label ?? '')}
+              onChange={(e) => setEditAccount({ ...editAccount, label: e.target.value })} />
+          </label>
+          <label className="text-xs">Режим
+            <select className="input mt-1" value={String(editAccount.mode ?? 'LIVE')}
+              onChange={(e) => setEditAccount({ ...editAccount, mode: e.target.value })}>
+              <option value="TEST">TEST</option><option value="LIVE">LIVE</option>
+            </select>
+          </label>
+          <label className="text-xs">Капитал (TEST)
+            <input className="input mt-1" type="number" value={Number(editAccount.capital ?? 0)}
+              onChange={(e) => setEditAccount({ ...editAccount, capital: Number(e.target.value) })} />
+          </label>
+        </FormDialog>
+      )}
+      <ConfirmDialog open={deleteId !== null} title="Удалить счёт"
+        message="Счёт можно удалить, только если к нему не привязаны роботы. Секрет в auth.json не удаляется."
+        onCancel={() => setDeleteId(null)}
+        onConfirm={() => { if (deleteId) removeAcc.mutate(deleteId); }} />
     </div>
   );
 }

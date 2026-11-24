@@ -196,6 +196,8 @@ def live_settings_from_store(store: RobotStore | None = None) -> LiveSettings:
     st.init_db()
     accounts: dict[str, AccountSettings] = {}
     for row in st.list_accounts():
+        if not row.get("enabled", True):
+            continue
         accounts[row["id"]] = AccountSettings(
             id=row["id"],
             comment=row.get("label") or row.get("comment") or "",
