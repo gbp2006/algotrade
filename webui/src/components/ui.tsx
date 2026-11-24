@@ -109,6 +109,27 @@ export function ConfirmDialog({ open, title, message, onConfirm, onCancel }: {
   );
 }
 
+export function JsonDialog({ title, value, onClose }: {
+  title: string; value: Record<string, unknown> | null; onClose: () => void;
+}) {
+  return (
+    <DialogPrimitive.Root open={value !== null} onOpenChange={(next) => { if (!next) onClose(); }}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/60" />
+        <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 max-h-[80vh] w-[min(640px,92vw)] -translate-x-1/2 -translate-y-1/2 overflow-auto rounded-card border border-line bg-surface p-6 shadow-2xl">
+          <DialogPrimitive.Title className="text-base font-semibold">{title}</DialogPrimitive.Title>
+          <pre className="num mt-3 overflow-x-auto rounded-lg bg-elevated p-3 text-[11px] leading-relaxed">
+            {JSON.stringify(value ?? {}, null, 2)}
+          </pre>
+          <div className="mt-4 flex justify-end">
+            <button type="button" className="btn" onClick={onClose}>Закрыть</button>
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
+  );
+}
+
 export function Loading() {
   return <div className="grid gap-3 sm:grid-cols-3">{[0, 1, 2].map((n) => (
     <div key={n} className="skeleton h-20" />))}</div>;

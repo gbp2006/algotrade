@@ -780,22 +780,24 @@ def logs_aggregate(store: RobotStore, limit: int = 80) -> list[dict]:
     """Единый лог: заявки, события инстансов, запуски таймеров, здоровье."""
     out: list[dict] = []
     for r in tj.records(limit=limit):
-        out.append({"ts": r["ts"], "source": "orders",
+        out.append({"ts": r["ts"], "source": "orders", "details": dict(r),
                     "text": f"{r['config']} {r['side']} {r['qty']} "
                             f"@{r['price']} — {r['status']}"})
     for e in store.events_feed(limit=limit):
         out.append({"ts": e.get("created_at") or "", "source": "instances",
+                    "details": dict(e),
                     "text": f"{e.get('instance_id')}: {e.get('action')} "
                             f"{e.get('reason') or ''}".strip()})
     for r in store.list_runs(limit=limit):
         out.append({"ts": r.get("started") or "", "source": "scheduler",
+                    "details": dict(r),
                     "text": f"{r.get('job_id')}: {r.get('status')} "
                             f"{r.get('detail') or ''}".strip()})
     try:
         wd = json.loads(HEALTH.read_text(encoding="utf-8"))
         for p in wd.get("problems", []):
             out.append({"ts": wd.get("checked") or "", "source": "health",
-                        "text": p})
+                        "details": {"problem": p}, "text": p})
     except Exception:  # noqa: BLE001 — битый health не должен ронять лог
         pass
     return sorted(out, key=lambda x: x["ts"], reverse=True)[:limit * 2]

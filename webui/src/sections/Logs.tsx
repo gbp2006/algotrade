@@ -4,7 +4,7 @@ import { api } from '../lib/api';
 import { time } from '../lib/format';
 import type { LogItem } from '../lib/types';
 import { useUi } from '../store/ui';
-import { Card, ConfirmDialog, DataTable, ErrorBox, Loading, TabPanel, Tabs } from '../components/ui';
+import { Card, DataTable, ErrorBox, JsonDialog, Loading, TabPanel, Tabs } from '../components/ui';
 import type { ColumnDef } from '@tanstack/react-table';
 
 const categories = [
@@ -56,12 +56,10 @@ export function Logs() {
           <DataTable data={filtered} columns={columns} empty="Событий по фильтру нет" />
         </Card>
       </TabPanel>
-      <ConfirmDialog
-        open={inspect !== null}
-        title="Контекст события"
-        message={inspect ? `${inspect.ts} · ${inspect.source}\n${inspect.text}` : ''}
-        onCancel={() => setInspect(null)}
-        onConfirm={() => setInspect(null)}
+      <JsonDialog
+        title={`Контекст: ${inspect?.source ?? ''} · ${inspect?.ts ?? ''}`}
+        value={inspect?.details ?? (inspect ? { text: inspect.text } : null)}
+        onClose={() => setInspect(null)}
       />
     </Tabs>
   );

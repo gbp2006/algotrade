@@ -52,6 +52,11 @@ export const api = {
   journal: (limit = 100) => get<Record<string, unknown>[]>(`/api/journal?limit=${limit}`),
   candles: (tf: string, days: number, config = '') => get<[string, number, number, number, number][]>(
     `/api/candles?tf=${tf}&days=${days}${config ? `&config=${encodeURIComponent(config)}` : ''}`),
+  trades: (config = '') => get<{
+    config: string;
+    trades: { dir: string; in: string; in_px: number; out: string; out_px: number; pnl: number }[];
+    open: { dir: string; in: string; in_px: number } | null;
+  }>(`/api/trades${config ? `?config=${encodeURIComponent(config)}` : ''}`),
   accounts: () => get<Record<string, unknown>[]>('/api/accounts'),
   stopAll: () => post<{ stop_real: boolean }>('/api/stop-real', { action: 'set' }),
 };

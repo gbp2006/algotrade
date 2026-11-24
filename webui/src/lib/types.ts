@@ -147,6 +147,7 @@ export interface LogItem {
   ts: string;
   source: string;
   text: string;
+  details?: Record<string, unknown>;
 }
 
 export interface Health {

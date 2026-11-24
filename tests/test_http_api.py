@@ -117,6 +117,8 @@ class TestHTTPApi(unittest.TestCase):
         status, data = request(web_app.app, "GET", "/api/logs?limit=99999")
         self.assertEqual(status, 200)
         self.assertIn("items", data)
+        for item in data["items"]:
+            self.assertIn("details", item)
 
     def test_live_state(self):
         status, data = request(web_app.app, "GET", "/api/live-state")
