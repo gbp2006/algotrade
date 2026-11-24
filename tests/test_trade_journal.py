@@ -72,7 +72,7 @@ class TestTradeJournal(unittest.TestCase):
             self.assertTrue(tj.mark_execution(
                 "a", status="filled", executed_qty=1, price=12.35,
                 ts="2026-11-24T14:00:24", detail="filled:1@12.35",
-                path=db, csv_path=csv_path))
+                path=db, csv_path=str(csv_path)))
             self.assertFalse(tj.mark_execution(
                 "a", status="filled", executed_qty=1, price=12.35,
                 detail="filled:1@12.35", path=db, csv_path=csv_path))

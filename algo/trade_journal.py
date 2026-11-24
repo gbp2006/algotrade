@@ -155,6 +155,7 @@ def mark_execution(client_order_id: str, *, status: str, executed_qty: float,
     Идемпотентно: повтор с тем же статусом и количеством ничего не меняет.
     """
     cid = str(client_order_id)
+    csv_path = Path(csv_path) if csv_path else None
     with connect(path) as c:
         row = c.execute("SELECT * FROM orders WHERE client_order_id=?", (cid,)).fetchone()
         if row is None:
