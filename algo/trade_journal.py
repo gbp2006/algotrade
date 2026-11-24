@@ -214,7 +214,7 @@ def refresh_executions(broker: Any, account: str, *, path: Path | None = None,
     sent = [r for r in records(limit=500, account=account, path=path)
             if r["status"] == "sent"]
     if not sent:
-        return {"checked": 0, "updated": 0}
+        return {"checked": 0, "updated": 0, "details": {}}
     by_cid: dict[str, dict] = {}
     for item in broker.orders(account):
         order = item.get("order", item)
@@ -222,6 +222,7 @@ def refresh_executions(broker: Any, account: str, *, path: Path | None = None,
         if cid:
             by_cid[cid] = item
     updated = 0
+    details: dict[str, dict] = {}
     for r in sent:
         item = by_cid.get(r["client_order_id"])
         if item is None:
@@ -235,11 +236,16 @@ def refresh_executions(broker: Any, account: str, *, path: Path | None = None,
         price = _scalar(order.get("limit_price") or 0) or float(r["price"] or 0)
         detail = (f"{status}:{int(round(qty))}@{price:g}; "
                   f"{item.get('transact_at') or ''}").strip()
+        details[r["client_order_id"]] = {
+            "status": status, "qty": qty, "price": price,
+            "signal_price": float(r["price"] or 0), "side": r["side"],
+            "ts": str(item.get("transact_at") or ""),
+        }
         if mark_execution(r["client_order_id"], status=status, executed_qty=qty,
                           price=price, ts=str(item.get("transact_at") or ""),
                           detail=detail, path=path, csv_path=csv_path):
             updated += 1
-    return {"checked": len(sent), "updated": updated}
+    return {"checked": len(sent), "updated": updated, "details": details}
 
 
 def backup(destination: Path | None = None, path: Path | None = None) -> Path:

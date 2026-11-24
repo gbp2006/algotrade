@@ -177,6 +177,8 @@ def main(argv: list[str] | None = None) -> int:
 
         counts: dict[str, int] = {}
         notes: list[str] = []
+        fills: list[dict] = []
+        paper_signals: dict[str, dict] = {}
         now = datetime.now().strftime("%H%M%S")
 
         for (acc_id, key_ref), symbols in plans.items():
@@ -266,6 +268,9 @@ def main(argv: list[str] | None = None) -> int:
                                             stop=STOP_REAL,
                                             dry_run=not args.arm)
                     status, reason = result.status, result.reason
+                    if result.sent and result.client_order_id:
+                        paper_signals[result.client_order_id] = {
+                            "price": plan["price"], "side": side, "symbol": sym}
                 elif status in ("skipped", "rejected"):
                     # чтобы пропуск был виден в журнале, а не только в сводке
                     stub = Order(client_id=client_id, config=ids, symbol=sym,
@@ -288,6 +293,23 @@ def main(argv: list[str] | None = None) -> int:
                 if refreshed["updated"]:
                     notes.append(f"{acc_id}: исполнений в журнале: "
                                  f"{refreshed['updated']}/{refreshed['checked']}")
+                for cid, detail in refreshed.get("details", {}).items():
+                    sig = paper_signals.get(cid)
+                    if sig is None:
+                        continue
+                    side = detail["side"]
+                    adverse = ((detail["price"] - sig["price"]) if side == "buy"
+                               else (sig["price"] - detail["price"]))
+                    tick = tick_for(sig["symbol"])
+                    fills.append({
+                        "client_order_id": cid, "symbol": sig["symbol"],
+                        "side": side, "qty": detail["qty"],
+                        "signal_price": sig["price"], "fill_price": detail["price"],
+                        "adverse_ticks": round(adverse / tick, 2) if tick else None,
+                        "adverse_rub": round(adverse * detail["qty"]
+                                             * mult_for(sig["symbol"]), 2),
+                        "status": detail["status"], "ts": detail["ts"],
+                    })
             except Exception as exc:  # noqa: BLE001 — отсутствие брокера не роняет прогон
                 notes.append(f"{acc_id}: не удалось обновить исполнения: "
                              f"{type(exc).__name__}")
@@ -297,6 +319,7 @@ def main(argv: list[str] | None = None) -> int:
             "date": str(day), "armed": bool(args.arm), "counts": counts,
             "robots": sorted(settings.robots),
             "accounts": sorted({acc for acc, _ in plans}),
+            "fills": fills,
             "notes": notes[:40],
         }, ensure_ascii=False, indent=1), encoding="utf-8")
         print(f"live {day}: {sum(counts.values())} решений, статусы {counts}, "

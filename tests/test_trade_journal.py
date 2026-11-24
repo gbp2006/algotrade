@@ -100,7 +100,8 @@ class TestTradeJournal(unittest.TestCase):
                                        "limit_price": {"value": "12.35"}}}]
 
             result = tj.refresh_executions(Broker(), "2102993", path=db)
-            self.assertEqual(result, {"checked": 1, "updated": 1})
+            self.assertEqual((result["checked"], result["updated"]), (1, 1))
+            self.assertEqual(result["details"]["a"]["price"], 12.35)
             self.assertEqual(tj.records(limit=10, path=db)[0]["status"], "filled")
 
     def test_backup_is_readable(self):
