@@ -15,7 +15,7 @@ import csv
 import json
 import os
 import sys
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -49,6 +49,7 @@ STOP = ROOT / "results" / "STOP"
 RUN_LOCK = ROOT / "results" / "live_run.lock"
 SUMMARY = ROOT / "results" / "live_run.json"
 BY_ID = {c.id: c for c in CONFIGS + ROBOT_CONFIGS}
+MSK = timezone(timedelta(hours=3))
 
 
 def read_paper(day: date) -> list[dict]:
@@ -89,6 +90,12 @@ def plan_targets(rows: list[dict], settings, day: date) -> dict:
         plan["pricings"].add(rs.pricing)
         plan["expiry"] = plan["expiry"] and rs.trade_on_expiry
     return plans
+
+
+def expiry_ok(day: date, sym: str, delta: int, trade_on_expiry: bool,
+              run_day: date | None = None) -> bool:
+    """Экспирация проверяется по дню исполнения, не по дню бумажного решения."""
+    return expiry_allows(run_day or day, sym, delta, trade_on_expiry)
 
 
 def journal_positions(account: str) -> tuple[dict[str, int], int]:
@@ -180,6 +187,9 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         day = date.fromisoformat(args.day)
+        # Экспирация проверяется на дату Actual исполнения, а не на дату
+        # бумажного решения: догоняющий --day=вчера не должен уйти в экспирацию.
+        run_day = datetime.now(MSK).date()
         plans = plan_targets(read_paper(day), settings, day)
         if not plans:
             print(f"{day}: решений для боевых роботов нет")
@@ -258,7 +268,7 @@ def main(argv: list[str] | None = None) -> int:
                     delta = target - actual.get(sym, 0)
                     if delta != 0:
                         side = "buy" if delta > 0 else "sell"
-                        if not expiry_allows(day, sym, delta, plan["expiry"]):
+                        if not expiry_ok(day, sym, delta, plan["expiry"], run_day):
                             status, reason = "skipped", "день экспирации"
                         else:
                             pricing = next(iter(plan["pricings"]))

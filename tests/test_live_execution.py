@@ -181,6 +181,19 @@ class TestSourceConfig(unittest.TestCase):
         cid2 = mod.decision_client_id("live-1", "2026-11-24", "buy", plan["when"], 4)
         self.assertEqual(cid1, cid2)
 
+    def test_expiry_checked_on_run_day(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "live_exec_exp", Path(__file__).resolve().parent.parent /
+            "scripts" / "34_live_execute.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        paper_day = date(2026, 3, 18)   # решение накануне экспирации
+        run_day = date(2026, 3, 19)     # третий четверг — исполнение
+        self.assertTrue(mod.expiry_ok(paper_day, "RIZ6@RTSX", 1, False, paper_day))
+        self.assertFalse(mod.expiry_ok(paper_day, "RIZ6@RTSX", 1, False, run_day))
+        self.assertTrue(mod.expiry_ok(paper_day, "CNYRUBF@RTSX", 1, False, run_day))
+
     def test_live_robot_follows_paper_config(self):
         import importlib.util
         spec = importlib.util.spec_from_file_location(
