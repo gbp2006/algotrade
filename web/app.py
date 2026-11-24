@@ -78,6 +78,7 @@ from algo.cash_flow_store import CashFlowStore  # noqa: E402
 from web.instances_api import (get_store, invalidate_analytics,  # noqa: E402
                                router as instances_router)
 from web.cash_flows_api import router as cash_flows_router  # noqa: E402
+from web.trading_api import router as trading_router  # noqa: E402
 
 
 def instrument_of(cfg):
@@ -90,6 +91,7 @@ def capital_of(cfg) -> float:
 app = FastAPI(title="Algo dashboard")
 app.include_router(instances_router)
 app.include_router(cash_flows_router)
+app.include_router(trading_router)
 app.mount("/static/img", StaticFiles(directory=str(Path(__file__).resolve().parent / "static" / "img")), name="static-img")
 if (WEBUI_DIST / "assets").is_dir():
     app.mount("/ui/assets", StaticFiles(directory=str(WEBUI_DIST / "assets")), name="ui-assets")

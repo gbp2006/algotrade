@@ -108,6 +108,12 @@ class TestHTTPApi(unittest.TestCase):
             self.assertIn('/ui/assets/', html)
             self.assertNotIn('ui-labels.js', html)  # старый UI удалён
 
+    def test_trading_status_endpoint(self):
+        status, data = request(web_app.app, "GET", "/api/trading/status")
+        self.assertEqual(status, 200)
+        for key in ("enabled", "stop_real", "next_run", "env_flag"):
+            self.assertIn(key, data)
+
     def test_reconciliation_endpoint(self):
         status, data = request(web_app.app, "GET", "/api/portfolio/reconciliation")
         self.assertEqual(status, 200)

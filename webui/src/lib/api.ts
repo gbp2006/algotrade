@@ -68,6 +68,14 @@ export const api = {
   }>(`/api/trades${config ? `?config=${encodeURIComponent(config)}` : ''}`),
   accounts: () => get<Record<string, unknown>[]>('/api/accounts'),
   stopAll: () => post<{ stop_real: boolean }>('/api/stop-real', { action: 'set' }),
+  tradingStatus: () => get<{
+    timer_installed: boolean; enabled: boolean; next_run: string | null;
+    stop_real: boolean; env_flag: string;
+  }>('/api/trading/status'),
+  tradingToggle: (enabled: boolean) => post<{
+    timer_installed: boolean; enabled: boolean; next_run: string | null;
+    stop_real: boolean; env_flag: string;
+  }>('/api/trading/toggle', { enabled }),
 };
 
 export const keys = {

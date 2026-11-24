@@ -38,12 +38,20 @@ export function App() {
   const ui = useUi();
   const queryClient = useQueryClient();
   const [confirmStop, setConfirmStop] = useState(false);
+  const [confirmTrading, setConfirmTrading] = useState<boolean | null>(null);
   const [offlineCount, setOfflineCount] = useState(0);
   const health = useQuery({ queryKey: keys.health, queryFn: api.health, refetchInterval: 60_000 });
   const analytics = useQuery({ queryKey: keys.analytics, queryFn: api.analytics, refetchInterval: 30_000 });
   const stopAll = useMutation({
     mutationFn: api.stopAll,
     onSuccess: () => void queryClient.invalidateQueries(),
+  });
+  const trading = useQuery({
+    queryKey: ['trading-status'], queryFn: api.tradingStatus, refetchInterval: 30_000,
+  });
+  const toggleTrading = useMutation({
+    mutationFn: (enabled: boolean) => api.tradingToggle(enabled),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['trading-status'] }),
   });
 
   useEffect(() => {
@@ -128,10 +136,29 @@ export function App() {
           <button type="button" className="btn" onClick={ui.toggleDensity}>
             {ui.density === 'compact' ? 'Компактная' : 'Комфортная'}
           </button>
+          <button type="button" className={trading.data?.enabled ? 'btn-danger' : 'btn'}
+            onClick={() => setConfirmTrading(!trading.data?.enabled)}>
+            Торговля: {trading.data?.enabled ? 'ВКЛ' : 'ВЫКЛ'}
+          </button>
+          <span className="text-[10px] text-muted">
+            {trading.data?.next_run ? `след. ${trading.data.next_run}` : 'расписание не задано'}
+          </span>
           <button type="button" className="btn-danger" onClick={() => setConfirmStop(true)}>Стоп всех</button>
         </header>
         <div className="p-5"><Account /></div>
       </main>
+      <ConfirmDialog
+        open={confirmTrading !== null}
+        title={confirmTrading ? 'Включить реальную торговлю' : 'Выключить реальную торговлю'}
+        message={confirmTrading
+          ? 'Будет включён таймер боевого раннера на 14:00 МСК. Заявки уйдут брокеру по решениям бумаги. Убедитесь, что на счёте достаточно средств и вы согласны с риском.'
+          : 'Таймер боевого раннера будет отключён. Открытые позиции у брокера останутся.'}
+        onCancel={() => setConfirmTrading(null)}
+        onConfirm={() => {
+          if (confirmTrading !== null) toggleTrading.mutate(confirmTrading);
+          setConfirmTrading(null);
+        }}
+      />
       <ConfirmDialog
         open={confirmStop}
         title="Остановить всех роботов"
