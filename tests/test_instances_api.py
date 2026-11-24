@@ -171,6 +171,14 @@ class TestApiViews(unittest.TestCase):
         self.assertEqual(data["real"], [])
         self.assertIn("x", {row["id"] for row in data["virtual"]})
 
+    def test_create_instance_keeps_algorithm_params(self):
+        inst = api.create_view(self.store, {
+            "id": "with-params", "spec_id": "prostushka", "instrument": "CNY",
+            "mode": "paper", "params": {"ma_window": 48, "entry": "13:50"},
+        })
+        self.assertEqual(inst["params"]["ma_window"], 48)
+        self.assertEqual(inst["params"]["entry"], "13:50")
+
     def test_generated_id_fallback(self):
         inst = api.create_view(self.store, {"spec_id": "prostushka",
                                             "instrument": "CNY", "mode": "paper"})
