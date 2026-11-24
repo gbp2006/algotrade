@@ -71,6 +71,7 @@
 | `infra/db/schema_timescale.sql` | Целевая DDL PG: NUMERIC-поля, append-only, уникальные ключи, гипертаблицы при наличии расширения | SQL → таблицы; к рабочей SQLite не применяется | PostgreSQL | `test_timescale_schema.py` |
 | `infra/systemd/algotrading-web.service` | Юнит панели | `Requires/After=postgresql`; Restart=always | systemd | проверка на WSL |
 | `scripts/start_project.sh` | Старт вместе с WSL | PG → схема/миграция → удаление старого UI → юнит → HTTP-проверка | sudo, curl | запуск на WSL |
+| `scripts/98_assign_paper_accounts.py` | Разводит бумажных роботов по отдельным TEST-счетам `paper-<id>`; идемпотентно, боевых не трогает | `./run.sh assign-paper-accounts` | `robot_store` | `test_assign_paper_accounts.py` |
 | `scripts/97_migrate_to_postgres.py` | Идемпотентная миграция SQLite→PG | `robots.db` → счета/роботы/потоки/снимки; одна строка сводки | `pg_store` | ручной прогон |
 | `scripts/deploy_wsl.sh` | Деплой только по whitelist | rsync → WSL, md5, опц. restart | ssh | `deploy --list` |
 | `scripts/34_live_execute.py` | Боевой контур | сигналы бумаги → заявки через шлюз; `--arm` + финам-флаг; свежий equity | `broker`, `trade_journal` | `test_live_execution.py` |

@@ -22,6 +22,7 @@ case "${1:-help}" in
   shadow) "$PY" scripts/33_shadow_live.py ;;
   backup) "$PY" scripts/95_backup_db.py ;;
   migrate-pg) "$PY" scripts/97_migrate_to_postgres.py ;;
+  assign-paper-accounts) "$PY" scripts/98_assign_paper_accounts.py ;;
   start-project) bash scripts/start_project.sh ;;
   check-ui) node webui/check-all.mjs "${2:-http://192.168.0.230:8080/}" ;;
   live-dry) shift; "$PY" scripts/34_live_execute.py "$@" ;;
@@ -77,6 +78,7 @@ usage: ./run.sh <команда>
   shadow   теневой прогон G3: плановые заявки без отправки
   backup   консистентный бэкап trades/robots/paper_metrics в backups/db (0600)
   migrate-pg  однократный перенос служебных данных SQLite в PostgreSQL
+  assign-paper-accounts  развести бумажных роботов по отдельным TEST-счетам
   start-project  полный старт на WSL: PostgreSQL, миграция, панель, проверка
   check-ui   headless-проверка GUI: 7 разделов, вкладки, 0 ошибок JS
   live-dry боевой контур в репетиции: заявки НЕ уходят (по умолчанию)
