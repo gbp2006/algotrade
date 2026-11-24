@@ -43,6 +43,27 @@ class TestDecisionTimes(unittest.TestCase):
         self.assertEqual(got["u-morning"], "10:20")
 
 
+class TestRolloverAccounting(unittest.TestCase):
+    def test_current_roll_behaviour_is_documented(self):
+        """Характеризация текущего учёта, а не одобрение: P&L старой ноги
+        признаётся, но строка ролла увеличивает счётчик сделок. Менять без
+        сличения с transfer-отчётом брокера нельзя (ADR 24.11, F11)."""
+        rows = [
+            {"date": "2026-03-18", "time": "13:50", "config": "r",
+             "symbol": "RIZ6@RTSX", "price": "100", "target": "2", "action": "решение"},
+            {"date": "2026-03-19", "time": "13:50", "config": "r",
+             "symbol": "RIZ6@RTSX", "price": "101", "target": "0", "action": "ролл"},
+            {"date": "2026-03-19", "time": "13:50", "config": "r",
+             "symbol": "RIH6@RTSX", "price": "102", "target": "2", "action": "решение"},
+        ]
+        trades, pnl, days = report.ledger(rows, 1000.0)
+        self.assertEqual(pnl, 2000.0)   # (101-100) × 2 × 1000
+        self.assertEqual(trades, 1)     # закрытие старой ноги
+        self.assertEqual(days, 2)
+        stats = report.trade_stats(rows, 1000.0)
+        self.assertEqual(stats[0], 1)
+
+
 class TestVersionedExpectation(unittest.TestCase):
     def test_cfg_for_changes_expectation_from_given_day(self):
         bars = m5()
