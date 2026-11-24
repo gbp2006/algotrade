@@ -141,6 +141,20 @@ class TestAccountPoller(unittest.TestCase):
         self.assertEqual(size_for_trade("acc-1", FakeBroker(0, fail=True),
                                         12.29, 1000.0, 2.0), 0)
 
+    def test_sync_skips_disabled_accounts(self):
+        self.store.create_account({"id": "off-1", "label": "Выключенный",
+                                   "key_ref": "acc:off-1", "enabled": False})
+        calls: list[str] = []
+
+        def factory(account: dict) -> FakeBroker:
+            calls.append(account["id"])
+            return FakeBroker(200_000)
+
+        results = sync_accounts(self.store.list_accounts(), self.flows,
+                                broker_factory=factory)
+        self.assertEqual(calls, [])
+        self.assertEqual(results, [])
+
     def test_sync_skips_accounts_without_keys(self):
         self.store.create_account({"id": "live-1", "label": "боевой",
                                    "key_ref": "acc:live-1"})
