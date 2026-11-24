@@ -9,6 +9,7 @@ from typing import Callable
 
 from .base import BrokerAdapter
 from .finam_adapter import FinamAdapter
+from .tinvest_adapter import TInvestAdapter
 
 _FACTORIES: dict[str, Callable[..., BrokerAdapter]] = {}
 
@@ -29,3 +30,4 @@ def get_adapter(name: str, **kwargs) -> BrokerAdapter:
 
 
 register("finam", FinamAdapter)
+register("tinvest", TInvestAdapter)

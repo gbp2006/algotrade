@@ -113,6 +113,8 @@ update-live и channel каждые 10 минут. Они запускают с�
   `/api/portfolio/*`; старые ответы `/api/accounts/analytics` и страницы
   сохраняются. Ручное применение денег разрешено только виртуальным роботам,
   для LIVE — только запись обнаруженного брокером потока.
+- Адаптеры: `finam` рабочий, `tinvest` зарегистрирован, но без токена и gRPC
+  инертен (`NotConfiguredError`); маппинг тикеров — `algo/broker/instrument_map.py`.
 - Параллельный фронт `webui/` (React 18 + TS strict + Vite + Tailwind/Radix,
   TanStack Query/Zustand, RHF/Zod, lightweight-charts, react-table) работает
   с теми же API через прокси и не заменяет старую панель. Доменные расчёты
