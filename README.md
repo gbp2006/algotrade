@@ -9,7 +9,7 @@
 ```bash
 ./run.sh test          # юнит-тесты движка
 ./run.sh all           # Простушка на Si + Универсалка
-./run.sh dash          # локальная панель на :8809
+./run.sh start-project # полный старт на WSL: PostgreSQL + миграция + GUI :8080
 ```
 
 Если `.venv` нет: `python3 -m venv .venv && ./.venv/bin/pip install -r requirements.txt`.
@@ -34,7 +34,8 @@
 | `algo/` | движок, данные, стратегии (импортируется как `algo.*`) |
 | `scripts/` | нумерованные прогоны и утилиты (`01_…`, `10_…`, `44_…`) |
 | `tests/` | юнит-тесты движка |
-| `web/` | локальная панель FastAPI + Jinja, статика |
+| `web/` | FastAPI: API и раздача React-сборки (старый Jinja-интерфейс удалён) |
+| `webui/` | новый интерфейс React 18 + TypeScript (сборка — `npm run build`) |
 | `docs/` | решения (`decisions.md`), how-to, стратегии, источники |
 | `reports/` | отчёты для человека, эквити, csv-выгрузки |
 | `results/` | `runs.csv`, журнал бумажного контура, health |

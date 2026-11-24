@@ -22,6 +22,7 @@ case "${1:-help}" in
   shadow) "$PY" scripts/33_shadow_live.py ;;
   backup) "$PY" scripts/95_backup_db.py ;;
   migrate-pg) "$PY" scripts/97_migrate_to_postgres.py ;;
+  start-project) bash scripts/start_project.sh ;;
   live-dry) shift; "$PY" scripts/34_live_execute.py "$@" ;;
   live) shift; "$PY" scripts/34_live_execute.py --arm "$@" ;;
   rollover-dry) shift; "$PY" scripts/35_rollover_live.py "$@" ;;
@@ -75,6 +76,7 @@ usage: ./run.sh <команда>
   shadow   теневой прогон G3: плановые заявки без отправки
   backup   консистентный бэкап trades/robots/paper_metrics в backups/db (0600)
   migrate-pg  однократный перенос служебных данных SQLite в PostgreSQL
+  start-project  полный старт на WSL: PostgreSQL, миграция, панель, проверка
   live-dry боевой контур в репетиции: заявки НЕ уходят (по умолчанию)
   live     боевой контур с --arm; требует FINAM_ALLOW_TRADING=1 и live_settings.json
   rollover-dry  перекладка квартальных позиций без отправки (по умолчанию)

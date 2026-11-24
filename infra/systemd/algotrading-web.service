@@ -1,0 +1,18 @@
+[Unit]
+Description=Algo dashboard (FastAPI + React WebUI)
+Requires=postgresql.service
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=zt
+WorkingDirectory=/home/zt/algotrading
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/zt/algotrading/.venv/bin/python -m uvicorn web.app:app --host 0.0.0.0 --port 8080
+Restart=always
+RestartSec=5
+StandardOutput=append:/home/zt/algotrading/results/web.log
+StandardError=append:/home/zt/algotrading/results/web.log
+
+[Install]
+WantedBy=multi-user.target

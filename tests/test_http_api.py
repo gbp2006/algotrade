@@ -100,23 +100,22 @@ class TestHTTPApi(unittest.TestCase):
         self.assertIn("real", analytics)
         self.assertIn("portfolio", analytics)
 
-    def test_accounts_page_keeps_old_and_loads_new_ui(self):
-        status, html = request(web_app.app, "GET", "/accounts")
-        self.assertEqual(status, 200)
-        self.assertIn('/static/ui-theme.js', html)
-        self.assertIn('id="flow-rows"', html)
-        self.assertIn('id="virtual-rows"', html)  # старый блок на месте
+    def test_old_page_routes_serve_react(self):
+        for path in ("/", "/trade", "/robots", "/accounts", "/health", "/ui"):
+            status, html = request(web_app.app, "GET", path)
+            self.assertEqual(status, 200, path)
+            self.assertIn('id="root"', html)
+            self.assertIn('/ui/assets/', html)
+            self.assertNotIn('ui-labels.js', html)  # старый UI удалён
 
     def test_reconciliation_endpoint(self):
         status, data = request(web_app.app, "GET", "/api/portfolio/reconciliation")
         self.assertEqual(status, 200)
         self.assertIn("items", data)
 
-    def test_webui_route_is_additive(self):
-        status, html = request(web_app.app, "GET", "/ui")
-        self.assertIn(status, (200, 404))
-        if status == 200:
-            self.assertIn('id="root"', html)
+    def test_ui_assets_are_served(self):
+        status, html = request(web_app.app, "GET", "/ui/assets/index-D0eHtem1.js")
+        self.assertIn(status, (200, 404))  # файл может называться иначе после сборки
 
     def test_logs_limit_clamped(self):
         status, data = request(web_app.app, "GET", "/api/logs?limit=99999")

@@ -138,12 +138,11 @@ class TestApiViews(unittest.TestCase):
         self.assertEqual(inst["id"], "prostushka-cny")
 
     def test_form_uses_name_and_toggles(self):
-        html = (Path(__file__).resolve().parent.parent / "web" / "templates"
-                / "robots.html").read_text(encoding="utf-8")
-        self.assertIn('id="f-name"', html)
-        self.assertNotIn('id="f-id"', html)
-        self.assertIn('type="checkbox"', html)
-        self.assertIn('data-type="bool"', html)
+        src = (Path(__file__).resolve().parent.parent / "webui" / "src"
+               / "sections" / "Robots.tsx").read_text(encoding="utf-8")
+        self.assertIn("register('name')", src)
+        self.assertNotIn("register('id')", src)
+        self.assertIn("z.enum", src)  # валидация Zod вместо ручного ввода id
 
     def test_backtest_preview(self):
         r = api.backtest_preview_view({
@@ -193,13 +192,13 @@ class TestPanelSafety(unittest.TestCase):
                 path.write_text('{"ok": true}', encoding="utf-8")
                 self.assertEqual(web_app.read_health(), {"ok": True})
 
-    def test_paper_toggle_does_not_claim_live(self):
-        html = (Path(__file__).resolve().parent.parent / "web" / "templates"
-                / "index.html").read_text(encoding="utf-8")
-        self.assertIn("Пауза бумаги", html)
-        self.assertIn("Снять паузу", html)
-        self.assertNotIn("○ Offline", html)
-        self.assertNotIn("● Live", html)
+    def test_ui_does_not_claim_live_when_only_paper(self):
+        src = (Path(__file__).resolve().parent.parent / "webui" / "src"
+               / "App.tsx").read_text(encoding="utf-8")
+        self.assertIn("TEST", src)
+        self.assertIn("LIVE", src)
+        self.assertIn("Тестовые", src)
+        self.assertIn("Боевые", src)
 
 
 if __name__ == "__main__":

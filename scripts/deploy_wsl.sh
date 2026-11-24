@@ -38,7 +38,7 @@ done
 FILES=(
   run.sh requirements.txt AGENTS.md PROGRESS.md README.md live_settings.example.json
   algo/*.py algo/broker/*.py algo/strategies/*.py
-  scripts/*.py scripts/README.md scripts/deploy_wsl.sh
+  scripts/*.py scripts/README.md scripts/deploy_wsl.sh scripts/start_project.sh
   tests/*.py
   web/*.py web/templates/*.html web/static/*.css web/static/*.js web/static/img/*
   webui/dist/index.html webui/dist/assets/*

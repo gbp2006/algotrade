@@ -122,7 +122,8 @@ update-live и channel каждые 10 минут. Они запускают с�
   `webui/src/lib/offline.ts`; темы, плотность и вкладки — `localStorage`.
 - Параллельный фронт `webui/` (React 18 + TS strict + Vite + Tailwind/Radix,
   TanStack Query/Zustand, RHF/Zod, lightweight-charts, react-table) работает
-  с теми же API через прокси и не заменяет старую панель. Доменные расчёты
+  стал основным интерфейсом (старые Jinja-шаблоны удалены): все адреса страниц
+  отдают React-сборку, API остаются прежними. Доменные расчёты
   остаются на Python: в TS нет второй формулы лотности. Сборка — `npm run build`
   в `webui/`, тесты — `npm test`. Готовый `webui/dist/` отдаётся тем же сервером
   по `/ui` (ассеты — `/ui/assets`); старые страницы остаются на своих адресах.

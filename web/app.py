@@ -23,8 +23,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import (HTMLResponse, JSONResponse, PlainTextResponse,
                                RedirectResponse)
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from starlette.requests import Request
 
 ROOT = Path(__file__).resolve().parent.parent
 PAPER = ROOT / "results" / "paper.csv"
@@ -33,6 +31,17 @@ STOP = ROOT / "results" / "STOP"
 HEALTH = ROOT / "results" / "health.json"
 ALERTS = ROOT / "results" / "alerts_seen.json"
 WEBUI_DIST = ROOT / "webui" / "dist"
+
+
+def react_index() -> HTMLResponse:
+    """Единая точка входа нового интерфейса; без кэша, чтобы не было старой сборки."""
+    index = WEBUI_DIST / "index.html"
+    if not index.exists():
+        return HTMLResponse(
+            "<h3>Сборка WebUI отсутствует</h3><p>cd webui && npm run build</p>",
+            status_code=503)
+    return HTMLResponse(index.read_text(encoding="utf-8"),
+                        headers={"Cache-Control": "no-store"})
 MSK = timezone(timedelta(hours=3))
 MULT = 1000.0
 
@@ -81,8 +90,7 @@ def capital_of(cfg) -> float:
 app = FastAPI(title="Algo dashboard")
 app.include_router(instances_router)
 app.include_router(cash_flows_router)
-templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
-app.mount("/static", StaticFiles(directory=str(Path(__file__).resolve().parent / "static")), name="static")
+app.mount("/static/img", StaticFiles(directory=str(Path(__file__).resolve().parent / "static" / "img")), name="static-img")
 if (WEBUI_DIST / "assets").is_dir():
     app.mount("/ui/assets", StaticFiles(directory=str(WEBUI_DIST / "assets")), name="ui-assets")
 
@@ -360,38 +368,15 @@ def config_stats(cfg, rows: list[dict], price: float | None = None) -> dict:
 
 
 @app.get("/", response_class=HTMLResponse)
-def index(request: Request):
-    # шаблон меняется при деплое — браузер не должен держать старую копию
-    return templates.TemplateResponse(request, "index.html", {},
-                                      headers={"Cache-Control": "no-store"})
-
-
 @app.get("/trade", response_class=HTMLResponse)
-def trade_page(request: Request):
-    """Вкладка «Торговля»: живые счета, заявки, стопы, перекладка."""
-    return templates.TemplateResponse(request, "trade.html", {},
-                                      headers={"Cache-Control": "no-store"})
-
-
 @app.get("/robots", response_class=HTMLResponse)
-def robots_page(request: Request):
-    """Управление инстансами роботов (сервис, этап 3)."""
-    return templates.TemplateResponse(request, "robots.html", {},
-                                      headers={"Cache-Control": "no-store"})
-
-
 @app.get("/accounts", response_class=HTMLResponse)
-def accounts_page(request: Request):
-    """Счета: реальные и виртуальные в одном экране (GUI v2)."""
-    return templates.TemplateResponse(request, "accounts.html", {},
-                                      headers={"Cache-Control": "no-store"})
-
-
 @app.get("/health", response_class=HTMLResponse)
-def health_page(request: Request):
-    """Здоровье: единый лог и состояние сторожа (GUI v2)."""
-    return templates.TemplateResponse(request, "health.html", {},
-                                      headers={"Cache-Control": "no-store"})
+@app.get("/ui", response_class=HTMLResponse)
+@app.get("/ui/{path:path}", response_class=HTMLResponse)
+def index(path: str = ""):
+    """Старые адреса страниц отдают новый React-интерфейс."""
+    return react_index()
 
 
 @app.get("/favicon.ico")
@@ -707,14 +692,3 @@ def ack_alerts():
                                  ensure_ascii=False), encoding="utf-8")
     return {"digest": digest, "dismissed": True}
 
-
-@app.get("/ui")
-@app.get("/ui/{path:path}")
-def webui_index(path: str = ""):
-    """Параллельный React/TS-фронт на той же точке входа; старые страницы не тронуты."""
-    index = WEBUI_DIST / "index.html"
-    if not index.exists():
-        return HTMLResponse(
-            "<h3>React-сборка отсутствует</h3><p>Выполните <code>cd webui && npm run build</code></p>",
-            status_code=404)
-    return HTMLResponse(index.read_text(encoding="utf-8"))
