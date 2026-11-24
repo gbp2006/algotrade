@@ -68,7 +68,8 @@ def _fail(exc: Exception) -> None:
 def specs_view() -> list[dict]:
     return [
         {
-            "id": s.id, "strategy": s.strategy, "defaults": s.defaults,
+            "id": s.id, "strategy": s.strategy, "title": sd.name(s.strategy),
+            "defaults": s.defaults,
             "schema": s.schema, "instruments": list(s.instruments),
             "description": s.description, "examples": list(s.examples),
             "about": sd.describe(s.strategy),
@@ -101,6 +102,7 @@ def instances_view(store: RobotStore, mode: str | None = None,
         # `note` у робота — это его человекочитаемое описание; `about` — описание
         # самой стратегии. Оба поля нужны в карточке инстанса (GUI v2).
         r["description"] = r.get("note") or ""
+        r["strategy_name"] = sd.name(r.get("spec_id") or "")
         r["about"] = sd.describe(r.get("spec_id") or "")
     return rows
 
@@ -167,6 +169,7 @@ def detail(iid: str, store: RobotStore = Depends(get_store)):
         raise HTTPException(404, f"нет инстанса {iid}")
     return {**inst,
             "description": inst.get("note") or "",
+            "strategy_name": sd.name(inst.get("spec_id") or ""),
             "about": sd.describe(inst.get("spec_id") or "")}
 
 

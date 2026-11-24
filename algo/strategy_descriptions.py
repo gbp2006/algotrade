@@ -8,6 +8,17 @@
 
 from __future__ import annotations
 
+# Короткие human-readable имена — единственный источник для подписей в UI.
+# Полное описание живёт в DESCRIPTIONS ниже; id остаётся техническим ключом.
+NAMES = {
+    "prostushka": "Простушка",
+    "universal": "Универсалка",
+    "channel_break": "Пробой временного канала",
+    "donchian": "Donchian 20/10",
+    "money_market": "Фонд денежного рынка",
+}
+
+
 DESCRIPTIONS = {
     "prostushka": (
         "Простушка (Примечание №6 автора): тренд-фоллоуинг по SMA на ближайшем "
@@ -48,6 +59,11 @@ DESCRIPTIONS = {
         "ALGO_MM_ARMED; в контур пока не включён."
     ),
 }
+
+
+def name(strategy_id: str) -> str:
+    """Короткое имя стратегии; неизвестные id получают честную заглушку."""
+    return NAMES.get(str(strategy_id or ""), str(strategy_id or "Неизвестная стратегия"))
 
 
 def describe(strategy_id: str) -> str:

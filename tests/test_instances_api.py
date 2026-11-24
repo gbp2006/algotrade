@@ -27,6 +27,18 @@ class TestApiViews(unittest.TestCase):
         self.assertTrue(any(s["id"] == "prostushka" for s in specs))
         self.assertIn("ma_window", specs[0]["schema"])
 
+    def test_single_source_of_strategy_names(self):
+        from algo import strategy_descriptions as sd
+        self.assertEqual(sd.name("prostushka"), "Простушка")
+        self.assertEqual(sd.name("unknown"), "unknown")
+        specs = {s["id"]: s for s in api.specs_view()}
+        self.assertEqual(specs["donchian"]["title"], "Donchian 20/10")
+        api.create_view(self.store, {"id": "name-1", "spec_id": "prostushka",
+                                     "instrument": "CNY", "mode": "paper"})
+        row = api.instances_view(self.store)[0]
+        self.assertEqual(row["strategy_name"], "Простушка")
+        self.assertTrue(row["about"].startswith("Простушка"))
+
     def test_create_list_action_history(self):
         created = api.create_view(self.store, {
             "id": "p-api", "spec_id": "prostushka", "instrument": "CNY",

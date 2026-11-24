@@ -57,7 +57,8 @@
   // «Простушка (Примечание №6 автора): …» → «Простушка».
   function strategyName(spec) {
     if (!spec) return '—';
-    if (spec.title || spec.display) return spec.title || spec.display;
+    if (spec.title || spec.display || spec.strategy_name)
+      return spec.title || spec.display || spec.strategy_name;
     const head = String(spec.about || spec.description || '')
       .split('(')[0].split(':')[0].trim();
     return head || spec.id || '—';
