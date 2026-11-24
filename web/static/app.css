@@ -432,7 +432,7 @@ pre {
   color: var(--muted); text-decoration: none; white-space: nowrap;
 }
 .subtabs a:hover { color: var(--text); }
-.subtabs a.on { background: var(--bg-3); color: var(--text); box-shadow: var(--shadow-sm); }
+.subtabs a.on { background: var(--surface-2); color: var(--text); box-shadow: var(--shadow-sm); }
 .cols-2 {
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px; align-items: start;
@@ -440,3 +440,14 @@ pre {
 .kpi-mini { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
 .kpi-mini b { color: var(--text); font-size: 15px; font-weight: 600; }
 @media (max-width: 900px) { .cols-2 { grid-template-columns: 1fr; } }
+
+/* GUI v2: выбор робота/счёта на экране торговли */
+.pick-list { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; }
+.pick {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 9px 11px; border: 1px solid var(--border); border-radius: 9px;
+  background: var(--bg-2); color: var(--text); cursor: pointer; font: inherit; font-size: 12.5px;
+}
+.pick:hover { border-color: var(--accent); }
+.pick.on { border-color: var(--accent); background: var(--surface-2); }
+.pick .muted { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

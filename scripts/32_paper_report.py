@@ -25,6 +25,8 @@ except ImportError:
     pass
 
 from algo.configs import CONFIGS  # noqa: E402
+from algo.expected import expected as _expected_shared  # noqa: E402
+from algo.expected import expected_bars as _expected_bars  # noqa: E402
 from algo.robot_configs import ROBOT_CONFIGS  # noqa: E402
 from algo import risk  # noqa: E402
 from algo import store  # noqa: E402
@@ -92,65 +94,10 @@ def trade_stats(rows: list[dict], mult: float) -> tuple[int, int, int, float, fl
 
 def expected(cfg, m5: pd.DataFrame, start: str, end: str,
              mult: float, capital: float, tick: float = 0.0,
-             cfg_for=None) -> tuple[int, float]:
-    """Что та же конфигурация дала бы на архиве за тот же период.
-
-    Лот считается живым risk.contracts_for_config, включая ATR-резку сайза.
-    `cfg_for(day)` возвращает конфиг, действовавший в этот день: параметры
-    меняются из панели, и пересчёт всего периода по сегодняшним параметрам
-    даёт ложный tracking error.
-    """
-    days = sorted({d for d in m5.index.date
-                   if str(d) >= start and str(d) <= end and d.weekday() < 5})
-    pos = 0
-    entry = 0.0
-    pnl = 0.0
-    trades = 0
-    decisions = 0
-    for day in days:
-        cur = cfg_for(day) if cfg_for else cfg
-        # утренний выход 10:20 работает до дневного решения и тоже меняет P&L
-        if cur.params.get("hold") == "morning" and pos != 0:
-            exit_price = morning_exit_price(m5, day)
-            if exit_price is not None:
-                pnl += (exit_price - entry) * mult * pos
-                trades += 1
-                entry, pos = 0.0, 0
-        dec = decision(cur, m5[m5.index.date <= day], day)
-        if dec is None:
-            continue
-        decisions += 1
-        if dec.target != 0:
-            # Ожидание обязано повторять живой лот: новые роботы режут сайз по ATR,
-            # иначе tracking error показывает разницу лотности, а не исполнения.
-            risk_bars = m5[(m5.index.date <= day)
-                           & (m5.index <= dec.ts + pd.Timedelta(minutes=5))]
-            contracts, _ = risk.contracts_for_config(
-                cur, capital + pnl, dec.price, mult, risk_bars, [], day, capital)
-        else:
-            contracts = 0
-        target = dec.target * contracts
-        if target != pos:
-            if pos != 0:
-                pnl += (dec.price - entry) * mult * pos
-                trades += 1
-            if target != 0:
-                entry = dec.price
-            pos = target
-        # p-friday закрывается в 18:45 пятницы — ожидание обязано это моделировать,
-        # иначе отчёт показывает ложный tracking error после срабатывания таймера.
-        if cur.params.get("close_friday") and day.weekday() == 4 and pos != 0:
-            today = m5[m5.index.date == day]
-            closed = today[(today.index.hour * 60 + today.index.minute) <= 18 * 60 + 45]
-            if not closed.empty:
-                # живое закрытие берёт котировку минус 1 тик проскальзывания
-                exit_price = float(closed["close"].iloc[-1]) - tick * (1 if pos > 0 else -1)
-                pnl += (exit_price - entry) * mult * pos
-                trades += 1
-                entry, pos = 0.0, 0
-    if decisions == 0:
-        return None, None          # архив не покрывает период — ожидания нет
-    return trades, pnl
+             cfg_for=None) -> tuple[int | None, float | None]:
+    """Ожидание по общей логике `algo.expected` (без второго варианта кода)."""
+    return _expected_shared(cfg, m5, start, end, mult, capital,
+                            tick=tick, cfg_for=cfg_for)
 
 
 def _dd_stats(rows: list[dict], mult: float, capital: float) -> dict:
@@ -178,26 +125,8 @@ def _symbol_of(inst) -> str:
 
 
 def expected_bars(inst) -> pd.DataFrame | None:
-    """Бары для ожидания: живые M5 из БД, потом CSV, потом архив."""
-    if store.DB_PATH.exists():
-        try:
-            sym = _symbol_of(inst)
-            df = store.read(sym, "M5", source="finam_live")
-            if not df.empty:
-                return df
-            m1 = store.read(sym, "M1")
-            if not m1.empty:
-                return to_timeframe(m1, 5)
-        except Exception:  # нет таблицы или прав — откатываемся к файлу
-            pass
-    live = ROOT / "results" / f"finam_m5_{inst.code}.csv"
-    if live.exists():
-        df = pd.read_csv(live, parse_dates=["dt"]).set_index("dt")
-        return df[["open", "high", "low", "close", "vol"]]
-    try:
-        return load_cached(inst.file, 5) if inst.file else None
-    except (FileNotFoundError, TypeError):
-        return None
+    """Бары для ожидания: общая реализация в `algo.expected`."""
+    return _expected_bars(inst)
 
 
 def build_rows() -> tuple[list[dict], str, str]:

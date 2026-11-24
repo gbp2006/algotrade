@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#0a0c11">
 <title>Autopilot — торговля</title>
 <link rel="stylesheet" href="/static/app.css">
-<script src="/static/ui-state.js" defer></script>
+<script src="/static/ui-state.js"></script>
 <script src="/static/sidebar.js" defer></script>
 </head>
 <body>
@@ -39,25 +39,31 @@
       <div id="archive-list" class="small muted">Загрузка…</div>
     </div>
     <div class="page-head">
-      <div><h2>Торговля</h2><p>Живые инстансы, журнал заявок и расписание. Реальные заявки выключены, пока не пройдены ворота.</p></div>
+      <div><h2>Торговля</h2><p>Роботы слева, счета справа. Клик по строке показывает детали: позиции, equity, решения и заявки.</p></div>
     </div>
     <div class="pf" id="kpi"></div>
+    <div class="cols-2" id="trade-panels" style="display:{% if mode == 'archive' %}none{% else %}grid{% endif %}">
+      <div class="card"><h3>{% if mode == 'test' %}Роботы · тест{% else %}Роботы · бой{% endif %}</h3>
+        <div id="robot-list" class="pick-list"><div class="muted small">загрузка…</div></div></div>
+      <div class="card"><h3>Счета</h3>
+        <div id="account-list" class="pick-list"><div class="muted small">загрузка…</div></div></div>
+    </div>
+    <div class="card mt" id="detail-card"><h3 id="detail-title">Детали</h3>
+      <div id="detail-body" class="small muted">Выберите робота или счёт выше.</div></div>
     <div class="card" id="stop-card"><h3>Управление</h3>
       <div class="row"><button class="btn danger" onclick="stopReal('set')">Глобальный STOP</button>
         <button class="btn" onclick="stopReal('clear')">Снять STOP</button>
         <span class="muted small" id="msg"></span></div></div>
     <div class="grid">
-      <div class="card"><h3>Роботы в бою</h3>
-        <div class="table-wrap"><table><thead><tr><th>Робот</th><th>Параметры</th><th>Счёт</th><th>Статус</th>
-          <th>Позиция</th><th>Equity</th><th></th></tr></thead><tbody id="robots"></tbody></table></div></div>
       <div class="card"><h3 id="orders-title">Заявки</h3>
         <div class="table-wrap"><table><thead><tr><th>Время</th><th>Робот</th><th>Символ</th><th>Сторона</th>
           <th>Лот</th><th>Цена</th><th>Статус</th><th>Причина</th></tr></thead>
           <tbody id="orders"></tbody></table></div></div>
+      <div class="card"><h3>Брокеры и расписание</h3><div class="row" id="brokers"></div>
+        <p class="muted small" id="sched-state"></p>
+        <div class="table-wrap"><table><thead><tr><th>Задание</th><th>Время</th><th>Команда</th><th>Последний запуск</th><th></th></tr></thead><tbody id="jobs"></tbody></table></div>
+        <button class="btn ghost mt" onclick="openJob()">+ задание</button></div>
     </div>
-    <div class="card"><h3>Счета и брокеры</h3><div class="row" id="accounts"></div>
-      <div class="row mt" id="brokers"></div></div>
-    <div class="card"><h3><span>Расписание и запуски</span>
       <button class="btn ghost" onclick="openJob()">+ задание</button></h3>
       <p class="muted small" id="sched-state"></p>
       <div class="table-wrap"><table><thead><tr><th>Задание</th><th>Время / интервал</th><th>Команда</th>
@@ -110,13 +116,68 @@ async function api(p, opts){
   let d=null; try{d=await r.json();}catch(e){}
   if(!r.ok) throw new Error((d&&d.detail)||('HTTP '+r.status)); return d;
 }
+let ROBOTS = [], ACCS = [], RUNTIME = {};
+function num(v, digits=0){ return (v===null||v===undefined||v==='') ? '—' : Number(v).toLocaleString('ru-RU',{maximumFractionDigits:digits}); }
+function pickRobot(id){
+  UIState.set('tradeRobot', id);
+  renderRobotDetail();
+  document.querySelectorAll('#robot-list [data-id]').forEach(el =>
+    el.classList.toggle('on', el.dataset.id === id));
+  document.querySelectorAll('#account-list [data-id]').forEach(el => el.classList.remove('on'));
+}
+function pickAccount(key){
+  UIState.set('tradeAccount', key);
+  renderAccountDetail();
+  document.querySelectorAll('#account-list [data-id]').forEach(el =>
+    el.classList.toggle('on', el.dataset.id === key));
+  document.querySelectorAll('#robot-list [data-id]').forEach(el => el.classList.remove('on'));
+}
+function renderRobotDetail(){
+  const id = UIState.get('tradeRobot', '');
+  const i = ROBOTS.find(x=>x.id===id);
+  const box = $('detail-body'), title = $('detail-title');
+  if(!i){ title.textContent='Детали'; box.innerHTML='Выберите робота или счёт выше.'; return; }
+  const s = RUNTIME[i.id] || {};
+  const mine = ORDERS.filter(o=>o.config===i.id).slice(0,10);
+  title.textContent = `${i.id} · ${i.spec_id}`;
+  box.innerHTML = `<div class="kpi-mini mb">
+      <span>Статус <b>${esc(i.status)}</b></span>
+      <span>Позиция <b>${num(s.position)}</b></span>
+      <span>Equity <b>${num(s.equity)} ₽</b></span>
+      <span>Счёт <b>${esc(i.account||'—')}</b></span></div>
+    <p class="muted">${esc(i.about || '')}</p>
+    <p><b>Описание:</b> ${esc(i.description||i.note||'—')}</p>
+    <p><code>${Object.entries(i.params||{}).map(([k,v])=>k+'='+esc(v)).join(' ')}</code></p>
+    <p class="muted small">Последнее решение: ${esc(s.last_decision||'—')}</p>
+    <table class="table"><thead><tr><th>Заявки робота</th><th>Символ</th><th>Сторона</th><th>Лот</th><th>Цена</th><th>Статус</th></tr></thead><tbody>${
+      mine.length ? mine.map(o=>`<tr><td>${esc(String(o.ts||'').replace('T',' ').slice(0,16))}</td><td>${esc(o.symbol||'')}</td><td>${esc(o.side||'')}</td><td>${esc(o.qty||'')}</td><td>${esc(o.price||'')}</td><td>${esc(o.status||'')}</td></tr>`).join('') : '<tr><td colspan="6" class="muted">заявок нет</td></tr>'
+    }</tbody></table>`;
+}
+function renderAccountDetail(){
+  const key = UIState.get('tradeAccount', '');
+  const a = ACCS.find(x=>x.key===key);
+  const box = $('detail-body'), title = $('detail-title');
+  if(!a){ title.textContent='Детали'; box.innerHTML='Выберите робота или счёт выше.'; return; }
+  title.textContent = `${a.label} · ${a.mode==='live'?'реальный':'виртуальный'}`;
+  const rows = a.positions ? a.positions.map(p=>`<tr><td>${esc(p.symbol)}</td><td>${num(p.qty)}</td><td>${num(p.pnl)} ₽</td></tr>`).join('') : '<tr><td colspan="3" class="muted">позиций нет</td></tr>';
+  box.innerHTML = `<div class="kpi-mini mb"><span>Equity <b>${num(a.equity)} ₽</b></span>
+    <span>Позиций <b>${a.positions ? a.positions.length : (a.position?1:0)}</b></span>
+    <span>Статус <b>${esc(a.status||'—')}</b></span></div>
+    <table class="table"><thead><tr><th>Символ</th><th>Количество</th><th>P&L</th></tr></thead><tbody>${
+      rows || `<tr><td>${esc(a.id)}</td><td>${num(a.position)}</td><td class="muted">${esc(a.last_decision||'')}</td></tr>`
+    }</tbody></table>`;
+}
 async function load(){
   try{
-    const [st, robots, rt, orders, acc, br, jobs, runs, sched] = await Promise.all([
-      api('/live-state'), api('/instances?mode=live'), api('/runtime'),
-      api('/live-orders'), api('/accounts'), api('/brokers'),
-      api('/scheduler/jobs'), api('/scheduler/runs?limit=20'), api('/scheduler/state')]);
-    const run = Object.fromEntries(rt.map(x=>[x.instance_id,x]));
+    const mode = new URLSearchParams(location.search).get('mode') || 'live';
+    const [st, rt, orders, br, jobs, runs, sched, analytics] = await Promise.all([
+      api('/live-state'), api('/runtime'), api('/live-orders'), api('/brokers'),
+      api('/scheduler/jobs'), api('/scheduler/runs?limit=20'), api('/scheduler/state'),
+      api('/accounts/analytics')]);
+    const instMode = mode === 'test' ? 'paper' : 'live';
+    const robots = mode === 'archive' ? [] : await api('/instances?mode=' + instMode);
+    ROBOTS = robots; RUNTIME = Object.fromEntries(rt.map(x=>[x.instance_id,x]));
+    ACCS = (mode === 'test' ? analytics.virtual : analytics.real).map(x=>({...x, key:x.id}));
     ORDERS = orders; ALLOW = !!st.allow_trading;
     $('orders-title').textContent = ALLOW ? 'Заявки' : 'Заявки · dry-run, не сделки';
     $('kpi').innerHTML = `
@@ -126,17 +187,23 @@ async function load(){
       <div class="it"><span>Дней бумаги</span><b>${st.paper_days}/30</b></div>
       <div class="it"><span>Дней тени</span><b>${st.shadow_days ?? 0}/10</b></div>
       <div class="it"><span>${ALLOW?'Заявок в журнале':'Сухих заявок (не отправлялись)'}</span><b>${orders.length}</b></div>`;
-    $('robots').innerHTML = robots.length ? robots.map(i=>{
-      const s=run[i.id]||{};
-      const params=Object.entries(i.params||{}).map(([k,v])=>k+'='+esc(v)).join(' ');
-      return `<tr><td><b>${esc(i.id)}</b><br><code>${esc(i.spec_id)}</code></td>
-        <td><code>${params}</code></td><td>${esc(i.account||'—')}<br><span class="muted">${esc(i.pricing||'—')}</span></td>
-        <td><span class="chip">${esc(i.status)}</span></td><td>${s.position??'—'}</td>
-        <td>${s.equity?Number(s.equity).toLocaleString('ru'):'—'}</td>
-        <td><button onclick="act('${esc(i.id)}','pause')">пауза</button></td></tr>`;
-    }).join('') : '<tr><td colspan="7" class="muted">боевых роботов нет</td></tr>';
+    $('robot-list').innerHTML = robots.length ? robots.map(i=>{
+      const s = RUNTIME[i.id]||{};
+      return `<button class="pick" data-id="${esc(i.id)}" onclick="pickRobot('${esc(i.id)}')">
+        <b>${esc(i.id)}</b><span class="muted">${esc(i.description||i.spec_id||'')}</span>
+        <span class="ml-auto">${esc(i.status)} · ${num(s.position)}</span></button>`;
+    }).join('') : '<div class="empty">Роботов в этом режиме нет</div>';
+    $('account-list').innerHTML = ACCS.length ? ACCS.map(a=>
+      `<button class="pick" data-id="${esc(a.key)}" onclick="pickAccount('${esc(a.key)}')">
+        <b>${esc(a.label||a.id)}</b><span class="muted">${esc(a.id)}</span>
+        <span class="ml-auto">${num(a.equity)} ₽</span></button>`).join('')
+      : '<div class="empty">Счетов нет</div>';
+    const savedRobot = UIState.get('tradeRobot','');
+    const savedAcc = UIState.get('tradeAccount','');
+    if(robots.some(i=>i.id===savedRobot)) pickRobot(savedRobot);
+    else if(ACCS.some(a=>a.key===savedAcc)) pickAccount(savedAcc);
+    else { $('detail-title').textContent='Детали'; $('detail-body').innerHTML='Выберите робота или счёт выше.'; }
     renderOrders();
-    $('accounts').innerHTML = acc.map(a=>`<span class="chip">${esc(a.id)}: ${Number(a.capital).toLocaleString('ru')} ₽</span>`).join('')||'нет счетов';
     $('brokers').innerHTML = br.map(b=>`<button onclick="check('${esc(b.name)}')">проверить ${esc(b.name)}</button>`).join('');
     const lastByJob = {};
     runs.forEach(r => { if (!lastByJob[r.job_id]) lastByJob[r.job_id] = r; });
@@ -149,7 +216,7 @@ async function load(){
         <td>${last ? esc(last.status) + ' · ' + esc(last.slot || last.started || '') : '—'}</td>
         <td><button onclick="deleteJob('${esc(j.id)}')">удалить</button></td></tr>`;
     }).join('') : '<tr><td colspan="5" class="muted">заданий нет</td></tr>';
-    $('msg').textContent = `${robots.length} боевых роботов, ${st.paper_days}/30 дней бумаги`;
+    $('msg').textContent = `${robots.length} роботов, ${st.paper_days}/30 дней бумаги`;
   }catch(e){ $('msg').textContent='ошибка: '+e.message; }
 }
 async function act(id,a){ try{ await api(`/instances/${encodeURIComponent(id)}/${a}`,{method:'POST'}); await load(); }

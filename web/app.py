@@ -55,6 +55,8 @@ import sys  # noqa: E402
 sys.path.insert(0, str(ROOT))
 from algo.broker.finam import FinamBroker  # noqa: E402
 from algo.configs import BY_ID, CONFIGS  # noqa: E402
+from algo.expected import expected_pnl  # noqa: E402
+from algo.instance_configs import configs_at  # noqa: E402
 from algo.robot_configs import ROBOT_BY_ID, ROBOT_CONFIGS  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS, margin, symbol as inst_symbol  # noqa: E402
 from algo.portfolio import (CAPITAL, account_card, drawdown_stats,  # noqa: E402
@@ -487,34 +489,21 @@ def config_detail(cfg_id: str) -> dict:
 
 
 def _expected(cfg, start: str, end: str):
-    """Что конфигурация дала бы на архиве за тот же период (кэш 1 час)."""
-    inst = instrument_of(cfg)
-    mult, capital = inst.mult, capital_of(cfg)
-
+    """Ожидание по общей логике отчёта и панели (кэш 1 час)."""
     def calc():
-        from algo.data import load_cached
-        from algo.live import decision
-        m5 = load_cached(inst.file, 5)
-        days = sorted({d for d in m5.index.date
-                       if str(d) >= start and str(d) <= end and d.weekday() < 5})
-        from algo.portfolio import size_contracts
-        pos, entry, pnl, trades = 0, 0.0, 0.0, 0
-        for day in days:
-            dec = decision(cfg, m5[m5.index.date <= day], day)
-            if dec is None:
-                continue
-            contracts = size_contracts(capital + pnl, dec.price, mult,
-                                              exposure_of(cfg)) if dec.target != 0 else 0
-            target = dec.target * contracts
-            if target == pos:
-                continue
-            if pos != 0:
-                pnl += (dec.price - entry) * mult * pos
-                trades += 1
-            if target != 0:
-                entry = dec.price
-            pos = target
-        return {"net": round(pnl, 0), "trades": trades, "days": len(days)}
+        times: dict[str, str] = {}
+        for r in read_paper():
+            if r.get("config") == cfg.id and start <= r["date"] <= end:
+                if r["time"] > times.get(r["date"], ""):
+                    times[r["date"]] = r["time"]
+        by_day: dict[str, object] = {}
+        for key, when in times.items():
+            try:
+                by_day[key] = {c.id: c for c in configs_at(key, at=when)}
+            except Exception:  # noqa: BLE001 — без БД остаётся переданный конфиг
+                by_day[key] = {}
+        return expected_pnl(cfg, start, end, fallback_capital=CAPITAL,
+                            cfg_for=lambda d: by_day.get(str(d), {}).get(cfg.id, cfg))
     return _cached(f"expected:{cfg.id}:{start}:{end}", 3600, calc)
 
 
