@@ -629,3 +629,111 @@ def scheduler_state(store: RobotStore = Depends(get_store)):
         "runs": len(store.list_runs(limit=200)),
         "log": scheduler.LOG.name,
     }
+
+
+# ---------- архив, аналитика счетов и единый лог (GUI v2) ----------
+def archive_list(store: RobotStore) -> list[dict]:
+    """Роботы, выведенные из эксплуатации: реал и бумага в одном списке."""
+    out = []
+    for r in store.list_instances():
+        if r["status"] not in ("archived", "stopped"):
+            continue
+        try:
+            rt = store.get_runtime(r["id"]) or {}
+        except Exception:  # noqa: BLE001 — рантайм не обязателен для архива
+            rt = {}
+        out.append({
+            "id": r["id"], "mode": r["mode"], "status": r["status"],
+            "strategy": r["spec_id"], "note": r.get("note") or "",
+            "updated_at": r.get("updated_at") or "",
+            "last_decision": rt.get("last_decision") or "",
+            "position": rt.get("position"),
+        })
+    return sorted(out, key=lambda x: x["updated_at"], reverse=True)
+
+
+@router.get("/archive")
+def api_archive(store: RobotStore = Depends(get_store)):
+    return {"items": archive_list(store)}
+
+
+def _scalar(value: Any) -> float:
+    if isinstance(value, dict):
+        value = value.get("value", 0)
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def account_analytics(store: RobotStore) -> dict:
+    """Аналитика реальных и виртуальных счетов (без вывода секретов)."""
+    real = []
+    for acc in store.list_accounts():
+        row = {"id": acc["id"], "label": acc.get("label") or acc["id"],
+               "mode": "live", "equity": None, "positions": [],
+               "status": "нет ключа"}
+        try:
+            broker = FinamBroker(secret=resolve_secret(acc["key_ref"]),
+                                 account=acc["id"])
+            data = broker.account(acc["id"])
+            row["equity"] = _scalar(data.get("equity"))
+            row["positions"] = [
+                {"symbol": p.get("symbol"),
+                 "qty": _scalar(p.get("quantity")),
+                 "pnl": _scalar(p.get("unrealized_pnl"))}
+                for p in data.get("positions", [])]
+            row["status"] = "ok"
+        except Exception as exc:  # noqa: BLE001 — счёт без доступа не роняет панель
+            row["status"] = type(exc).__name__
+        real.append(row)
+    virtual = []
+    for inst in store.list_instances(mode="paper"):
+        try:
+            rt = store.get_runtime(inst["id"]) or {}
+        except Exception:  # noqa: BLE001
+            rt = {}
+        virtual.append({
+            "id": inst["id"], "mode": "paper",
+            "label": inst.get("note") or inst["id"],
+            "equity": rt.get("equity"), "position": rt.get("position"),
+            "last_price": rt.get("last_price"),
+            "last_decision": rt.get("last_decision") or "",
+        })
+    return {"real": real, "virtual": virtual}
+
+
+@router.get("/accounts/analytics")
+def api_accounts_analytics(store: RobotStore = Depends(get_store)):
+    return account_analytics(store)
+
+
+def logs_aggregate(store: RobotStore, limit: int = 80) -> list[dict]:
+    """Единый лог: заявки, события инстансов, запуски таймеров, здоровье."""
+    out: list[dict] = []
+    for r in tj.records(limit=limit):
+        out.append({"ts": r["ts"], "source": "orders",
+                    "text": f"{r['config']} {r['side']} {r['qty']} "
+                            f"@{r['price']} — {r['status']}"})
+    for inst in store.list_instances():
+        for e in store.history(inst["id"])[-limit:]:
+            out.append({"ts": e.get("created_at") or "", "source": "instances",
+                        "text": f"{inst['id']}: {e.get('action')} "
+                                f"{e.get('reason') or ''}".strip()})
+    for r in store.list_runs(limit=limit):
+        out.append({"ts": r.get("started") or "", "source": "scheduler",
+                    "text": f"{r.get('job_id')}: {r.get('status')} "
+                            f"{r.get('detail') or ''}".strip()})
+    try:
+        wd = json.loads(HEALTH.read_text(encoding="utf-8"))
+        for p in wd.get("problems", []):
+            out.append({"ts": wd.get("checked") or "", "source": "health",
+                        "text": p})
+    except Exception:  # noqa: BLE001 — битый health не должен ронять лог
+        pass
+    return sorted(out, key=lambda x: x["ts"], reverse=True)[:limit * 2]
+
+
+@router.get("/logs")
+def api_logs(limit: int = 80, store: RobotStore = Depends(get_store)):
+    return {"items": logs_aggregate(store, min(max(limit, 1), 500))}

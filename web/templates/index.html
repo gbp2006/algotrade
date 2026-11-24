@@ -10,6 +10,7 @@
 <meta name="theme-color" content="#0a0c11">
 <title>Autopilot — алго-песочница</title>
 <link rel="stylesheet" href="/static/app.css">
+<script src="/static/ui-state.js" defer></script>
 </head>
 <body>
 <div class="layout">
@@ -27,7 +28,7 @@
   </aside>
 
   <main class="main">
-    <div class="navtabs"><a class="on" href="/">Тест</a><a class="live" href="/trade">Торговля</a><a href="/robots?mode=paper">Роботы</a></div>
+    {% include "nav.html" %}
     <div class="banner" id="banner"></div>
     <div class="pf" id="pf"></div>
     <section class="hero">

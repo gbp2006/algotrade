@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0a0c11">
+<title>Autopilot — счета</title>
+<link rel="stylesheet" href="/static/app.css">
+<script src="/static/ui-state.js" defer></script>
+</head>
+<body>
+<div class="layout">
+  <aside class="side">
+    <div class="logo"><div class="dot">A</div><b>Autopilot</b></div>
+    <a class="item" href="/trade"><span class="ico">📈</span><span class="nm">Торговля</span></a>
+    <a class="item" href="/robots"><span class="ico">🤖</span><span class="nm">Роботы</span></a>
+    <div class="grow"></div>
+    <div class="user"><div class="av"></div><div><div>Счета · аналитика</div><small>реальные и виртуальные</small></div></div>
+  </aside>
+  <main class="main">
+    {% include "nav.html" %}
+    <div class="page-head">
+      <div><h2>Счета</h2><p>Реальные счета брокера и виртуальные депозиты бумажных роботов — в одном месте.</p></div>
+    </div>
+    <div class="pf" id="kpi"></div>
+    <div class="cols-2 mt">
+      <div class="card"><h3>Реальные счета</h3>
+        <div class="table-wrap"><table class="table"><thead><tr>
+          <th>Счёт</th><th>Equity</th><th>Позиции</th><th>Статус</th>
+        </tr></thead><tbody id="real-rows"><tr><td colspan="4" class="muted">Загрузка…</td></tr></tbody></table></div>
+      </div>
+      <div class="card"><h3>Виртуальные счета</h3>
+        <div class="table-wrap"><table class="table"><thead><tr>
+          <th>Робот</th><th>Equity</th><th>Позиция</th><th>Последнее решение</th>
+        </tr></thead><tbody id="virtual-rows"><tr><td colspan="4" class="muted">Загрузка…</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const num = v => (v === null || v === undefined || v === '') ? '—' : Number(v).toLocaleString('ru-RU', {maximumFractionDigits:0});
+async function load(){
+  try{
+    const j = await (await fetch('/api/accounts/analytics', {cache:'no-store'})).json();
+    $('real-rows').innerHTML = j.real.length ? j.real.map(a=>`<tr>
+      <td><b>${esc(a.label)}</b><br><span class="muted small">${esc(a.id)}</span></td>
+      <td>${num(a.equity)} ₽</td>
+      <td>${a.positions.length ? a.positions.map(p=>`${esc(p.symbol)} ${num(p.qty)} (${num(p.pnl)} ₽)`).join('<br>') : '—'}</td>
+      <td>${esc(a.status)}</td></tr>`).join('') : '<tr><td colspan="4" class="muted">Нет зарегистрированных счетов</td></tr>';
+    $('virtual-rows').innerHTML = j.virtual.length ? j.virtual.map(v=>`<tr>
+      <td>${esc(v.id)}</td><td>${num(v.equity)} ₽</td><td>${num(v.position)}</td>
+      <td class="muted small">${esc(v.last_decision)}</td></tr>`).join('') : '<tr><td colspan="4" class="muted">Нет бумажных инстансов</td></tr>';
+    const eq = j.real.filter(a=>a.equity).reduce((s,a)=>s+a.equity,0);
+    $('kpi').innerHTML = `<div class="kpi"><span>Реальных счетов</span><b>${j.real.length}</b></div>
+      <div class="kpi"><span>Equity реальных</span><b>${num(eq)} ₽</b></div>
+      <div class="kpi"><span>Виртуальных</span><b>${j.virtual.length}</b></div>`;
+  }catch(e){
+    $('real-rows').innerHTML = '<tr><td colspan="4" class="muted">Нет данных: '+esc(e.message)+'</td></tr>';
+  }
+}
+load();
+</script>
+</body>
+</html>

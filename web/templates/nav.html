@@ -1,0 +1,8 @@
+<nav class="navtabs app-nav" data-ui-nav>
+  <a href="/trade" data-section="trade" class="{% if request.url.path in ['/', '/trade'] %}on{% endif %}">Торговля</a>
+  <a href="/robots" data-section="robots" class="{% if request.url.path == '/robots' %}on{% endif %}">Роботы</a>
+  <a href="/accounts" data-section="accounts" class="{% if request.url.path == '/accounts' %}on{% endif %}">Счета</a>
+  <a href="/health" data-section="health" class="{% if request.url.path == '/health' %}on{% endif %}">Здоровье</a>
+  <span class="nav-spacer"></span>
+  <a href="/?home=1" class="nav-classic" title="Классический экран «Тест»">Тест</a>
+</nav>

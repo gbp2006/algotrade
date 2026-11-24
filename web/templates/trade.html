@@ -9,6 +9,7 @@
 <meta name="theme-color" content="#0a0c11">
 <title>Autopilot — торговля</title>
 <link rel="stylesheet" href="/static/app.css">
+<script src="/static/ui-state.js" defer></script>
 <script src="/static/sidebar.js" defer></script>
 </head>
 <body>
@@ -26,7 +27,17 @@
     </div>
   </aside>
   <main class="main">
-    <div class="navtabs"><a href="/">Тест</a><a class="live on" href="/trade">Торговля</a><a href="/robots?mode=live">Роботы</a></div>
+    {% include "nav.html" %}
+    {% set mode = request.query_params.get('mode', 'test' if request.url.path == '/' else 'live') %}
+    <div class="subtabs">
+      <a href="/trade?mode=live" data-ui-sub="live" class="{% if mode == 'live' %}on{% endif %}">Реал</a>
+      <a href="/?home=1" data-ui-sub="test" class="{% if mode == 'test' %}on{% endif %}">Тест</a>
+      <a href="/trade?mode=archive" data-ui-sub="archive" class="{% if mode == 'archive' %}on{% endif %}">Архив</a>
+    </div>
+    <div class="card" id="archive-card" style="display:{% if mode == 'archive' %}block{% else %}none{% endif %}">
+      <h3>Архив выведенных из эксплуатации роботов</h3>
+      <div id="archive-list" class="small muted">Загрузка…</div>
+    </div>
     <div class="page-head">
       <div><h2>Торговля</h2><p>Живые инстансы, журнал заявок и расписание. Реальные заявки выключены, пока не пройдены ворота.</p></div>
     </div>
@@ -172,6 +183,19 @@ async function deleteJob(id){
   try{ await api('/scheduler/jobs/'+encodeURIComponent(id),{method:'DELETE'}); await load(); }
   catch(e){ $('msg').textContent=e.message; }
 }
+async function loadArchive(){
+  const box = $('archive-list');
+  if(!box) return;
+  try{
+    const j = await api('/archive');
+    box.innerHTML = j.items.length
+      ? `<table class="table"><thead><tr><th>Робот</th><th>Режим</th><th>Статус</th><th>Стратегия</th><th>Последнее решение</th></tr></thead><tbody>`+
+        j.items.map(x=>`<tr><td>${esc(x.id)}</td><td>${esc(x.mode)}</td><td>${esc(x.status)}</td><td>${esc(x.strategy)}</td><td class="muted">${esc(x.last_decision)}</td></tr>`).join('')+
+        `</tbody></table>`
+      : '<div class="empty">Архив пуст — выведенные роботы появятся здесь.</div>';
+  }catch(e){ box.textContent = e.message; }
+}
+if(new URLSearchParams(location.search).get('mode') === 'archive') loadArchive();
 load();
 </script>
 </body>

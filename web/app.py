@@ -306,6 +306,20 @@ def robots_page(request: Request):
                                       headers={"Cache-Control": "no-store"})
 
 
+@app.get("/accounts", response_class=HTMLResponse)
+def accounts_page(request: Request):
+    """Счета: реальные и виртуальные в одном экране (GUI v2)."""
+    return templates.TemplateResponse(request, "accounts.html", {},
+                                      headers={"Cache-Control": "no-store"})
+
+
+@app.get("/health", response_class=HTMLResponse)
+def health_page(request: Request):
+    """Здоровье: единый лог и состояние сторожа (GUI v2)."""
+    return templates.TemplateResponse(request, "health.html", {},
+                                      headers={"Cache-Control": "no-store"})
+
+
 @app.get("/favicon.ico")
 def favicon():
     return RedirectResponse("/static/img/favicon.ico")
