@@ -608,6 +608,7 @@ def live_state_view() -> dict:
                             if r.get("status") == "planned" and r.get("ts")}
     return {
         "allow_trading": os.environ.get("FINAM_ALLOW_TRADING") == "1",
+        "live_trading_enabled": bool((live_control.status() or {}).get("enabled")),
         "stop_paper": STOP.exists(),
         "stop_real": STOP_REAL.exists(),
         "paper_days": len(days),
