@@ -61,6 +61,13 @@ class TestRisk(unittest.TestCase):
                                      limits=risk.RiskLimits(max_qty=3))
         self.assertEqual(capped, 3)
 
+    def test_invalid_equity_or_price_gives_zero_lots(self):
+        from algo import portfolio
+        self.assertEqual(portfolio.size_contracts(0, 12.29), 0)
+        self.assertEqual(portfolio.size_contracts(200_000, 0), 0)
+        self.assertEqual(portfolio.size_contracts(-100, -1), 0)
+        self.assertGreaterEqual(portfolio.size_contracts(200_000, 12.29), 1)
+
     def test_contracts_for_config_plain(self):
         cfg = Config("t-plain", "prostushka", dict(ma_window=200, entry="13:50"))
         from algo import portfolio

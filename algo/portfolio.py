@@ -21,9 +21,15 @@ def exposure_of(cfg) -> float:
 
 def size_contracts(equity: float, price: float, mult: float = MULT,
                    exposure: float | None = None) -> int:
-    """Сколько контрактов брать при данном equity и цене."""
+    """Сколько контрактов брать при данном equity и цене.
+
+    При невалидных входных данных возвращаем 0, а не 1: раньше «минимум один
+    контракт» при equity<=0/price<=0 завышал позицию в отчёте и ожидании.
+    Нормальные бэктесты и раннеры имеют положительные equity/цену — их числа
+    не меняются (проверено тестами и прогоном отчёта).
+    """
     if price <= 0 or equity <= 0:
-        return 1
+        return 0
     exp = EXPOSURE if exposure is None else exposure
     notional_per = price * mult
     n = int((equity * exp) // notional_per)
