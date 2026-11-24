@@ -32,7 +32,8 @@ from algo import metrics_store  # noqa: E402
 from algo.data import load_cached, to_timeframe  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS  # noqa: E402
 from algo.instruments import symbol as contract_symbol  # noqa: E402
-from algo.live import decision  # noqa: E402
+from algo.instance_configs import active_configs, configs_at
+from algo.live import decision, morning_exit_price  # noqa: E402
 from algo.portfolio import CAPITAL, drawdown_stats  # noqa: E402
 
 PAPER = Path(__file__).resolve().parent.parent / "results" / "paper.csv"
@@ -90,10 +91,14 @@ def trade_stats(rows: list[dict], mult: float) -> tuple[int, int, int, float, fl
 
 
 def expected(cfg, m5: pd.DataFrame, start: str, end: str,
-             mult: float, capital: float, tick: float = 0.0) -> tuple[int, float]:
+             mult: float, capital: float, tick: float = 0.0,
+             cfg_for=None) -> tuple[int, float]:
     """Что та же конфигурация дала бы на архиве за тот же период.
 
     Лот считается живым risk.contracts_for_config, включая ATR-резку сайза.
+    `cfg_for(day)` возвращает конфиг, действовавший в этот день: параметры
+    меняются из панели, и пересчёт всего периода по сегодняшним параметрам
+    даёт ложный tracking error.
     """
     days = sorted({d for d in m5.index.date
                    if str(d) >= start and str(d) <= end and d.weekday() < 5})
@@ -103,7 +108,15 @@ def expected(cfg, m5: pd.DataFrame, start: str, end: str,
     trades = 0
     decisions = 0
     for day in days:
-        dec = decision(cfg, m5[m5.index.date <= day], day)
+        cur = cfg_for(day) if cfg_for else cfg
+        # утренний выход 10:20 работает до дневного решения и тоже меняет P&L
+        if cur.params.get("hold") == "morning" and pos != 0:
+            exit_price = morning_exit_price(m5, day)
+            if exit_price is not None:
+                pnl += (exit_price - entry) * mult * pos
+                trades += 1
+                entry, pos = 0.0, 0
+        dec = decision(cur, m5[m5.index.date <= day], day)
         if dec is None:
             continue
         decisions += 1
@@ -113,7 +126,7 @@ def expected(cfg, m5: pd.DataFrame, start: str, end: str,
             risk_bars = m5[(m5.index.date <= day)
                            & (m5.index <= dec.ts + pd.Timedelta(minutes=5))]
             contracts, _ = risk.contracts_for_config(
-                cfg, capital + pnl, dec.price, mult, risk_bars, [], day, capital)
+                cur, capital + pnl, dec.price, mult, risk_bars, [], day, capital)
         else:
             contracts = 0
         target = dec.target * contracts
@@ -126,7 +139,7 @@ def expected(cfg, m5: pd.DataFrame, start: str, end: str,
             pos = target
         # p-friday закрывается в 18:45 пятницы — ожидание обязано это моделировать,
         # иначе отчёт показывает ложный tracking error после срабатывания таймера.
-        if cfg.params.get("close_friday") and day.weekday() == 4 and pos != 0:
+        if cur.params.get("close_friday") and day.weekday() == 4 and pos != 0:
             today = m5[m5.index.date == day]
             closed = today[(today.index.hour * 60 + today.index.minute) <= 18 * 60 + 45]
             if not closed.empty:
@@ -199,7 +212,20 @@ def build_rows() -> tuple[list[dict], str, str]:
     start, end = rows[0]["date"], rows[-1]["date"]
     out: list[dict] = []
     cache: dict[str, pd.DataFrame] = {}
-    for cfg in CONFIGS + ROBOT_CONFIGS:
+    # Конфиг мог быть изменён в панели внутри периода: ожидание обязано
+    # использовать параметры, действовавшие в день каждого решения.
+    cfgs = {c.id: c for c in CONFIGS + ROBOT_CONFIGS}
+    try:
+        cfgs.update({c.id: c for c in active_configs("paper")})
+    except Exception:  # noqa: BLE001 — без БД остаётся статический реестр
+        pass
+    day_cfgs: dict[str, dict[str, object]] = {}
+    for day in sorted({r["date"] for r in rows}):
+        try:
+            day_cfgs[day] = {c.id: c for c in configs_at(day)}
+        except Exception:  # noqa: BLE001 — нет БД → статический реестр
+            day_cfgs[day] = {}
+    for cfg in cfgs.values():
         mine = [r for r in rows if r["config"] == cfg.id]
         if not mine:
             continue
@@ -213,8 +239,11 @@ def build_rows() -> tuple[list[dict], str, str]:
             # Окно ожидания — по датам самого конфигурации: новые роботы вошли
             # в журнал позже базы, и сравнение с её 3 днями давало ложный error.
             c_start, c_end = mine[0]["date"], mine[-1]["date"]
-            e_trades, e_pnl = expected(cfg, cache[inst.code], c_start, c_end,
-                                       mult, capital, tick=inst.tick)
+            by_day = day_cfgs
+            e_trades, e_pnl = expected(
+                cfg, cache[inst.code], c_start, c_end, mult, capital,
+                tick=inst.tick,
+                cfg_for=lambda d, cid=cfg.id: by_day.get(str(d), {}).get(cid, cfg))
         dd = _dd_stats(mine, mult, capital)
         n, wins, losses, gw, gl = trade_stats(mine, mult)
         last = mine[-1]

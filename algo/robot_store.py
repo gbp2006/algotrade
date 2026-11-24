@@ -148,6 +148,15 @@ class RobotStore:
                 (instance_id,)).fetchall()
         return [dict(r) for r in rows]
 
+    def param_history(self, instance_id: str) -> list[dict]:
+        """Версии параметров инстанса по порядку (для сверки «факт/ожидание»)."""
+        with self._conn() as c:
+            rows = c.execute(
+                "SELECT version, params_json, reason, actor, created_at "
+                "FROM param_versions WHERE instance_id=? ORDER BY version",
+                (instance_id,)).fetchall()
+        return [dict(r) for r in rows]
+
     def list_accounts(self) -> list[dict]:
         # capital не отдаётся: размер боевого счёта знает только брокер
         cols = ("id, label, max_exposure, max_daily_loss_pct, max_qty, comment, "

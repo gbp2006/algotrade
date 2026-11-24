@@ -137,6 +137,110 @@ def migrate_csv(csv_path: Path, path: Path | None = None) -> int:
     return count
 
 
+def _scalar(value: Any) -> float:
+    if isinstance(value, dict):
+        value = value.get("value", 0)
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def mark_execution(client_order_id: str, *, status: str, executed_qty: float,
+                   price: float = 0.0, ts: str = "", detail: str = "",
+                   path: Path | None = None,
+                   csv_path: Path | None = None) -> bool:
+    """Записать исполнение заявки: смена статуса, событие и строка в `trades`.
+
+    Идемпотентно: повтор с тем же статусом и количеством ничего не меняет.
+    """
+    cid = str(client_order_id)
+    with connect(path) as c:
+        row = c.execute("SELECT * FROM orders WHERE client_order_id=?", (cid,)).fetchone()
+        if row is None:
+            return False
+        qty = int(round(executed_qty))
+        marker = f"{status}:{qty}"
+        done = c.execute(
+            "SELECT 1 FROM order_events WHERE client_order_id=? AND status=? "
+            "AND detail LIKE ?", (cid, status, f"{marker}%")).fetchone()
+        if done is not None:
+            return False
+        now = ts or datetime.now().isoformat(timespec="seconds")
+        note = detail or marker
+        c.execute("UPDATE orders SET status=?, reason=? WHERE client_order_id=?",
+                  (status, note[:200], cid))
+        c.execute(
+            "INSERT INTO order_events (client_order_id, ts, status, detail) "
+            "VALUES (?,?,?,?)", (cid, now, status, note[:200]))
+        if qty > 0:
+            fill_price = price or float(row["price"] or 0)
+            if fill_price > 0:
+                c.execute(
+                    "INSERT INTO trades (client_order_id, order_id, ts, symbol, side, "
+                    "qty, price, account, config) VALUES (?,?,?,?,?,?,?,?,?)",
+                    (cid, str(row["order_id"] or ""), now, str(row["symbol"] or ""),
+                     str(row["side"] or ""), qty, fill_price,
+                     str(row["account"] or ""), str(row["config"] or "")))
+    if csv_path is not None and csv_path.exists():
+        with csv_path.open(encoding="utf-8", newline="") as f:
+            rows = list(csv.DictReader(f))
+        changed = False
+        for r in rows:
+            if r.get("client_order_id") == cid:
+                r["status"] = status
+                r["reason"] = note[:200]
+                changed = True
+        if changed:
+            with csv_path.open("w", encoding="utf-8", newline="") as f:
+                w = csv.DictWriter(f, fieldnames=FIELDS)
+                w.writeheader()
+                w.writerows(rows)
+    return True
+
+
+_STATUS_MAP = {
+    "ORDER_STATUS_FILLED": "filled",
+    "ORDER_STATUS_PARTIALLY_FILLED": "partial",
+    "ORDER_STATUS_CANCELLED": "cancelled",
+    "ORDER_STATUS_REJECTED": "rejected",
+}
+
+
+def refresh_executions(broker: Any, account: str, *, path: Path | None = None,
+                       csv_path: Path | None = None) -> dict:
+    """Сверить отправленные заявки с брокером и дописать исполнения в журнал."""
+    sent = [r for r in records(limit=500, account=account, path=path)
+            if r["status"] == "sent"]
+    if not sent:
+        return {"checked": 0, "updated": 0}
+    by_cid: dict[str, dict] = {}
+    for item in broker.orders(account):
+        order = item.get("order", item)
+        cid = str(order.get("client_order_id") or "")
+        if cid:
+            by_cid[cid] = item
+    updated = 0
+    for r in sent:
+        item = by_cid.get(r["client_order_id"])
+        if item is None:
+            continue
+        status = _STATUS_MAP.get(str(item.get("status") or ""), "")
+        if not status:
+            continue
+        order = item.get("order", item)
+        qty = _scalar(item.get("executed_quantity") or 0)
+        qty = qty or (float(r["qty"]) if status == "filled" else 0.0)
+        price = _scalar(order.get("limit_price") or 0) or float(r["price"] or 0)
+        detail = (f"{status}:{int(round(qty))}@{price:g}; "
+                  f"{item.get('transact_at') or ''}").strip()
+        if mark_execution(r["client_order_id"], status=status, executed_qty=qty,
+                          price=price, ts=str(item.get("transact_at") or ""),
+                          detail=detail, path=path, csv_path=csv_path):
+            updated += 1
+    return {"checked": len(sent), "updated": updated}
+
+
 def backup(destination: Path | None = None, path: Path | None = None) -> Path:
     """Консистентная копия БД (sqlite backup API), не копия файла на ходу."""
     src = Path(path or TRADES_DB)

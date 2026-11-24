@@ -35,6 +35,7 @@ from algo.broker.live_guard import (  # noqa: E402
     decision_client_id, expiry_allows, price_for, quote_age_sec,
     reconcile_guard,
 )
+from algo import trade_journal as tj  # noqa: E402
 from algo.portfolio import exposure_of, size_contracts  # noqa: E402
 from algo.configs import CONFIGS  # noqa: E402
 from algo.instance_configs import live_settings_from_store  # noqa: E402
@@ -277,6 +278,19 @@ def main(argv: list[str] | None = None) -> int:
                 counts[status or "noop"] = counts.get(status or "noop", 0) + 1
                 if reason or note:
                     notes.append(f"{acc_id}/{sym}: {reason or note}")
+
+            # Заявка может исполниться за секунды: дописать filled/partial в журнал.
+            # Делаем после reconcile — иначе модель position из sent-заявок
+            # перестанет совпадать с брокером и сверка поставит STOP.
+            try:
+                refreshed = tj.refresh_executions(
+                    broker, acc_id, csv_path=LIVE)
+                if refreshed["updated"]:
+                    notes.append(f"{acc_id}: исполнений в журнале: "
+                                 f"{refreshed['updated']}/{refreshed['checked']}")
+            except Exception as exc:  # noqa: BLE001 — отсутствие брокера не роняет прогон
+                notes.append(f"{acc_id}: не удалось обновить исполнения: "
+                             f"{type(exc).__name__}")
 
         SUMMARY.parent.mkdir(parents=True, exist_ok=True)
         SUMMARY.write_text(json.dumps({

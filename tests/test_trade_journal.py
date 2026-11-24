@@ -60,6 +60,49 @@ class TestTradeJournal(unittest.TestCase):
             self.assertEqual(tj.migrate_csv(csv_path, db), 1)
             self.assertEqual(tj.migrate_csv(csv_path, db), 0)
 
+    def test_mark_execution_is_idempotent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Path(tmp) / "trades.db"
+            csv_path = Path(tmp) / "live.csv"
+            with csv_path.open("w", newline="", encoding="utf-8") as f:
+                w = csv.DictWriter(f, fieldnames=tj.FIELDS)
+                w.writeheader()
+                w.writerow(row("a", "sent"))
+            tj.append(row("a", "sent"), db)
+            self.assertTrue(tj.mark_execution(
+                "a", status="filled", executed_qty=1, price=12.35,
+                ts="2026-11-24T14:00:24", detail="filled:1@12.35",
+                path=db, csv_path=csv_path))
+            self.assertFalse(tj.mark_execution(
+                "a", status="filled", executed_qty=1, price=12.35,
+                detail="filled:1@12.35", path=db, csv_path=csv_path))
+            rec = tj.records(limit=10, path=db)[0]
+            self.assertEqual(rec["status"], "filled")
+            with tj.connect(db) as c:
+                trades = [dict(x) for x in c.execute("SELECT * FROM trades")]
+            self.assertEqual(len(trades), 1)
+            self.assertEqual(trades[0]["price"], 12.35)
+            with csv_path.open(encoding="utf-8") as f:
+                mirror = list(csv.DictReader(f))
+            self.assertEqual(mirror[0]["status"], "filled")
+
+    def test_refresh_executions(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Path(tmp) / "trades.db"
+            tj.append(row("a", "sent"), db)
+
+            class Broker:
+                def orders(self, account):
+                    return [{"order_id": "ord-1", "status": "ORDER_STATUS_FILLED",
+                             "executed_quantity": {"value": "1"},
+                             "transact_at": "2026-11-24T14:00:24",
+                             "order": {"client_order_id": "a",
+                                       "limit_price": {"value": "12.35"}}}]
+
+            result = tj.refresh_executions(Broker(), "2102993", path=db)
+            self.assertEqual(result, {"checked": 1, "updated": 1})
+            self.assertEqual(tj.records(limit=10, path=db)[0]["status"], "filled")
+
     def test_backup_is_readable(self):
         with tempfile.TemporaryDirectory() as tmp:
             db = Path(tmp) / "trades.db"

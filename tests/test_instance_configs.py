@@ -57,6 +57,21 @@ class TestInstanceConfigs(unittest.TestCase):
         self.assertEqual(st["symbol"], "CNYRUBF@RTSX")
         self.assertIn("2026-11-23", st["last_decision"])
 
+    def test_configs_at_uses_param_versions(self):
+        ic.seed_static_configs(self.db)
+        before = {c.id: c for c in ic.configs_at("2026-11-22", store=self.db)}
+        self.assertNotIn("timeframe", before["p-base"].params)
+        self.db.update_instance(
+            "p-base", {"params": dict(before["p-base"].params, timeframe=60)}, 1,
+            reason="H1", actor="test")
+        self.db.set_status("p-base", "active")
+        after = {c.id: c for c in ic.configs_at("2026-11-24", store=self.db)}
+        self.assertEqual(after["p-base"].params["timeframe"], 60)
+        again = {c.id: c for c in ic.configs_at("2026-11-22", store=self.db)}
+        self.assertNotIn("timeframe", again["p-base"].params)
+        self.assertEqual([v["version"] for v in self.db.param_history("p-base")],
+                         [1, 2])
+
     def test_live_settings_from_store(self):
         self.db.create_account({"id": "A1"})
         self.db.create_instance({

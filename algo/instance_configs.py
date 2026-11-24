@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import csv
+import json
 from pathlib import Path
 from typing import Iterable
 
@@ -83,6 +84,44 @@ def active_configs(mode: str = "paper",
     if not rows:
         return list(STATIC) if mode == "paper" else []
     return [_to_config(r) for r in rows if r["status"] == "active"]
+
+
+def configs_at(day, mode: str = "paper",
+               store: RobotStore | None = None) -> list[Config]:
+    """Конфиги, действовавшие на дату `day`.
+
+    Параметры берутся из последней версии `param_versions`, созданной не позже
+    этой даты; до первой версии инстанса используется статический реестр —
+    именно он и работал в бумаге до переноса в store. Без этого отчёт
+    «факт/ожидание» пересчитывает весь период по сегодняшним параметрам и
+    показывает ложные расхождения после правки робота из панели.
+    """
+    st = store or RobotStore()
+    try:
+        rows = st.list_instances(mode=mode)
+    except Exception:  # noqa: BLE001 — нет БД → работаем как раньше
+        rows = []
+    out: list[Config] = []
+    for inst in rows:
+        if inst.get("status") != "active":
+            continue
+        versions = []
+        try:
+            versions = st.param_history(inst["id"])
+        except Exception:  # noqa: BLE001 — старыми БД пренебрегаем
+            pass
+        cutoff = str(day)
+        applicable = [v for v in versions
+                      if str(v.get("created_at") or "")[:10] <= cutoff]
+        if applicable:
+            params = json.loads(applicable[-1]["params_json"])
+        else:
+            static = next((c for c in STATIC if c.id == inst["id"]), None)
+            params = dict(static.params) if static else dict(inst["params"])
+        out.append(_to_config({**inst, "params": params}))
+    if not out and mode == "paper":
+        return list(STATIC)
+    return out
 
 
 def migrate_runtime_from_paper(store: RobotStore | None = None,
