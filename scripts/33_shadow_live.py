@@ -12,11 +12,12 @@
 
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import os
 import sys
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -32,7 +33,9 @@ from algo.broker.execution import (  # noqa: E402
     Order, OrderGateway, positions_from_response, reconcile,
 )
 from algo.broker.finam import FinamBroker  # noqa: E402
+from algo.broker.live_guard import decision_client_id  # noqa: E402
 from algo.configs import CONFIGS  # noqa: E402
+from algo.instance_configs import active_configs  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS  # noqa: E402
 
 PAPER = ROOT / "results" / "paper.csv"
@@ -40,6 +43,18 @@ SHADOW_JOURNAL = ROOT / "results" / "shadow.csv"
 SHADOW_LOCK = ROOT / "results" / "shadow.lock"
 SHADOW = ROOT / "results" / "shadow.json"
 STOP = ROOT / "results" / "STOP"
+MSK = timezone(timedelta(hours=3))
+
+
+def _configs() -> list:
+    """Тень видит те же инстансы, что и бумага; при пустом store — статический список."""
+    try:
+        found = active_configs("paper")
+        if found:
+            return found
+    except Exception:  # noqa: BLE001 — store может быть ещё не проинициализирован
+        pass
+    return list(CONFIGS)
 
 
 def read_paper() -> list[dict]:
@@ -49,9 +64,9 @@ def read_paper() -> list[dict]:
         return [r for r in csv.DictReader(f) if "config" in r]
 
 
-def plan_orders(rows: list[dict], day: date) -> list[Order]:
+def plan_orders(rows: list[dict], day: date, configs: list | None = None) -> list[Order]:
     orders: list[Order] = []
-    for cfg in CONFIGS:
+    for cfg in (configs if configs is not None else _configs()):
         mine = [r for r in rows if r["config"] == cfg.id]
         if len(mine) < 1 or mine[-1]["date"] != str(day):
             continue
@@ -64,7 +79,9 @@ def plan_orders(rows: list[dict], day: date) -> list[Order]:
         inst = INSTRUMENTS.get(cfg.instrument, DEFAULT)
         side = "buy" if delta > 0 else "sell"
         orders.append(Order(
-            client_id=f"{cfg.id}:{day}:{side}",
+            # детерминированный ключ: время решения из paper.csv, а не запуска
+            client_id=decision_client_id(cfg.id, str(day), side,
+                                         last.get("time", ""), abs(delta)),
             config=cfg.id,
             symbol=last["symbol"],
             side=side,
@@ -76,19 +93,20 @@ def plan_orders(rows: list[dict], day: date) -> list[Order]:
     return orders
 
 
-def main() -> int:
+def main(day: date | None = None) -> int:
     if STOP.exists():
         print("стоп-флаг установлен: теневой прогон пропущен")
         return 0
-    day = date.today()
+    day = day or datetime.now(MSK).date()  # бумага пишет решения в МСК
     rows = read_paper()
-    orders = plan_orders(rows, day)
+    configs = _configs()
+    orders = plan_orders(rows, day, configs)
     gateway = OrderGateway(FinamBroker(), journal=SHADOW_JOURNAL, lock=SHADOW_LOCK)
     results = [gateway.submit(o, os.environ.get("FINAM_ACCOUNT"), dry_run=True)
                for o in orders]
 
     expected: dict[str, int] = {}
-    for cfg in CONFIGS:
+    for cfg in configs:
         mine = [r for r in rows if r["config"] == cfg.id and r["date"] == str(day)]
         if mine:
             sym = mine[-1]["symbol"]
@@ -117,4 +135,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    parser = argparse.ArgumentParser(description="Теневой прогон G3")
+    parser.add_argument("--day", help="YYYY-MM-DD, по умолчанию сегодня в МСК")
+    args = parser.parse_args()
+    raise SystemExit(main(date.fromisoformat(args.day) if args.day else None))

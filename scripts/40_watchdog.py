@@ -22,7 +22,22 @@ PAPER = ROOT / "results" / "paper.csv"
 HEALTH = ROOT / "results" / "health.json"
 STOP = ROOT / "results" / "STOP"
 
+# Резервный список на случай недоступного store. Основной список берётся из
+# активных бумажных инстансов — иначе переименованный робот даёт ложный «нет решений».
 DECISION_CONFIGS = ["p-base", "p-fast", "p-h1", "p-friday", "u-base", "u-wide", "u-morning", "p-rts", "p-gold"]
+
+
+def decision_configs(rows: list[dict]) -> list[str]:
+    """Конфиги, с которых ждём решения: активные и уже дававшие записи в журнале."""
+    try:
+        from algo.instance_configs import active_configs
+        active = {c.id for c in active_configs("paper")}
+    except Exception:  # noqa: BLE001 — store может быть недоступен
+        active = set()
+    if not active:
+        return list(DECISION_CONFIGS)
+    seen = {r.get("config") for r in rows}
+    return sorted(active & (seen | set(DECISION_CONFIGS)))
 TIMERS = ["algotrading-daily.timer", "algotrading-morning.timer",
           "algotrading-friday.timer", "algotrading-update-live.timer",
           "algotrading-shadow.timer",
@@ -136,6 +151,7 @@ def check() -> dict:
 
         # проверяем только дни начиная с даты старта теста (первой записи в журнале)
         start_date = date.fromisoformat(min(r["date"] for r in rows))
+        expected_configs = decision_configs(rows)
 
         # после 14:00 по будням должны быть решения по всем конфигурациям
         for d in trading_days_back(MAX_LOOKBACK):
@@ -151,7 +167,7 @@ def check() -> dict:
                     problems.append(f"{d}: нет ни одной записи")
                 continue
             have = {r["config"] for r in day_rows}
-            missing = [c for c in DECISION_CONFIGS if c not in have]
+            missing = [c for c in expected_configs if c not in have]
             if missing:
                 problems.append(f"{d}: нет решений по {', '.join(missing)}")
 

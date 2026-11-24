@@ -42,7 +42,18 @@ class TestWatchdog(unittest.TestCase):
             mock.patch.object(wd, "STOP", self.stop),
             mock.patch.object(wd, "data_freshness", lambda: data_date),
             mock.patch.object(wd, "tracking_errors", lambda: errors or []),
+            mock.patch.object(wd, "decision_configs",
+                              lambda rows: list(wd.DECISION_CONFIGS)),
         ]
+
+    def test_decision_configs_follow_active_instances(self):
+        rows = [{"config": "p-new"}, {"config": "gone-old"}]
+        with mock.patch("algo.instance_configs.active_configs",
+                        return_value=[mock.Mock(id="p-new")]):
+            self.assertEqual(wd.decision_configs(rows), ["p-new"])
+        with mock.patch("algo.instance_configs.active_configs",
+                        side_effect=RuntimeError("нет store")):
+            self.assertEqual(wd.decision_configs(rows), wd.DECISION_CONFIGS)
 
     def test_check_ok_when_all_present(self):
         self._journal()

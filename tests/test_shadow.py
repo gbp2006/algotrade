@@ -54,6 +54,7 @@ class TestShadow(unittest.TestCase):
             mock.patch.object(shadow, "SHADOW_LOCK", self.lock),
             mock.patch.object(shadow, "FinamBroker", lambda: self.broker),
             mock.patch.object(shadow, "CONFIGS", [BY_ID["p-base"]]),
+            mock.patch.object(shadow, "_configs", lambda: [BY_ID["p-base"]]),
         ]
         for p in self.patches:
             p.start()
@@ -81,6 +82,18 @@ class TestShadow(unittest.TestCase):
         self.assertEqual(data["date"], str(today))
         self.assertEqual(data["counts"], {"planned": 1})
         self.assertTrue(data["issues"])
+
+    def test_client_id_is_deterministic(self):
+        today = date.today()
+        self._journal(today)
+        with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):
+            self.assertEqual(shadow.main(today), 0)
+        first = list(__import__("csv").DictReader(self.live.open(encoding="utf-8")))[0]
+        self.live.unlink()
+        with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):
+            self.assertEqual(shadow.main(today), 0)
+        second = list(__import__("csv").DictReader(self.live.open(encoding="utf-8")))[0]
+        self.assertEqual(first["client_order_id"], second["client_order_id"])
 
     def test_shadow_uses_own_journal_and_lock(self):
         today = date.today()
