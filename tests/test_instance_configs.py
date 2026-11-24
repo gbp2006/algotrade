@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 import tempfile
 import unittest
@@ -65,10 +66,23 @@ class TestInstanceConfigs(unittest.TestCase):
             "p-base", {"params": dict(before["p-base"].params, timeframe=60)}, 1,
             reason="H1", actor="test")
         self.db.set_status("p-base", "active")
+        with self.db._conn() as c:
+            c.execute("UPDATE param_versions SET created_at=?, params_json=? "
+                      "WHERE instance_id='p-base' AND version=1",
+                      ("2026-11-19T13:00:00", json.dumps(before["p-base"].params)))
+            c.execute("UPDATE param_versions SET created_at=? "
+                      "WHERE instance_id='p-base' AND version=2",
+                      ("2026-11-23T19:30:24",))
         after = {c.id: c for c in ic.configs_at("2026-11-24", store=self.db)}
         self.assertEqual(after["p-base"].params["timeframe"], 60)
         again = {c.id: c for c in ic.configs_at("2026-11-22", store=self.db)}
         self.assertNotIn("timeframe", again["p-base"].params)
+        same_day = {c.id: c for c in ic.configs_at("2026-11-23", store=self.db,
+                                                   at="13:50")}
+        self.assertNotIn("timeframe", same_day["p-base"].params)  # правка в 19:30
+        late = {c.id: c for c in ic.configs_at("2026-11-23", store=self.db,
+                                               at="20:00")}
+        self.assertEqual(late["p-base"].params["timeframe"], 60)
         self.assertEqual([v["version"] for v in self.db.param_history("p-base")],
                          [1, 2])
 

@@ -219,12 +219,23 @@ def build_rows() -> tuple[list[dict], str, str]:
         cfgs.update({c.id: c for c in active_configs("paper")})
     except Exception:  # noqa: BLE001 — без БД остаётся статический реестр
         pass
-    day_cfgs: dict[str, dict[str, object]] = {}
+    day_cfgs: dict[tuple[str, str], object] = {}
     for day in sorted({r["date"] for r in rows}):
-        try:
-            day_cfgs[day] = {c.id: c for c in configs_at(day)}
-        except Exception:  # noqa: BLE001 — нет БД → статический реестр
-            day_cfgs[day] = {}
+        # Время решения из журнала: параметр, изменённый после него, не должен
+        # применяться к уже записанному решению (версия создана в 19:30,
+        # а решение было в 13:50 — использовалась ещё старая логика).
+        last_time: dict[str, str] = {}
+        for r in rows:
+            if r["date"] == day:
+                cid = r["config"]
+                if r["time"] > last_time.get(cid, ""):
+                    last_time[cid] = r["time"]
+        for cid, when in last_time.items():
+            try:
+                found = {c.id: c for c in configs_at(day, at=when)}
+            except Exception:  # noqa: BLE001 — нет БД → статический реестр
+                found = {}
+            day_cfgs[(day, cid)] = found.get(cid, cfgs.get(cid))
     for cfg in cfgs.values():
         mine = [r for r in rows if r["config"] == cfg.id]
         if not mine:
@@ -243,7 +254,7 @@ def build_rows() -> tuple[list[dict], str, str]:
             e_trades, e_pnl = expected(
                 cfg, cache[inst.code], c_start, c_end, mult, capital,
                 tick=inst.tick,
-                cfg_for=lambda d, cid=cfg.id: by_day.get(str(d), {}).get(cid, cfg))
+                cfg_for=lambda d, cid=cfg.id: by_day.get((str(d), cid), cfg))
         dd = _dd_stats(mine, mult, capital)
         n, wins, losses, gw, gl = trade_stats(mine, mult)
         last = mine[-1]

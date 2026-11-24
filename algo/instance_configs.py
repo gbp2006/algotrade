@@ -86,9 +86,9 @@ def active_configs(mode: str = "paper",
     return [_to_config(r) for r in rows if r["status"] == "active"]
 
 
-def configs_at(day, mode: str = "paper",
-               store: RobotStore | None = None) -> list[Config]:
-    """Конфиги, действовавшие на дату `day`.
+def configs_at(day, mode: str = "paper", store: RobotStore | None = None,
+               at: str = "") -> list[Config]:
+    """Конфиги, действовавшие на дату `day` (опционально — до времени `at`).
 
     Параметры берутся из последней версии `param_versions`, созданной не позже
     этой даты; до первой версии инстанса используется статический реестр —
@@ -110,9 +110,9 @@ def configs_at(day, mode: str = "paper",
             versions = st.param_history(inst["id"])
         except Exception:  # noqa: BLE001 — старыми БД пренебрегаем
             pass
-        cutoff = str(day)
+        cutoff = f"{day}T{at}" if at else f"{day}T23:59:59"
         applicable = [v for v in versions
-                      if str(v.get("created_at") or "")[:10] <= cutoff]
+                      if str(v.get("created_at") or "") <= cutoff]
         if applicable:
             params = json.loads(applicable[-1]["params_json"])
         else:
