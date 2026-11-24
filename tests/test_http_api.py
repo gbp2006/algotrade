@@ -107,6 +107,11 @@ class TestHTTPApi(unittest.TestCase):
         self.assertIn('id="flow-rows"', html)
         self.assertIn('id="virtual-rows"', html)  # старый блок на месте
 
+    def test_reconciliation_endpoint(self):
+        status, data = request(web_app.app, "GET", "/api/portfolio/reconciliation")
+        self.assertEqual(status, 200)
+        self.assertIn("items", data)
+
     def test_webui_route_is_additive(self):
         status, html = request(web_app.app, "GET", "/ui")
         self.assertIn(status, (200, 404))

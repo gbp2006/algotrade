@@ -4,7 +4,7 @@ import {
   createChart, type CandlestickData, type IChartApi, type SeriesMarker,
   type UTCTimestamp,
 } from 'lightweight-charts';
-import { api } from '../lib/api';
+import { api, keys } from '../lib/api';
 import { money } from '../lib/format';
 import { useUi } from '../store/ui';
 import { Badge, Card, ErrorBox, Loading, TabPanel, Tabs } from '../components/ui';
@@ -94,6 +94,7 @@ export function Charts() {
     queryKey: ['trades-charts', first], queryFn: () => api.trades(first),
     enabled: Boolean(first), refetchInterval: 30_000,
   });
+  const runtime = useQuery({ queryKey: keys.runtime, queryFn: api.runtime, refetchInterval: 30_000 });
   const last = candles.data?.at(-1);
 
   const markers = useMemo<SeriesMarker<UTCTimestamp>[]>(() => {
@@ -115,6 +116,20 @@ export function Charts() {
     }
     return result;
   }, [candles.data, trades.data, layers.trades]);
+
+  const exposure = useMemo(() => {
+    const groups = new Map<string, { count: number; lots: number; names: string[] }>();
+    for (const robot of robots.data ?? []) {
+      const key = robot.instrument;
+      const position = runtime.data?.find((item) => item.instance_id === robot.id)?.position ?? 0;
+      const row = groups.get(key) ?? { count: 0, lots: 0, names: [] };
+      row.count += 1;
+      row.lots += Math.abs(position);
+      row.names.push(robot.note || robot.id);
+      groups.set(key, row);
+    }
+    return [...groups.entries()].map(([symbol, value]) => ({ symbol, ...value }));
+  }, [robots.data, runtime.data]);
 
   const rows = useMemo(() => (flows.data?.items ?? []).slice(0, 50), [flows.data]);
 
@@ -179,6 +194,14 @@ export function Charts() {
           </Tabs>
         </div>
         <Card title="Роботы инструмента">
+          {exposure.some((row) => row.count > 1) && (
+            <div className="mb-3 rounded-lg border border-warn p-2 text-[11px] text-warn">
+              Невидимая корреляция: несколько роботов на одном инструменте.{' '}
+              {exposure.filter((row) => row.count > 1).map((row) => (
+                <span key={row.symbol}>{row.symbol}: {row.count} роб., {row.lots} лотов. </span>
+              ))}
+            </div>
+          )}
           <div className="grid gap-2">
             {(robots.data ?? []).slice(0, 12).map((robot) => (
               <div key={robot.id} className="rounded-lg border border-line p-3">

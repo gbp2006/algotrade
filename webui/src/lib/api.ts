@@ -1,6 +1,6 @@
 import type {
   Analytics, CashFlowPreview, CashFlowRow, EquityResponse, Health,
-  LogItem, Robot, RuntimeState, Spec,
+  InstanceEvent, LogItem, Robot, RuntimeState, Spec,
 } from './types';
 
 export class ApiError extends Error {
@@ -32,6 +32,11 @@ export const del = <T>(path: string): Promise<T> =>
 
 export const api = {
   analytics: () => get<Analytics>('/api/portfolio/analytics'),
+  reconciliation: () => get<{ date: string; items: {
+    robot: string; symbol: string; planned_lots: number; actual_lots: number;
+    planned_price: number; actual_price: number; slippage_ticks: number;
+    slippage_rub: number; commission: number;
+  }[]; note: string }>('/api/portfolio/reconciliation'),
   equity: (accountId = '') => get<EquityResponse>(
     `/api/portfolio/equity?limit=1000${accountId ? `&account_id=${encodeURIComponent(accountId)}` : ''}`),
   flows: (accountId = '') => get<{ items: CashFlowRow[] }>(
@@ -44,6 +49,8 @@ export const api = {
     post<Record<string, unknown>>(`/api/instances/${encodeURIComponent(id)}/${action}`, {}),
   updateInstance: (id: string, payload: Record<string, unknown>) =>
     patchRequest<Robot>(`/api/instances/${encodeURIComponent(id)}`, payload),
+  instanceHistory: (id: string) =>
+    get<InstanceEvent[]>(`/api/instances/${encodeURIComponent(id)}/history`),
   robots: () => get<Robot[]>('/api/instances'),
   runtime: () => get<RuntimeState[]>('/api/runtime'),
   specs: () => get<Spec[]>('/api/specs'),
