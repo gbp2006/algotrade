@@ -44,7 +44,7 @@
 ./run.sh test            # все Python-тесты
 cd webui && npm test     # Vitest
 cd webui && npm run build# сборка в webui/dist
-node webui/check-all.mjs http://192.168.0.230:8080/ui/   # headless: 7 разделов, вкладки, 0 ошибок
+./run.sh check-ui       # headless: 7 разделов, вкладки, 0 ошибок JS
 ./scripts/deploy_wsl.sh --apply --restart                # выкладка на WSL
 ./run.sh start-project   # НА WSL: PG → миграция → systemd → HTTP-проверка
 ./run.sh migrate-pg      # однократная миграция SQLite → PG (идемпотентна)

@@ -23,6 +23,7 @@ case "${1:-help}" in
   backup) "$PY" scripts/95_backup_db.py ;;
   migrate-pg) "$PY" scripts/97_migrate_to_postgres.py ;;
   start-project) bash scripts/start_project.sh ;;
+  check-ui) node webui/check-all.mjs "${2:-http://192.168.0.230:8080/}" ;;
   live-dry) shift; "$PY" scripts/34_live_execute.py "$@" ;;
   live) shift; "$PY" scripts/34_live_execute.py --arm "$@" ;;
   rollover-dry) shift; "$PY" scripts/35_rollover_live.py "$@" ;;
@@ -77,6 +78,7 @@ usage: ./run.sh <команда>
   backup   консистентный бэкап trades/robots/paper_metrics в backups/db (0600)
   migrate-pg  однократный перенос служебных данных SQLite в PostgreSQL
   start-project  полный старт на WSL: PostgreSQL, миграция, панель, проверка
+  check-ui   headless-проверка GUI: 7 разделов, вкладки, 0 ошибок JS
   live-dry боевой контур в репетиции: заявки НЕ уходят (по умолчанию)
   live     боевой контур с --arm; требует FINAM_ALLOW_TRADING=1 и live_settings.json
   rollover-dry  перекладка квартальных позиций без отправки (по умолчанию)
