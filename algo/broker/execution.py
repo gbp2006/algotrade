@@ -13,6 +13,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import os
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -27,6 +28,43 @@ LOCK = ROOT / "results" / "live.lock"
 FIELDS = ["ts", "client_id", "client_order_id", "order_id", "config", "symbol",
           "side", "qty", "price", "multiplier", "status", "reason", "response",
           "account", "pricing", "order_type"]
+
+LOCK_MAX_AGE_SEC = 300  # аренда лока: после падения процесса снимается автоматически
+
+
+def _lock_lease_stale(path: Path, max_age: float = LOCK_MAX_AGE_SEC) -> bool:
+    """Лок упавшего процесса не должен блокировать заявки до ручного удаления."""
+    if not path.exists():
+        return False
+    try:
+        text = path.read_text(encoding="utf-8").strip()
+        pid_raw, sep, _ = text.partition(":")
+        if sep:
+            try:
+                os.kill(int(pid_raw), 0)  # жив ли владелец
+                return False
+            except PermissionError:
+                return False  # процесс есть, просто нет права посылать сигнал
+            except (ValueError, ProcessLookupError, OSError):
+                return True
+        # legacy-формат (только client_id) — ориентируемся на возраст файла
+        return time.time() - path.stat().st_mtime > max_age
+    except OSError:
+        return False
+
+
+def _acquire_lock(path: Path) -> int | None:
+    """O_EXCL + однократный сброс stale-лока. None — занят живым процессом."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    for attempt in (0, 1):
+        try:
+            return os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            if attempt == 0 and _lock_lease_stale(path):
+                path.unlink(missing_ok=True)
+                continue
+            return None
+    return None
 
 
 class ExecutionError(RuntimeError):
@@ -161,14 +199,12 @@ class OrderGateway:
             return self._write(order, Result("blocked", f"STOP: {stop.name}",
                                              client_order_id=cid))
 
-        self.lock.parent.mkdir(parents=True, exist_ok=True)
-        try:
-            fd = os.open(self.lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError:
+        fd = _acquire_lock(self.lock)
+        if fd is None:
             return self._write(order, Result("rejected", "уже выполняется другая заявка",
                                              client_order_id=cid))
         with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(order.client_id)
+            f.write(f"{os.getpid()}:{order.client_id}")
 
         try:
             try:

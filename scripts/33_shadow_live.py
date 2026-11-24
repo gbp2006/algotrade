@@ -2,8 +2,10 @@
 
 Работает после `paper-live`, берёт уже принятые решения из `results/paper.csv`
 и прогоняет их через `OrderGateway(dry_run=True)`. Заявки НЕ отправляются даже
-при включённом `FINAM_ALLOW_TRADING`. Результат — `results/live.csv` (статус
-`planned`/`rejected`) и сводка `results/shadow.json`.
+при включённом `FINAM_ALLOW_TRADING`. Результат — отдельные `results/shadow.csv`
+(статус `planned`/`rejected`) и `results/shadow.lock`; боевой контур использует
+`live.csv`/`live.lock` и не должен делить с тенью ни журнал, ни лок. Сводка —
+`results/shadow.json`.
 
 Запуск: ./run.sh shadow
 """
@@ -27,14 +29,15 @@ except Exception:
     pass
 
 from algo.broker.execution import (  # noqa: E402
-    LOCK, Order, OrderGateway, positions_from_response, reconcile,
+    Order, OrderGateway, positions_from_response, reconcile,
 )
 from algo.broker.finam import FinamBroker  # noqa: E402
 from algo.configs import CONFIGS  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS  # noqa: E402
 
 PAPER = ROOT / "results" / "paper.csv"
-LIVE = ROOT / "results" / "live.csv"
+SHADOW_JOURNAL = ROOT / "results" / "shadow.csv"
+SHADOW_LOCK = ROOT / "results" / "shadow.lock"
 SHADOW = ROOT / "results" / "shadow.json"
 STOP = ROOT / "results" / "STOP"
 
@@ -80,7 +83,7 @@ def main() -> int:
     day = date.today()
     rows = read_paper()
     orders = plan_orders(rows, day)
-    gateway = OrderGateway(FinamBroker(), journal=LIVE, lock=LOCK)
+    gateway = OrderGateway(FinamBroker(), journal=SHADOW_JOURNAL, lock=SHADOW_LOCK)
     results = [gateway.submit(o, os.environ.get("FINAM_ACCOUNT"), dry_run=True)
                for o in orders]
 

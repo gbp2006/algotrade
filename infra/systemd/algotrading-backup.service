@@ -1,0 +1,9 @@
+[Unit]
+Description=Algo SQLite backup (WAL-safe, no secrets)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=zt
+WorkingDirectory=/home/zt/algotrading
+ExecStart=/home/zt/algotrading/.venv/bin/python scripts/95_backup_db.py

@@ -97,6 +97,27 @@ class TestGateway(unittest.TestCase):
         self.assertIn("другая заявка", res.reason)
         self.assertEqual(self.broker.calls, [])
 
+    def test_stale_lock_from_dead_process_is_cleared(self):
+        self.lock.write_text("99999999:old-order", encoding="utf-8")
+        with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):
+            res = self.gw.submit(order())
+        self.assertTrue(res.sent)
+        self.assertFalse(self.lock.exists())
+
+    def test_legacy_lock_expires_by_age(self):
+        self.lock.write_text("old-order", encoding="utf-8")
+        old = __import__("time").time() - ex.LOCK_MAX_AGE_SEC - 10
+        os.utime(self.lock, (old, old))
+        with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):
+            res = self.gw.submit(order())
+        self.assertTrue(res.sent)
+
+    def test_live_pid_lock_still_blocks(self):
+        self.lock.write_text(f"{os.getpid()}:current-order", encoding="utf-8")
+        with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):
+            res = self.gw.submit(order())
+        self.assertEqual(res.status, "rejected")
+
     def test_transport_error_journaled_and_lock_released(self):
         gw = ex.OrderGateway(FakeBroker(fail=True), journal=self.journal, lock=self.lock)
         with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):

@@ -55,6 +55,9 @@ class RobotStore:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(self.path)
         conn.row_factory = sqlite3.Row
+        # Панель и планировщик пишут/читают одну БД одновременно: ждём writer,
+        # а не падаем «database is locked» через 5 с по умолчанию.
+        conn.execute("PRAGMA busy_timeout=5000")
         try:
             yield conn
             conn.commit()
@@ -63,6 +66,12 @@ class RobotStore:
 
     def init_db(self) -> None:
         with self._conn() as c:
+            # WAL: длинный reader панели не блокирует writer-планировщик. Режим
+            # сохраняется в файле БД, повтор на уже WAL-базе — быстрый no-op.
+            try:
+                c.execute("PRAGMA journal_mode=WAL")
+            except sqlite3.DatabaseError:
+                pass  # БД занята — оставляем текущий режим, verbose в tests
             c.executescript("""
                 CREATE TABLE IF NOT EXISTS accounts (
                   id TEXT PRIMARY KEY, label TEXT NOT NULL, capital REAL NOT NULL,
@@ -107,6 +116,15 @@ class RobotStore:
                   slot TEXT NOT NULL, started TEXT, finished TEXT,
                   status TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0,
                   detail TEXT DEFAULT '', UNIQUE(job_id, slot));
+                -- Индексы под реальные запросы панели/сторожа (иначе SCAN + TEMP B-TREE)
+                CREATE UNIQUE INDEX IF NOT EXISTS ux_param_versions
+                  ON param_versions(instance_id, version);
+                CREATE INDEX IF NOT EXISTS idx_instance_events_inst
+                  ON instance_events(instance_id, created_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_scheduler_runs_status
+                  ON scheduler_runs(status, slot DESC);
+                CREATE INDEX IF NOT EXISTS idx_runtime_updated
+                  ON runtime_state(updated_at);
             """)
             # миграция существующих баз: ключ счёта и торговый код
             cols = {r[1] for r in c.execute("PRAGMA table_info(accounts)")}

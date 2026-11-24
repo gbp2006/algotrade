@@ -42,16 +42,16 @@ class TestShadow(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         d = Path(self.tmp.name)
-        self.paper, self.live = d / "paper.csv", d / "live.csv"
+        self.paper, self.live = d / "paper.csv", d / "shadow.csv"
         self.shadow, self.stop = d / "shadow.json", d / "STOP"
-        self.lock = d / "live.lock"
+        self.lock = d / "shadow.lock"
         self.broker = FakeBroker()
         self.patches = [
             mock.patch.object(shadow, "PAPER", self.paper),
-            mock.patch.object(shadow, "LIVE", self.live),
+            mock.patch.object(shadow, "SHADOW_JOURNAL", self.live),
             mock.patch.object(shadow, "SHADOW", self.shadow),
             mock.patch.object(shadow, "STOP", self.stop),
-            mock.patch.object(shadow, "LOCK", self.lock),
+            mock.patch.object(shadow, "SHADOW_LOCK", self.lock),
             mock.patch.object(shadow, "FinamBroker", lambda: self.broker),
             mock.patch.object(shadow, "CONFIGS", [BY_ID["p-base"]]),
         ]
@@ -81,6 +81,15 @@ class TestShadow(unittest.TestCase):
         self.assertEqual(data["date"], str(today))
         self.assertEqual(data["counts"], {"planned": 1})
         self.assertTrue(data["issues"])
+
+    def test_shadow_uses_own_journal_and_lock(self):
+        today = date.today()
+        self._journal(today)
+        with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):
+            self.assertEqual(shadow.main(), 0)
+        self.assertTrue(self.live.exists())          # shadow.csv
+        self.assertFalse((self.live.parent / "live.csv").exists())
+        self.assertFalse(self.lock.exists())         # shadow.lock снят
 
     def test_stop_skips_shadow(self):
         self.stop.write_text("1", encoding="utf-8")

@@ -30,6 +30,7 @@ from algo.robot_store import ConflictError, RobotStore, StoreError
 
 ROOT = Path(__file__).resolve().parent.parent
 LIVE = ROOT / "results" / "live.csv"
+SHADOW_JOURNAL = ROOT / "results" / "shadow.csv"
 PAPER = ROOT / "results" / "paper.csv"
 HEALTH = ROOT / "results" / "health.json"
 SHADOW = ROOT / "results" / "shadow.json"
@@ -578,11 +579,15 @@ def live_state_view() -> dict:
             days = {r.get("date", "") for r in csv.DictReader(f) if "config" in r}
     days.discard("")
     shadow_days: set[str] = set()
-    if LIVE.exists():
-        with LIVE.open(encoding="utf-8") as f:
-            shadow_days = {str(r.get("ts", ""))[:10]
-                           for r in csv.DictReader(f)
-                           if r.get("status") == "planned" and r.get("ts")}
+    # Тень с 24.11 пишет в shadow.csv; старые planned-строки жили в live.csv —
+    # читаем оба журнала, чтобы счётчик G3 не терял историю при разделении.
+    for journal in (LIVE, SHADOW_JOURNAL):
+        if not journal.exists():
+            continue
+        with journal.open(encoding="utf-8") as f:
+            shadow_days |= {str(r.get("ts", ""))[:10]
+                            for r in csv.DictReader(f)
+                            if r.get("status") == "planned" and r.get("ts")}
     return {
         "allow_trading": os.environ.get("FINAM_ALLOW_TRADING") == "1",
         "stop_paper": STOP.exists(),
