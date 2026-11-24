@@ -1,10 +1,26 @@
 {
+  // ПРОФИЛЬ: work
   "$schema": "https://opencode.ai/config.json",
 
   // Встроенный веб-поиск OpenCode: ключ TAVILY_API_KEY берётся из окружения
   // сервиса (systemd user environment), в конфиг секрет не пишем.
   "websearch": {
     "provider": "tavily"
+  },
+
+  // Контекст: компактировать заранее, а не у лимита (буфер 35% = ~65% окна).
+  // Плюс scripts/94_context_cleanup.py делает принудительный /compact для
+  // крупных активных сессий каждые 4 часа (automation в профиле algo).
+  "compaction": {
+    "auto": true,
+    "background": true,
+    "keep": { "tokens": 12000 },
+    "buffer": "35%"
+  },
+  // Длинные выходы инструментов режем: детали — в reports/, в чат только путь.
+  "tool_output": {
+    "max_lines": 200,
+    "max_bytes": 16000
   },
 
 // ==== SYNCED PROVIDERS BEGIN (генерируется infra/bin/sync-providers.py, править в hub) ====
@@ -355,43 +371,16 @@
 
   "mcp": {
     "servers": {
-      // Свой индекс истории: notes.md сессий, PROGRESS.md, docs, reports.
       "memory": {
         "type": "local",
-        "command": ["python3", "/mnt/DiskD/opencode-algo/infra/db/memory.py", "--mcp"],
+        "command": [
+          "python3",
+          "/mnt/DiskD/opencode-algo/infra/db/memory.py",
+          "--mcp"
+        ],
         "environment": {
           "OC_MEMORY_ROOT": "/mnt/DiskD/opencode-algo",
           "OC_MEMORY_SESSIONS": "sessions"
-        }
-      },
-      // Локальный поиск без ключей (Bing/Google News RSS) — то же имя, что
-      // в хабе, чтобы инструменты назывались одинаково в обеих песочницах.
-      "websearch-local": {
-        "type": "local",
-        "command": ["node", "/mnt/DiskD/opencode-algo/infra/mcp/websearch/server.js"]
-      },
-      // Exa: семантический поиск и чтение страниц (web_search_exa,
-      // web_fetch_exa, agent_run). Ключ подставляется из окружения.
-      "exa": {
-        "type": "remote",
-        "url": "https://mcp.exa.ai/mcp",
-        "headers": {
-          "x-api-key": "{env:EXA_API_KEY}"
-        }
-      },
-      // Брокер Финам: котировки, портфель, заявки. Только в алго-песочнице.
-      "finam-mcp": {
-        "type": "remote",
-        "url": "https://mcp.finam.ru/sk_cX7zrq5h7Fs0BRGrRdvm3uHMPA4pYGFY05fvngYnIkY"
-      },
-      // OsEngine: локальный терминал под Wine, MCP-хост на :6500.
-      // Ключ — публичный дефолт OsEngine для loopback, не секрет.
-      // Только исследования: не эталон (ADR 18.11) и без выхода в контур (ADR 23.11).
-      "osengine": {
-        "type": "remote",
-        "url": "http://localhost:6500/api/v2/mcp",
-        "headers": {
-          "X-Api-Key": "osengine-mcp-default-key"
         }
       }
     }
@@ -402,6 +391,8 @@
     { "action": "skill", "resource": "*", "effect": "deny" },
     { "action": "skill", "resource": "session-workflow", "effect": "allow" },
     { "action": "skill", "resource": "memory-index", "effect": "allow" },
+    // Finam Trade API Skill (установлен в .agents/skills/trade-api).
+    { "action": "skill", "resource": "trade-api", "effect": "allow" },
 
     // Данные рынка — только через скрипты, не инструментами чтения.
     { "action": "read", "resource": "/mnt/DiskD/MOEX/**", "effect": "deny" },

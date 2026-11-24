@@ -1,0 +1,10 @@
+{
+  "memory": {
+    "type": "local",
+    "command": ["python3", "/mnt/DiskD/opencode-algo/infra/db/memory.py", "--mcp"],
+    "environment": {
+      "OC_MEMORY_ROOT": "/mnt/DiskD/opencode-algo",
+      "OC_MEMORY_SESSIONS": "sessions"
+    }
+  }
+}

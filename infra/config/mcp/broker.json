@@ -1,0 +1,14 @@
+{
+  "memory": {
+    "type": "local",
+    "command": ["python3", "/mnt/DiskD/opencode-algo/infra/db/memory.py", "--mcp"],
+    "environment": {
+      "OC_MEMORY_ROOT": "/mnt/DiskD/opencode-algo",
+      "OC_MEMORY_SESSIONS": "sessions"
+    }
+  },
+  "finam-mcp": {
+    "type": "remote",
+    "url": "https://mcp.finam.ru/sk_cX7zrq5h7Fs0BRGrRdvm3uHMPA4pYGFY05fvngYnIkY"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "memory": {
+    "type": "local",
+    "command": ["python3", "/mnt/DiskD/opencode-algo/infra/db/memory.py", "--mcp"],
+    "environment": {
+      "OC_MEMORY_ROOT": "/mnt/DiskD/opencode-algo",
+      "OC_MEMORY_SESSIONS": "sessions"
+    }
+  },
+  "websearch-local": {
+    "type": "local",
+    "command": ["node", "/mnt/DiskD/opencode-algo/infra/mcp/websearch/server.js"]
+  },
+  "exa": {
+    "type": "remote",
+    "url": "https://mcp.exa.ai/mcp",
+    "headers": { "x-api-key": "{env:EXA_API_KEY}" }
+  },
+  "osengine": {
+    "type": "remote",
+    "url": "http://localhost:6500/api/v2/mcp",
+    "headers": { "X-Api-Key": "osengine-mcp-default-key" }
+  }
+}
