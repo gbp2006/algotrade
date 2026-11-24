@@ -209,6 +209,9 @@
 <script>
 const $ = id => document.getElementById(id);
 const L = window.UILabels;
+// Master-list: сначала те, что требуют внимания (остановлен/на паузе),
+// затем черновики, затем работающие и архив. Ранг один для всех разделов.
+const STATUS_RANK = {stopping: 0, stopped: 0, paused: 1, draft: 2, active: 3, archived: 4};
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let specs = [], accounts = [], paperIds = [];
 const PARAM_LABELS = {
@@ -319,6 +322,7 @@ async function loadAll() {
       insts.length = 0; insts.push(...shown);
     }
     const runtime = Object.fromEntries(rt.map(x => [x.instance_id, x]));
+    insts.sort((a, b) => (STATUS_RANK[a.status] ?? 5) - (STATUS_RANK[b.status] ?? 5));
     $('instances').innerHTML = insts.length ? insts.map(i => {
       const st = runtime[i.id] || {};
       const acts = [];
@@ -345,7 +349,9 @@ async function loadAll() {
         <td>${esc(specName)}<br><span class="muted small">${esc(i.instrument||'')}</span>
           <details class="tech-details"><summary>Параметры (${Object.keys(i.params||{}).length})</summary><code>${params}</code></details></td>
         <td>${esc(L.mode(i.mode))}</td>
-        <td><span class="badge ${esc(i.status)}">${esc(L.robotStatus(i.status))}</span></td>
+        <td><span class="badge ${esc(i.status)}">${esc(L.robotStatus(i.status))}</span>${
+          ['paused', 'stopped', 'stopping'].includes(i.status)
+            ? '<br><span class="muted small">требует внимания</span>' : ''}</td>
         <td>${esc(i.account||'—')}<br><span class="muted small">${esc(i.pricing||'—')}</span></td>
         <td>${L.qty(st.position)} / ${L.money(st.equity)}
           <br><span class="muted small">${esc(L.decision(st.last_decision))}</span>
