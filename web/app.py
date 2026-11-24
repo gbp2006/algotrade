@@ -160,7 +160,7 @@ def quote_for(inst, day=None) -> dict:
         q = b.quote(sym)
         return {"symbol": sym, "bid": q.bid, "ask": q.ask, "last": q.last,
                 "spread_ticks": round((q.ask - q.bid) / inst.tick), "ts": q.timestamp}
-    return _cached(f"quote:{sym}", 10, fetch)
+    return _cached(f"quote:{sym}", 15, fetch)
 
 
 ALL_CONFIGS = CONFIGS + ROBOT_CONFIGS
@@ -184,7 +184,7 @@ def price_series(inst=None) -> list[list]:
         df = b.bars(sym, "TIME_FRAME_M5", start, end)
         return [[d.strftime("%H:%M"), round(float(v), inst.digits)] for d, v in
                 zip(df.index, df["close"])]
-    return _cached(f"price:{inst.code}", 30, fetch)
+    return _cached(f"price:{inst.code}", 60, fetch)
 
 
 TF_MAP = {
@@ -213,11 +213,15 @@ def candles(tf: str = "M5", days: int = 2, config_id: str | None = None) -> list
 
 
 def timer_state(name: str) -> str:
-    try:
-        r = subprocess.run(["systemctl", "is-active", name], capture_output=True, text=True, timeout=3)
-        return r.stdout.strip() or "unknown"
-    except Exception:
-        return "n/a"
+    """Состояние systemd-юнита; кэш 10 с убирает 3 подпроцесса из `/api/state`."""
+    def fetch():
+        try:
+            r = subprocess.run(["systemctl", "is-active", name],
+                               capture_output=True, text=True, timeout=3)
+            return r.stdout.strip() or "unknown"
+        except Exception:
+            return "n/a"
+    return _cached(f"timer:{name}", 10, fetch)
 
 
 def config_stats(cfg, rows: list[dict], price: float | None = None) -> dict:
