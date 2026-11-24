@@ -57,6 +57,7 @@ export function Robots() {
   const [calcAmount, setCalcAmount] = useState(100_000);
   const [calcKind, setCalcKind] = useState('DEPOSIT');
   const [historyId, setHistoryId] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const robots = useQuery({ queryKey: keys.robots, queryFn: api.robots, refetchInterval: 30_000 });
   const runtime = useQuery({ queryKey: keys.runtime, queryFn: api.runtime, refetchInterval: 30_000 });
@@ -87,6 +88,25 @@ export function Robots() {
     if (spec) form.setValue('params', { ...spec.defaults }, { shouldValidate: true });
   }, [specId, specs.data, form]);
 
+  const startEdit = async (id: string) => {
+    const robot = await api.robot(id);
+    form.reset({
+      name: robot.note || robot.id,
+      spec_id: robot.spec_id,
+      instrument: robot.instrument,
+      mode: robot.mode === 'live' ? 'live' : 'paper',
+      account: robot.account ?? '',
+      exposure: Number(robot.exposure ?? 2),
+      sizing_mode: 'PERCENT', sizing_value: Number(robot.exposure ?? 2) * 100,
+      reaction: 'IMMEDIATE', smoothing_pct: 5, on_insufficient: 'PAUSE',
+      min_lots: 1, max_lots: Number(robot.max_qty ?? 100),
+      sl_pct: 0, tp_pct: 0, trailing_pct: 0, close_time: '',
+      params: robot.params ?? {},
+    });
+    setEditingId(id);
+    setTab('wizard');
+  };
+
   const create = useMutation({
     mutationFn: (payload: Record<string, unknown>) => api.createInstance(payload),
     onSuccess: () => {
@@ -112,6 +132,15 @@ export function Robots() {
           on_insufficient: values.on_insufficient,
         }],
       });
+    },
+  });
+  const edit = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Record<string, unknown> }) =>
+      api.updateInstance(id, payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: keys.robots });
+      setEditingId(null);
+      setTab('mine');
     },
   });
   const switchAccount = useMutation({
@@ -149,13 +178,14 @@ export function Robots() {
       <div className="flex gap-1">
         <button className="btn" onClick={() => action.mutate({ id: row.original.id, name: 'start' })}>Старт</button>
         <button className="btn" onClick={() => action.mutate({ id: row.original.id, name: 'pause' })}>Пауза</button>
+        <button className="btn" onClick={() => void startEdit(row.original.id)}>Настроить</button>
         <button className="btn" onClick={() => setSelected(row.original.id)}>Счёт</button>
       </div>
     ) },
   ];
 
   const submit = form.handleSubmit((values) => {
-    create.mutate({
+    const payload: Record<string, unknown> = {
       spec_id: values.spec_id,
       instrument: values.instrument,
       mode: values.mode,
@@ -163,8 +193,18 @@ export function Robots() {
       note: values.name,
       exposure: values.exposure,
       params: values.params,
-      capital: values.mode === 'paper' ? 200_000 : undefined,
-    });
+    };
+    if (editingId) {
+      edit.mutate({
+        id: editingId,
+        payload: { ...payload,
+          version: robots.data?.find((item) => item.id === editingId)?.version ?? 1,
+          reason: 'правка из мастера' },
+      });
+    } else {
+      create.mutate({ ...payload,
+        capital: values.mode === 'paper' ? 200_000 : undefined });
+    }
   });
 
   return (
@@ -193,7 +233,7 @@ export function Robots() {
           </div>
         </TabPanel>
         <TabPanel value="wizard">
-          <Card title="Мастер создания робота">
+          <Card title={editingId ? `Редактирование робота ${editingId}` : 'Мастер создания робота'}>
             <form onSubmit={submit} className="grid gap-4 md:grid-cols-2">
               <label className="text-xs">Имя робота
                 <input className="input mt-1" {...form.register('name')} />
@@ -292,12 +332,16 @@ export function Robots() {
                 <input className="input mt-1" placeholder="18:45" {...form.register('close_time')} />
               </label>
               <div className="flex items-end gap-2">
-                <button type="submit" className="btn-primary" disabled={create.isPending}>
-                  {create.isPending ? 'Создание…' : 'Создать робота'}
+                <button type="submit" className="btn-primary" disabled={create.isPending || edit.isPending}>
+                  {edit.isPending ? 'Сохранение…' : create.isPending ? 'Создание…'
+                    : editingId ? 'Сохранить изменения' : 'Создать робота'}
                 </button>
+                {editingId && <button type="button" className="btn"
+                  onClick={() => { setEditingId(null); setTab('mine'); }}>Отмена</button>}
                 <button type="button" className="btn" onClick={() => calc.mutate()}>Рассчитать лот</button>
               </div>
             </form>
+            {edit.error && <div className="mt-2"><ErrorBox error={edit.error} /></div>}
             <LiveCalculator data={calc.data} error={calc.error}
               amount={calcAmount} kind={calcKind}
               onAmount={setCalcAmount} onKind={setCalcKind} />

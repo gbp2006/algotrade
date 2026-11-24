@@ -45,6 +45,7 @@ export const api = {
   sync: (payload: Record<string, unknown> = {}) => post<{ items: unknown[]; needs_report: string[] }>('/api/cash-flows/sync', payload),
   applyFlow: (payload: Record<string, unknown>) => post<{ applied: boolean; capital_after?: number; key: string }>('/api/cash-flows', payload),
   createInstance: (payload: Record<string, unknown>) => post<Robot>('/api/instances', payload),
+  robot: (id: string) => get<Robot>(`/api/instances/${encodeURIComponent(id)}`),
   instanceAction: (id: string, action: string) =>
     post<Record<string, unknown>>(`/api/instances/${encodeURIComponent(id)}/${action}`, {}),
   updateInstance: (id: string, payload: Record<string, unknown>) =>

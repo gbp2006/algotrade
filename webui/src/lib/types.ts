@@ -113,6 +113,7 @@ export interface CashFlowPreview {
 
 export interface Robot {
   id: string;
+  spec_id: string;
   strategy: string;
   strategy_name?: string;
   note: string;
@@ -123,6 +124,8 @@ export interface Robot {
   capital?: number | null;
   exposure?: number | null;
   max_qty?: number | null;
+  version?: number;
+  params?: Record<string, string | number | boolean>;
 }
 
 export interface Spec {

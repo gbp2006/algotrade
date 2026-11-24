@@ -10,7 +10,7 @@ describe('offline store', () => {
   it('keeps virtual accounts and robots without a server', async () => {
     await hydrate({
       accounts: [{ id: 'paper-1', label: 'Бумага', mode: 'paper', equity: 200_000, cachedAt: 0 }],
-      robots: [{ id: 'paper-1', strategy: 'prostushka', note: 'Тест', instrument: 'CNY',
+      robots: [{ id: 'paper-1', spec_id: 'prostushka', strategy: 'prostushka', note: 'Тест', instrument: 'CNY',
         mode: 'paper', status: 'active', cachedAt: 0 }],
     });
     const accounts = await offline.accounts.toArray();
