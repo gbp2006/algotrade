@@ -202,6 +202,8 @@ async function load(){
     const savedAcc = UIState.get('tradeAccount','');
     if(robots.some(i=>i.id===savedRobot)) pickRobot(savedRobot);
     else if(ACCS.some(a=>a.key===savedAcc)) pickAccount(savedAcc);
+    else if(robots.length) pickRobot(robots[0].id);
+    else if(ACCS.length) pickAccount(ACCS[0].key);
     else { $('detail-title').textContent='Детали'; $('detail-body').innerHTML='Выберите робота или счёт выше.'; }
     renderOrders();
     $('brokers').innerHTML = br.map(b=>`<button onclick="check('${esc(b.name)}')">проверить ${esc(b.name)}</button>`).join('');
