@@ -12,12 +12,12 @@
       const r = await fetch('/api/instances?mode=live', { cache: 'no-store' });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       items = (await r.json()).map(i => ({
-        id: i.id, title: i.id, strategy: i.spec_id,
-        status: i.status === 'active' ? 'live' : i.status,
+        id: i.id, title: window.UILabels.humanName(i), hint: i.id,
+        strategy: i.spec_id, status: i.status === 'active' ? 'live' : i.status,
       }));
       box.innerHTML = items.length
         ? items.map(s => `
-            <a class="item" href="/robots?mode=live" title="${esc(s.title)}">
+            <a class="item" href="/robots?mode=live" title="${esc(s.title)} · ${esc(s.hint)}">
               <span class="ico">${s.strategy === 'prostushka' ? 'П' : 'У'}</span>
               <span class="nm">${esc(s.title)}</span>
               <span class="st ${esc(s.status)}"></span>

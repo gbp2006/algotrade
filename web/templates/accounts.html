@@ -7,6 +7,7 @@
 <title>Autopilot — счета</title>
 <link rel="stylesheet" href="/static/app.css">
 <script src="/static/ui-state.js"></script>
+<script src="/static/ui-labels.js"></script>
 </head>
 <body>
 <div class="layout">
@@ -39,19 +40,23 @@
 </div>
 <script>
 const $ = id => document.getElementById(id);
+const L = window.UILabels;
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const num = v => (v === null || v === undefined || v === '') ? '—' : Number(v).toLocaleString('ru-RU', {maximumFractionDigits:0});
 async function load(){
   try{
-    const j = await (await fetch('/api/accounts/analytics', {cache:'no-store'})).json();
+    const [j, insts] = await Promise.all([
+      fetch('/api/accounts/analytics', {cache:'no-store'}).then(r=>r.json()),
+      fetch('/api/instances', {cache:'no-store'}).then(r=>r.json()).catch(()=>[])]);
+    const names = Object.fromEntries((insts||[]).map(i=>[i.id, L.humanName(i)]));
     $('real-rows').innerHTML = j.real.length ? j.real.map(a=>`<tr>
       <td><b>${esc(a.label)}</b><br><span class="muted small">${esc(a.id)}</span></td>
       <td>${num(a.equity)} ₽</td>
-      <td>${a.positions.length ? a.positions.map(p=>`${esc(p.symbol)} ${num(p.qty)} (${num(p.pnl)} ₽)`).join('<br>') : '—'}</td>
-      <td>${esc(a.status)}</td></tr>`).join('') : '<tr><td colspan="4" class="muted">Нет зарегистрированных счетов</td></tr>';
+      <td>${a.positions.length ? a.positions.map(p=>`${esc(p.symbol)} ${L.qty(p.qty)} (${L.money(p.pnl)})`).join('<br>') : '—'}</td>
+      <td>${esc(L.robotStatus(a.status))}</td></tr>`).join('') : '<tr><td colspan="4" class="muted">Нет зарегистрированных счетов</td></tr>';
     $('virtual-rows').innerHTML = j.virtual.length ? j.virtual.map(v=>`<tr>
-      <td>${esc(v.id)}</td><td>${num(v.equity)} ₽</td><td>${num(v.position)}</td>
-      <td class="muted small">${esc(v.last_decision)}</td></tr>`).join('') : '<tr><td colspan="4" class="muted">Нет бумажных инстансов</td></tr>';
+      <td>${esc(names[v.id] || v.id)}</td><td>${L.money(v.equity)}</td><td>${L.qty(v.position)}</td>
+      <td class="muted small">${esc(L.decision(v.last_decision))}</td></tr>`).join('') : '<tr><td colspan="4" class="muted">Нет бумажных инстансов</td></tr>';
     const eq = j.real.filter(a=>a.equity).reduce((s,a)=>s+a.equity,0);
     $('kpi').innerHTML = `<div class="it"><span>Реальных счетов</span><b>${j.real.length}</b></div>
       <div class="it"><span>Equity реальных</span><b>${num(eq)} ₽</b></div>

@@ -10,6 +10,7 @@
 <title>Autopilot — роботы и брокеры</title>
 <link rel="stylesheet" href="/static/app.css">
 <script src="/static/ui-state.js"></script>
+<script src="/static/ui-labels.js"></script>
 <script src="/static/sidebar.js" defer></script>
 </head>
 <body>
@@ -46,7 +47,7 @@
   <div class="card">
     <h3>Инстансы роботов</h3>
     <p class="muted small">Робот без инстанса не торгует. Новый инстанс создаётся в черновике и запускается вручную.</p>
-    <div class="table-wrap"><table><thead><tr><th>id</th><th>тип / инструмент</th><th>режим</th><th>статус</th>
+    <div class="table-wrap"><table><thead><tr><th>Робот</th><th>Стратегия / инструмент</th><th>режим</th><th>статус</th>
       <th>счёт / цена</th><th>позиция / equity</th><th>версия</th><th>действия</th></tr></thead>
       <tbody id="instances"><tr><td colspan="8" class="muted">загрузка…</td></tr></tbody></table></div>
   </div>
@@ -207,6 +208,7 @@
 
 <script>
 const $ = id => document.getElementById(id);
+const L = window.UILabels;
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let specs = [], accounts = [], paperIds = [];
 const PARAM_LABELS = {
@@ -264,7 +266,7 @@ async function loadStats() {
 }
 async function refreshLiquid() {
   try { const r = await api('/instruments/refresh-liquid', {method:'POST'});
-        $('inst-stats').textContent = `ликвидных: ${r.selected} (${JSON.stringify(r.by_type)})`; }
+        $('inst-stats').textContent = `ликвидных: ${L.num(r.selected)} — ${L.byTypePhrase(r.by_type)}`; }
   catch(e) { $('inst-stats').textContent = 'ошибка: ' + e.message; }
 }
 async function addFavorite() {
@@ -299,7 +301,7 @@ async function loadAll() {
       api('/runtime'), api('/keys')]);
     specs = sp; accounts = acc;
     $('strategy-cards').innerHTML = sp.map(s => `<div class="card">
-      <h4>${esc(s.id)}</h4>
+      <h4>${esc(s.title || s.display || s.id)} <small class="muted">${esc(s.id)}</small></h4>
       <p class="muted small" style="min-height:70px">${esc(s.about || s.description || '—')}</p>
       <p class="hint">Параметров: ${Object.keys(s.defaults || {}).length} · инструментов: ${(s.instruments || []).length}</p>
       <button class="btn" onclick="openCreate('${esc(s.id)}')">Создать робота</button></div>`).join('') || '<div class="muted">библиотека пуста</div>';
@@ -337,14 +339,18 @@ async function loadAll() {
         acts.push(`<button onclick="mmAction('${esc(i.id)}','close')">закрыть фонд</button>`);
       }
       const params = Object.entries(i.params || {}).map(([k,v]) => `${k}=${esc(v)}`).join(' ');
-      return `<tr><td><b>${esc(i.id)}</b><br><span class="muted">${esc(i.note||'')}</span></td>
-        <td>${esc(i.spec_id)} / ${esc(i.instrument)}<br><code>${params}</code></td>
-        <td>${i.mode==='live'?'<span class="badge live">бой</span>':'бумага'}</td>
-        <td><span class="badge ${esc(i.status)}">${esc(i.status)}</span></td>
-        <td>${esc(i.account||'—')}<br><span class="muted">${esc(i.pricing||'—')}</span></td>
-        <td>${st.position ?? '—'} / ${st.equity ? Number(st.equity).toLocaleString('ru') : '—'}
-          <br><code>${esc(st.last_decision||'')}</code></td>
-        <td>v${i.version}</td><td><div class="row">${acts.join('')}</div></td></tr>`;
+      const spec = specs.find(x => x.id === i.spec_id);
+      const specName = spec ? (spec.title || spec.display || spec.id) : (i.spec_id || '—');
+      return `<tr><td><b>${esc(L.humanName(i))}</b><br><span class="muted small">${esc(i.id)}</span></td>
+        <td>${esc(specName)}<br><span class="muted small">${esc(i.instrument||'')}</span>
+          <details class="tech-details"><summary>Параметры (${Object.keys(i.params||{}).length})</summary><code>${params}</code></details></td>
+        <td>${esc(L.mode(i.mode))}</td>
+        <td><span class="badge ${esc(i.status)}">${esc(L.robotStatus(i.status))}</span></td>
+        <td>${esc(i.account||'—')}<br><span class="muted small">${esc(i.pricing||'—')}</span></td>
+        <td>${L.qty(st.position)} / ${L.money(st.equity)}
+          <br><span class="muted small">${esc(L.decision(st.last_decision))}</span>
+          <details class="tech-details"><summary>Сырое решение</summary><code>${esc(st.last_decision||'—')}</code></details></td>
+        <td>v${esc(i.version ?? '—')}</td><td><div class="row">${acts.join('')}</div></td></tr>`;
     }).join('') : '<tr><td colspan="7" class="muted">инстансов нет</td></tr>';
     $('accounts').innerHTML = accounts.map(a =>
       `<span class="badge">${esc(a.id)}${a.label ? ' · ' + esc(a.label) : ''}</span>`).join('') || 'нет счетов';
@@ -482,8 +488,9 @@ async function liveRun(arm) {
     const r = await api('/live-run', {method:'POST',
       body:JSON.stringify({arm, day:new Date().toISOString().slice(0,10)})});
     const s = r.summary || {};
-    $('live-run-result').textContent = (r.ok ? 'OK' : 'ошибка') +
-      (s.counts ? ' · ' + JSON.stringify(s.counts) : '') +
+    const counts = s.counts ? Object.entries(s.counts).map(([k,v]) => `${L.orderStatus(k)}: ${L.num(v)}`).join(', ') : '';
+    $('live-run-result').textContent = (r.ok ? 'Прогон завершён' : 'Ошибка прогона') +
+      (counts ? ' · ' + counts : '') +
       (s.notes && s.notes.length ? ' · ' + s.notes[0] : '');
     $('status').textContent = r.stdout || 'прогон завершён';
     await loadAll();
@@ -510,8 +517,8 @@ async function toggleLive() {
 }
 async function loadServiceKey() {
   try { const r = await api('/service-key');
-        $('service-status').textContent = r.set ? 'сервисный ключ сохранён (' + r.ref + ')'
-          : (r.env_fallback ? 'в auth.json нет, используется FINAM_SECRET из .env' : 'сервисный ключ не задан'); }
+        $('service-status').textContent = r.set ? 'сервисный ключ сохранён'
+          : (r.env_fallback ? 'Ключ не задан, используется переменная окружения' : 'сервисный ключ не задан'); }
   catch(_) {}
 }
 async function saveServiceKey() {
@@ -552,7 +559,7 @@ async function openEdit(id){
   const [inst, sp] = await Promise.all([api('/instances/'+encodeURIComponent(id)), api('/specs')]);
   const spec = sp.find(s => s.id === inst.spec_id);
   editing = inst;
-  $('edit-title').textContent = id + ' · ' + inst.spec_id;
+  $('edit-title').textContent = L.humanName(inst) + ' · ' + inst.id;
   $('e-reason').value = ''; $('e-note').value = inst.description || inst.note || '';
   $('e-err').textContent = ''; $('e-preview').textContent = '—';
   $('e-account').innerHTML = accounts.map(a =>

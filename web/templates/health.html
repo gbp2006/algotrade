@@ -7,6 +7,7 @@
 <title>Autopilot — здоровье</title>
 <link rel="stylesheet" href="/static/app.css">
 <script src="/static/ui-state.js"></script>
+<script src="/static/ui-labels.js"></script>
 </head>
 <body>
 <div class="layout">
@@ -40,6 +41,7 @@
 </div>
 <script>
 const $ = id => document.getElementById(id);
+const L = window.UILabels;
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let ITEMS = [];
 function render(){
@@ -47,15 +49,15 @@ function render(){
   const rows = ITEMS.filter(x => src === 'all' || x.source === src);
   $('log-rows').innerHTML = rows.length ? rows.map(x=>`<tr>
     <td class="muted">${esc(String(x.ts||'').replace('T',' ').slice(0,19))}</td>
-    <td>${esc(x.source)}</td><td>${esc(x.text)}</td></tr>`).join('')
+    <td>${esc(L.source(x.source))}</td><td>${esc(x.text)}</td></tr>`).join('')
     : '<tr><td colspan="3" class="muted">Событий нет</td></tr>';
 }
 async function load(){
   try{
     const h = await (await fetch('/api/health')).json();
-    $('status-line').innerHTML = `Проверка ${esc(h.checked)}: <b>${esc(h.status)}</b>, `
+    $('status-line').innerHTML = `Проверка ${esc(String(h.checked||'').replace('T',' ').slice(0,19))}: <b>${esc(L.health(h.status))}</b>, `
       + `проблем ${h.problems.length}, предупреждений ${h.warnings.length}, строк ${h.rows}`;
-    $('kpi').innerHTML = `<div class="it"><span>Статус</span><b>${esc(h.status)}</b></div>
+    $('kpi').innerHTML = `<div class="it"><span>Статус</span><b>${esc(L.health(h.status))}</b></div>
       <div class="it"><span>Проблемы</span><b>${h.problems.length}</b></div>
       <div class="it"><span>Данные до</span><b>${esc(h.data_date)}</b></div>`;
     const j = await (await fetch('/api/logs?limit=150', {cache:'no-store'})).json();

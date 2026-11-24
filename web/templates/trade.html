@@ -10,6 +10,7 @@
 <title>Autopilot — торговля</title>
 <link rel="stylesheet" href="/static/app.css">
 <script src="/static/ui-state.js"></script>
+<script src="/static/ui-labels.js"></script>
 <script src="/static/sidebar.js" defer></script>
 </head>
 <body>
@@ -64,10 +65,6 @@
         <div class="table-wrap"><table><thead><tr><th>Задание</th><th>Время</th><th>Команда</th><th>Последний запуск</th><th></th></tr></thead><tbody id="jobs"></tbody></table></div>
         <button class="btn ghost mt" onclick="openJob()">+ задание</button></div>
     </div>
-      <button class="btn ghost" onclick="openJob()">+ задание</button></h3>
-      <p class="muted small" id="sched-state"></p>
-      <div class="table-wrap"><table><thead><tr><th>Задание</th><th>Время / интервал</th><th>Команда</th>
-        <th>Последний запуск</th><th></th></tr></thead><tbody id="jobs"></tbody></table></div></div>
   </main>
 </div>
 <div class="modal" id="job-modal"><div class="box">
@@ -90,6 +87,7 @@
 </div></div>
 <script>
 const $ = id => document.getElementById(id);
+const L = window.UILabels;
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let ORDERS = [], ALLOW = false, ORDERS_OPEN = false;
 // При выключенной торговле журнал — сухие прогоны, а не сделки: свёрнут по умолчанию.
@@ -103,9 +101,11 @@ function renderOrders(){
     return;
   }
   box.innerHTML = ORDERS.length ? ORDERS.map(o=>`<tr>
-    <td>${esc(o.ts||'')}</td><td>${esc(o.config||'')}</td><td>${esc(o.symbol||'')}</td>
-    <td>${esc(o.side||'')}</td><td>${esc(o.qty||'')}</td><td>${esc(o.price||'')}</td>
-    <td>${esc(o.status||'')}</td><td class="muted">${esc(o.reason||'')}</td></tr>`).join('')
+    <td>${esc(String(o.ts||'').replace('T',' ').slice(0,16))}</td>
+    <td>${esc(L.humanName(ROBOTS.find(r=>r.id===o.config) || {id:o.config}))}</td>
+    <td>${esc(o.symbol||'')}</td>
+    <td>${esc(L.side(o.side))}</td><td>${L.qty(o.qty)}</td><td>${L.num(o.price, 4)}</td>
+    <td>${esc(L.orderStatus(o.status))}</td><td class="muted">${esc(o.reason||'—')}</td></tr>`).join('')
     : '<tr><td colspan="8" class="muted">заявок нет</td></tr>';
   if(!ALLOW) box.insertAdjacentHTML('beforeend',
     '<tr><td colspan="8"><button onclick="toggleOrders()">скрыть журнал</button></td></tr>');
@@ -139,18 +139,23 @@ function renderRobotDetail(){
   if(!i){ title.textContent='Детали'; box.innerHTML='Выберите робота или счёт выше.'; return; }
   const s = RUNTIME[i.id] || {};
   const mine = ORDERS.filter(o=>o.config===i.id).slice(0,10);
-  title.textContent = `${i.id} · ${i.spec_id}`;
+  title.textContent = L.humanName(i);
   box.innerHTML = `<div class="kpi-mini mb">
-      <span>Статус <b>${esc(i.status)}</b></span>
-      <span>Позиция <b>${num(s.position)}</b></span>
-      <span>Equity <b>${num(s.equity)} ₽</b></span>
+      <span>Статус <b>${esc(L.robotStatus(i.status))}</b></span>
+      <span>Режим <b>${esc(L.mode(i.mode))}</b></span>
+      <span>Позиция <b>${L.qty(s.position)}</b></span>
+      <span>Equity <b>${L.money(s.equity)}</b></span>
       <span>Счёт <b>${esc(i.account||'—')}</b></span></div>
     <p class="muted">${esc(i.about || '')}</p>
     <p><b>Описание:</b> ${esc(i.description||i.note||'—')}</p>
-    <p><code>${Object.entries(i.params||{}).map(([k,v])=>k+'='+esc(v)).join(' ')}</code></p>
-    <p class="muted small">Последнее решение: ${esc(s.last_decision||'—')}</p>
+    <p class="muted small">${esc(L.decision(s.last_decision))}</p>
+    <details class="tech-details"><summary>Технические детали</summary>
+      <p class="muted small">id ${esc(i.id)} · стратегия ${esc(i.spec_id||'—')} · версия ${esc(i.version ?? '—')}</p>
+      <p><code>${Object.entries(i.params||{}).map(([k,v])=>k+'='+esc(v)).join(' ')}</code></p>
+      <p class="muted small">Сырое решение: ${esc(s.last_decision||'—')}</p>
+    </details>
     <table class="table"><thead><tr><th>Заявки робота</th><th>Символ</th><th>Сторона</th><th>Лот</th><th>Цена</th><th>Статус</th></tr></thead><tbody>${
-      mine.length ? mine.map(o=>`<tr><td>${esc(String(o.ts||'').replace('T',' ').slice(0,16))}</td><td>${esc(o.symbol||'')}</td><td>${esc(o.side||'')}</td><td>${esc(o.qty||'')}</td><td>${esc(o.price||'')}</td><td>${esc(o.status||'')}</td></tr>`).join('') : '<tr><td colspan="6" class="muted">заявок нет</td></tr>'
+      mine.length ? mine.map(o=>`<tr><td>${esc(String(o.ts||'').replace('T',' ').slice(0,16))}</td><td>${esc(o.symbol||'')}</td><td>${esc(L.side(o.side))}</td><td>${L.qty(o.qty)}</td><td>${L.num(o.price,4)}</td><td>${esc(L.orderStatus(o.status))}</td></tr>`).join('') : '<tr><td colspan="6" class="muted">заявок сегодня не было</td></tr>'
     }</tbody></table>`;
 }
 function renderAccountDetail(){
@@ -158,11 +163,11 @@ function renderAccountDetail(){
   const a = ACCS.find(x=>x.key===key);
   const box = $('detail-body'), title = $('detail-title');
   if(!a){ title.textContent='Детали'; box.innerHTML='Выберите робота или счёт выше.'; return; }
-  title.textContent = `${a.label} · ${a.mode==='live'?'реальный':'виртуальный'}`;
-  const rows = a.positions ? a.positions.map(p=>`<tr><td>${esc(p.symbol)}</td><td>${num(p.qty)}</td><td>${num(p.pnl)} ₽</td></tr>`).join('') : '<tr><td colspan="3" class="muted">позиций нет</td></tr>';
-  box.innerHTML = `<div class="kpi-mini mb"><span>Equity <b>${num(a.equity)} ₽</b></span>
+  title.textContent = `${a.label || a.id} · ${a.mode==='live'?'реальный':'виртуальный'}`;
+  const rows = a.positions ? a.positions.map(p=>`<tr><td>${esc(p.symbol)}</td><td>${L.qty(p.qty)}</td><td>${L.money(p.pnl)}</td></tr>`).join('') : '<tr><td colspan="3" class="muted">позиций нет</td></tr>';
+  box.innerHTML = `<div class="kpi-mini mb"><span>Equity <b>${L.money(a.equity)}</b></span>
     <span>Позиций <b>${a.positions ? a.positions.length : (a.position?1:0)}</b></span>
-    <span>Статус <b>${esc(a.status||'—')}</b></span></div>
+    <span>Статус <b>${esc(L.robotStatus(a.status))}</b></span></div>
     <table class="table"><thead><tr><th>Символ</th><th>Количество</th><th>P&L</th></tr></thead><tbody>${
       rows || `<tr><td>${esc(a.id)}</td><td>${num(a.position)}</td><td class="muted">${esc(a.last_decision||'')}</td></tr>`
     }</tbody></table>`;
@@ -190,8 +195,8 @@ async function load(){
     $('robot-list').innerHTML = robots.length ? robots.map(i=>{
       const s = RUNTIME[i.id]||{};
       return `<button class="pick" data-id="${esc(i.id)}" onclick="pickRobot('${esc(i.id)}')">
-        <b>${esc(i.id)}</b><span class="muted">${esc(i.description||i.spec_id||'')}</span>
-        <span class="ml-auto">${esc(i.status)} · ${num(s.position)}</span></button>`;
+        <b>${esc(L.humanName(i))}</b><span class="muted">${esc(i.id)}</span>
+        <span class="ml-auto">${esc(L.robotStatus(i.status))} · ${L.qty(s.position)}</span></button>`;
     }).join('') : '<div class="empty">Роботов в этом режиме нет</div>';
     $('account-list').innerHTML = ACCS.length ? ACCS.map(a=>
       `<button class="pick" data-id="${esc(a.key)}" onclick="pickAccount('${esc(a.key)}')">
@@ -215,7 +220,7 @@ async function load(){
       const last = lastByJob[j.id];
       return `<tr><td><b>${esc(j.id)}</b><br><span class="muted">${esc(j.owner)}</span></td>
         <td>${esc(when)}</td><td><code>${esc(j.command)}</code></td>
-        <td>${last ? esc(last.status) + ' · ' + esc(last.slot || last.started || '') : '—'}</td>
+        <td>${last ? esc(L.runStatus(last.status)) + ' · ' + esc(last.slot || last.started || '') : '—'}</td>
         <td><button onclick="deleteJob('${esc(j.id)}')">удалить</button></td></tr>`;
     }).join('') : '<tr><td colspan="5" class="muted">заданий нет</td></tr>';
     $('msg').textContent = `${robots.length} роботов, ${st.paper_days}/30 дней бумаги`;
@@ -259,7 +264,7 @@ async function loadArchive(){
     const j = await api('/archive');
     box.innerHTML = j.items.length
       ? `<table class="table"><thead><tr><th>Робот</th><th>Режим</th><th>Статус</th><th>Стратегия</th><th>Последнее решение</th></tr></thead><tbody>`+
-        j.items.map(x=>`<tr><td>${esc(x.id)}</td><td>${esc(x.mode)}</td><td>${esc(x.status)}</td><td>${esc(x.strategy)}</td><td class="muted">${esc(x.last_decision)}</td></tr>`).join('')+
+        j.items.map(x=>`<tr><td>${esc(L.humanName(x))}<br><span class="muted small">${esc(x.id)}</span></td><td>${esc(L.mode(x.mode))}</td><td>${esc(L.robotStatus(x.status))}</td><td>${esc(x.strategy)}</td><td class="muted">${esc(L.decision(x.last_decision))}</td></tr>`).join('')+
         `</tbody></table>`
       : '<div class="empty">Архив пуст — выведенные роботы появятся здесь.</div>';
   }catch(e){ box.textContent = e.message; }

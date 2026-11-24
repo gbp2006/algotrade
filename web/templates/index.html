@@ -11,6 +11,7 @@
 <title>Autopilot — алго-песочница</title>
 <link rel="stylesheet" href="/static/app.css">
 <script src="/static/ui-state.js"></script>
+<script src="/static/ui-labels.js"></script>
 </head>
 <body>
 <div class="layout">
@@ -151,6 +152,7 @@
 </div></div>
 
 <script>
+const L = window.UILabels;
 let DATA = null, CUR = null, CANDLES = [], PTS = null, MARKS = {trades:[], open:null};
 const CONFIG_FROM_URL = new URLSearchParams(location.search).get("config");
 const SEEN_KEY = "algo.alerts.seen";   // локальная копия отметки «прочитано»
@@ -427,7 +429,7 @@ function render(){
 
   const h = DATA.health, live = !h.stop;
   const hStatus = h.status === "OK" ? "ok" : (h.status === "PROBLEMS" ? "bad" : "");
-  const hLabel = hStatus === "bad" ? "ПРОБЛЕМЫ" : (hStatus === "ok" ? "OK" : "...");
+  const hLabel = hStatus === "bad" ? "Есть проблемы" : (hStatus === "ok" ? "Всё в порядке" : "…");
   document.getElementById("sw-off").className = live ? "on" : "";
   document.getElementById("sw-on").className = live ? "" : "on resume";
   document.getElementById("h-status").textContent = hLabel;
@@ -445,7 +447,7 @@ function render(){
 
   const d = document.getElementById("dir");
   d.className = "dir " + (s.position > 0 ? "long" : s.position < 0 ? "short" : "flat");
-  d.textContent = s.position > 0 ? "LONG" : s.position < 0 ? "SHORT" : "ВНЕ РЫНКА";
+  d.textContent = s.position > 0 ? "Лонг" : s.position < 0 ? "Шорт" : "Вне рынка";
   document.getElementById("trade-note").textContent = s.last ? (s.last.note || "") : "решений ещё не было";
   document.getElementById("t-qty").textContent = Math.abs(s.position) + " контракт" + (Math.abs(s.position)===1?"":"ов");
   document.getElementById("t-equity").textContent =
@@ -465,14 +467,14 @@ function render(){
 
   const mm = s.metrics || {};
   document.getElementById("metrics-body").innerHTML = mm.day ? [
-    ["P&L", fmt(mm.realized||0) + ` (${mm.pnl_pct>=0?"+":""}${mm.pnl_pct||0}%)`, (mm.realized||0)>=0?"pos":"neg"],
+    ["Чистая прибыль, ₽", fmt(mm.realized||0) + ` (${mm.pnl_pct>=0?"+":""}${mm.pnl_pct||0}%)`, (mm.realized||0)>=0?"pos":"neg"],
     ["просадка abs", fmt(mm.dd_abs||0), "neg"],
     ["просадка %", (mm.dd_pct||0)+"%", "neg"],
-    ["DD, дней", mm.dd_days ?? 0, ""],
-    ["win rate", (mm.winrate||0)+"%", ""],
+    ["Макс. простой, дней", mm.dd_days ?? 0, ""],
+    ["Доля прибыльных", (mm.winrate||0)+"%", ""],
     ["ср. сделка", fmt(mm.avg_trade||0), (mm.avg_trade||0)>=0?"pos":"neg"],
-    ["PF", mm.profit_factor ?? "—", ""],
-    ["сделок", mm.trades ?? 0, ""],
+    ["Профит-фактор", mm.profit_factor ?? "—", ""],
+    ["Сделок", mm.trades ?? 0, ""],
     ["снапшот", mm.day, ""],
   ].map(([k,v,cls]) => `<div class="kv"><span>${k}</span><b class="${cls||""}">${v}</b></div>`).join("")
     : '<div style="color:var(--muted);font-size:12px">снапшота ещё нет — ждём ежедневный отчёт</div>';
@@ -605,8 +607,8 @@ async function openDetail(id){
     ["винрейт", st.winrate + "%", ""],
     ["средняя", fmt(st.avg), st.avg >= 0 ? "pos" : "neg"],
     ["макс. DD", fmt(st.dd), "neg"],
-    ["DD, дней", st.dd_days ?? 0, ""],
-    ["позиция", st.position > 0 ? "LONG" : st.position < 0 ? "SHORT" : "вне рынка", ""],
+    ["Макс. простой, дней", st.dd_days ?? 0, ""],
+    ["Позиция", st.position > 0 ? "Лонг" : st.position < 0 ? "Шорт" : "вне рынка", ""],
   ].map(([k,v,cls]) => `<div class="dstat"><span>${k}</span><b class="${cls}">${v}</b></div>`).join("");
 
   document.getElementById("d-exp").innerHTML = exp.net === undefined
@@ -620,7 +622,7 @@ async function openDetail(id){
 
   document.getElementById("d-trades").innerHTML = (d.trades || []).length
     ? d.trades.map(t => `<tr><td>${t.open_date} ${t.open_time}</td><td>${t.close_date} ${t.close_time}</td>
-        <td class="${t.dir==="LONG"?"pos":"neg"}">${t.dir}</td><td>${pxf(t.entry)}</td><td>${pxf(t.exit)}</td>
+        <td class="${t.dir==="LONG"?"pos":"neg"}">${L.side(t.dir)}</td><td>${pxf(t.entry)}</td><td>${pxf(t.exit)}</td>
         <td class="${t.pnl>=0?"pos":"neg"}">${fmt(t.pnl)}</td></tr>`).join("")
     : `<tr><td colspan="6" style="color:var(--muted)">сделок ещё нет</td></tr>`;
 
