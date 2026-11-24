@@ -20,7 +20,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from algo import (backtest_preview, instruments_catalog as catalog,
                   live_control, robot_library as lib, scheduler,
-                  trade_journal as tj)
+                  strategy_descriptions as sd, trade_journal as tj)
 from algo.broker import position_ops as pos, registry
 from algo.broker.finam import FinamBroker
 from algo.broker.secrets import resolve_secret
@@ -69,6 +69,7 @@ def specs_view() -> list[dict]:
             "id": s.id, "strategy": s.strategy, "defaults": s.defaults,
             "schema": s.schema, "instruments": list(s.instruments),
             "description": s.description, "examples": list(s.examples),
+            "about": sd.describe(s.strategy),
         }
         for s in lib.list_specs()
     ]
@@ -86,13 +87,20 @@ def spec_detail(spec_id: str):
     except ValueError as exc:
         raise HTTPException(404, str(exc))
     return {"id": s.id, "defaults": s.defaults, "schema": s.schema,
-            "instruments": list(s.instruments), "description": s.description}
+            "instruments": list(s.instruments), "description": s.description,
+            "about": sd.describe(s.strategy)}
 
 
 # ---------- инстансы ----------
 def instances_view(store: RobotStore, mode: str | None = None,
                    status: str | None = None) -> list[dict]:
-    return store.list_instances(mode=mode, status=status)
+    rows = store.list_instances(mode=mode, status=status)
+    for r in rows:
+        # `note` у робота — это его человекочитаемое описание; `about` — описание
+        # самой стратегии. Оба поля нужны в карточке инстанса (GUI v2).
+        r["description"] = r.get("note") or ""
+        r["about"] = sd.describe(r.get("spec_id") or "")
+    return rows
 
 
 @router.get("/instances")
@@ -153,7 +161,9 @@ def detail(iid: str, store: RobotStore = Depends(get_store)):
     inst = store.get_instance(iid)
     if inst is None:
         raise HTTPException(404, f"нет инстанса {iid}")
-    return inst
+    return {**inst,
+            "description": inst.get("note") or "",
+            "about": sd.describe(inst.get("spec_id") or "")}
 
 
 def update_view(store: RobotStore, iid: str, payload: dict) -> dict:
@@ -213,6 +223,15 @@ def action_view(store: RobotStore, iid: str, action: str,
 def action(iid: str, action: str, payload: dict | None = None,
            store: RobotStore = Depends(get_store)):
     return action_view(store, iid, action, payload)
+
+
+@router.delete("/instances/{iid}")
+def delete_instance(iid: str, store: RobotStore = Depends(get_store)):
+    """Полное удаление архивного/чернового робота (не боевого и не активного)."""
+    try:
+        return store.delete_instance(iid)
+    except StoreError as exc:
+        raise HTTPException(400, str(exc))
 
 
 def history_view(store: RobotStore, iid: str) -> list[dict]:

@@ -9,7 +9,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from algo.robot_store import RobotStore  # noqa: E402
+from algo.robot_store import RobotStore, StoreError  # noqa: E402
+from algo.strategy_descriptions import describe  # noqa: E402
 from web import instances_api as ia  # noqa: E402
 
 
@@ -44,6 +45,32 @@ class TestGuiV2Api(unittest.TestCase):
         entries = ia.logs_aggregate(self.store)
         self.assertTrue(any(x["source"] == "instances" and "old-bot" in x["text"]
                             for x in entries))
+
+    def test_descriptions_in_api(self):
+        specs = {s["id"]: s for s in ia.specs_view()}
+        self.assertIn("SMA", specs["prostushka"]["about"])
+        self.assertIn("репер", specs["universal"]["about"])
+        rows = ia.instances_view(self.store)
+        self.assertEqual(rows[0]["about"], describe("prostushka"))
+        self.assertEqual(rows[0]["description"], rows[0].get("note") or "")
+
+    def test_delete_only_archived_paper(self):
+        with self.assertRaises(StoreError):
+            self.store.delete_instance("old-bot")  # active
+        self.store.set_status("old-bot", "archived")
+        self.assertEqual(self.store.delete_instance("old-bot")["deleted"],
+                         "old-bot")
+        self.assertIsNone(self.store.get_instance("old-bot"))
+        self.assertEqual(ia.archive_list(self.store), [])
+
+    def test_live_cannot_be_deleted(self):
+        self.store.create_instance({
+            "id": "live-x", "spec_id": "prostushka", "mode": "live",
+            "status": "draft", "account": "A1", "instrument": "CNY",
+            "params": {},
+        })
+        with self.assertRaises(StoreError):
+            self.store.delete_instance("live-x")
 
 
 if __name__ == "__main__":

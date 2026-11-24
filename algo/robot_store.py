@@ -329,6 +329,26 @@ class RobotStore:
             return self.set_status(iid, "archived", reason, actor)
         return old  # type: ignore[return-value]
 
+    def delete_instance(self, iid: str, *, actor: str = "panel") -> dict:
+        """Полное удаление только черновика или архивного бумажного робота.
+
+        Активный/боевой инстанс удалить нельзя: его сначала надо остановить и
+        затем архивировать. Журнал заявок и сделок не трогается — это история.
+        """
+        old = self.get_instance(iid)
+        if old is None:
+            raise StoreError(f"нет инстанса {iid}")
+        if old["mode"] == "live":
+            raise StoreError("боевого робота нельзя удалить — только архивировать")
+        if old["status"] not in ("draft", "archived"):
+            raise StoreError(
+                f"сначала переведите робота в архив (сейчас {old['status']})")
+        with self._conn() as c:
+            for table in ("runtime_state", "param_versions", "instance_events"):
+                c.execute(f"DELETE FROM {table} WHERE instance_id=?", (iid,))
+            c.execute("DELETE FROM instances WHERE id=?", (iid,))
+        return {"deleted": iid, "mode": old["mode"], "actor": actor}
+
     # ---------- расписание ----------
     def list_jobs(self, owner: str | None = None,
                   enabled_only: bool = False) -> list[dict]:

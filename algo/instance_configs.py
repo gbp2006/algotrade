@@ -37,6 +37,13 @@ def seed_static_configs(store: RobotStore | None = None) -> int:
     added = 0
     for cfg in STATIC:
         if st.get_instance(cfg.id) is not None:
+            # старые переносы получили одинаковую заглушку вместо описания
+            # конфига; пользовательские примечания не перезаписываем
+            if cfg.comment:
+                with st._conn() as c:
+                    c.execute("UPDATE instances SET note=? WHERE id=? AND note=?",
+                              (cfg.comment, cfg.id,
+                               "перенос из статического реестра"))
             continue
         st.create_instance({
             "id": cfg.id,
@@ -47,7 +54,7 @@ def seed_static_configs(store: RobotStore | None = None) -> int:
             "status": "active",
             "capital": cfg.capital,
             "exposure": cfg.exposure,
-            "note": "перенос из статического реестра",
+            "note": cfg.comment or "перенос из статического реестра",
         }, actor="seed")
         added += 1
     return added

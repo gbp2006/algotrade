@@ -39,6 +39,11 @@
   </div>
   <p class="muted small" id="status"></p>
   <div class="card">
+    <h3>Стратегии · библиотека</h3>
+    <p class="muted small">Описания стратегий из канона проекта. Робот — инстанс стратегии со своими параметрами, счётом и режимом.</p>
+    <div class="grid" id="strategy-cards"><div class="muted">загрузка…</div></div>
+  </div>
+  <div class="card">
     <h3>Инстансы роботов</h3>
     <p class="muted small">Робот без инстанса не торгует. Новый инстанс создаётся в черновике и запускается вручную.</p>
     <div class="table-wrap"><table><thead><tr><th>id</th><th>тип / инструмент</th><th>режим</th><th>статус</th>
@@ -174,6 +179,7 @@
   </div>
   <div class="field"><label>Параметры</label><div class="params" id="e-params"></div>
     <span class="hint">Переключатели: включено = <code>true</code>, выключено = <code>false</code>; <code>*</code> — отличается от дефолта.</span></div>
+  <div class="field"><label for="e-note">Описание робота</label><input id="e-note" placeholder="например: база на юане, малый счёт"></div>
   <div class="field"><label for="e-reason">Причина изменения</label><input id="e-reason" placeholder="например: echo CM grid 48→55"></div>
   <div class="field"><label>Предпросмотр (60 дней)</label><div id="e-preview" class="muted small">—</div></div>
   <div class="err" id="e-err"></div>
@@ -292,6 +298,11 @@ async function loadAll() {
       api('/instances'), api('/specs'), api('/accounts'), api('/brokers'),
       api('/runtime'), api('/keys')]);
     specs = sp; accounts = acc;
+    $('strategy-cards').innerHTML = sp.map(s => `<div class="card">
+      <h4>${esc(s.id)}</h4>
+      <p class="muted small" style="min-height:70px">${esc(s.about || s.description || '—')}</p>
+      <p class="hint">Параметров: ${Object.keys(s.defaults || {}).length} · инструментов: ${(s.instruments || []).length}</p>
+      <button class="btn" onclick="openCreate('${esc(s.id)}')">Создать робота</button></div>`).join('') || '<div class="muted">библиотека пуста</div>';
      paperIds = insts.filter(i => i.mode === 'paper' && i.status === 'active').map(i => i.id);
      $('source-list').innerHTML = paperIds.map(x => `<option value="${esc(x)}"></option>`).join('');
     $('key-names').textContent = keys.names.length
@@ -314,6 +325,8 @@ async function loadAll() {
       if (i.status === 'active') acts.push(`<button onclick="act('${esc(i.id)}','pause')">пауза</button>`);
       acts.push(`<button onclick="act('${esc(i.id)}','stop')">стоп</button>`);
       acts.push(`<button onclick="act('${esc(i.id)}','archive')">убрать</button>`);
+      if (i.status === 'archived' || i.status === 'draft')
+        acts.push(`<button onclick="delInstance('${esc(i.id)}')">удалить</button>`);
       if (i.status !== 'archived') acts.push(`<button onclick="openEdit('${esc(i.id)}')">изменить</button>`);
       if (i.mode === 'paper' && i.status !== 'archived')
         acts.push(`<button onclick="openPromote('${esc(i.id)}')">в бой</button>`);
@@ -361,9 +374,10 @@ function modeChanged() {
     : 'Счетов нет — добавьте счёт ниже, режим «бой» недоступен.';
 }
 
-function openCreate() {
+function openCreate(specId) {
   $('modal').classList.add('on'); $('err').textContent=''; $('f-name').value='';
   $('f-spec').innerHTML = specs.map(s => `<option value="${esc(s.id)}">${esc(s.id)} — ${esc(s.description||'')}</option>`).join('');
+  if (specId) $('f-spec').value = specId;
   $('f-account').innerHTML = accounts.map(a => `<option value="${esc(a.id)}">${esc(a.id)}</option>`).join('');
   specChanged(); modeChanged();
 }
@@ -399,6 +413,13 @@ async function act(id, action) {
   try { await api(`/instances/${encodeURIComponent(id)}/${action}`, {method:'POST'});
         await loadAll(); }
   catch(e) { $('status').textContent = 'ошибка: ' + e.message; }
+}
+async function delInstance(id) {
+  if (!confirm('Удалить робота ' + id + ' из библиотеки? Журнал заявок останется.')) return;
+  try {
+    await api('/instances/' + encodeURIComponent(id), {method:'DELETE'});
+    await loadAll();
+  } catch(e) { $('status').textContent = 'ошибка: ' + e.message; }
 }
 async function closePositions(id) {
   if (!confirm('Закрыть все открытые позиции робота ' + id + '?')) return;
@@ -532,7 +553,8 @@ async function openEdit(id){
   const spec = sp.find(s => s.id === inst.spec_id);
   editing = inst;
   $('edit-title').textContent = id + ' · ' + inst.spec_id;
-  $('e-reason').value = ''; $('e-err').textContent = ''; $('e-preview').textContent = '—';
+  $('e-reason').value = ''; $('e-note').value = inst.description || inst.note || '';
+  $('e-err').textContent = ''; $('e-preview').textContent = '—';
   $('e-account').innerHTML = accounts.map(a =>
     `<option value="${esc(a.id)}">${esc(a.id)}${a.label ? ' · ' + esc(a.label) : ''}</option>`).join('');
   $('e-account').value = inst.account || '';
@@ -558,7 +580,8 @@ function editPayload(){
   });
   return {params, account:$('e-account').value,
           pricing:$('e-pricing').value, source_config:$('e-source').value.trim(),
-          exposure:Number($('e-exposure').value) || 0};
+          exposure:Number($('e-exposure').value) || 0,
+          note:$('e-note').value.trim()};
 }
 async function previewEdit(){
   if (!editing) return;
