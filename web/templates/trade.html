@@ -161,7 +161,7 @@ function renderRobotDetail(){
       mine.length ? mine.map(o=>`<tr><td>${esc(String(o.ts||'').replace('T',' ').slice(0,16))}</td><td>${esc(o.symbol||'')}</td><td>${esc(L.side(o.side))}</td><td>${L.qty(o.qty)}</td><td>${L.num(o.price,4)}</td><td>${esc(L.orderStatus(o.status))}</td></tr>`).join('') : '<tr><td colspan="6" class="muted">заявок сегодня не было</td></tr>'
     }</tbody></table>`;
 }
-function renderRisk(analytics){
+function renderRisk(analytics, allInstances){
   const box = $('risk-body');
   if(!box) return;
   const real = (analytics && analytics.real) || [];
@@ -170,8 +170,9 @@ function renderRisk(analytics){
   const eqVirt = virt.reduce((s,a)=>s+Number(a.equity||0), 0);
   const positions = real.flatMap(a => (a.positions||[]).map(p=>({
     symbol:p.symbol, qty:Number(p.qty||0), pnl:Number(p.pnl||0)})));
+  const names = Object.fromEntries((allInstances||[]).map(i=>[i.id, L.humanName(i)]));
   virt.forEach(v => { if(Number(v.position||0)) positions.push({
-    symbol: v.symbol || v.id, qty: Number(v.position||0), pnl: 0}); });
+    symbol: v.symbol || names[v.id] || v.id, qty: Number(v.position||0), pnl: 0}); });
   const exposure = positions.reduce((s,p)=>s+Math.abs(p.qty), 0);
   const top = positions.slice().sort((a,b)=>Math.abs(b.qty)-Math.abs(a.qty))[0];
   const pnl = positions.reduce((s,p)=>s+p.pnl, 0);
@@ -202,10 +203,10 @@ function renderAccountDetail(){
 async function load(){
   try{
     const mode = new URLSearchParams(location.search).get('mode') || 'live';
-    const [st, rt, orders, br, jobs, runs, sched, analytics] = await Promise.all([
+    const [st, rt, orders, br, jobs, runs, sched, analytics, allInst] = await Promise.all([
       api('/live-state'), api('/runtime'), api('/live-orders'), api('/brokers'),
       api('/scheduler/jobs'), api('/scheduler/runs?limit=20'), api('/scheduler/state'),
-      api('/accounts/analytics')]);
+      api('/accounts/analytics'), api('/instances')]);
     const instMode = mode === 'test' ? 'paper' : 'live';
     const robots = mode === 'archive' ? [] : await api('/instances?mode=' + instMode);
     ROBOTS = robots; RUNTIME = Object.fromEntries(rt.map(x=>[x.instance_id,x]));
@@ -220,7 +221,7 @@ async function load(){
       <div class="it"><span>${ALLOW?'Заявок':'Сухих заявок'}</span><b>${orders.length}</b></div>`;
     $('kpi-sub').textContent = `Бумага ${st.paper_days}/30 · Тень ${st.shadow_days ?? 0}/10`
       + (ALLOW ? '' : ' · заявки брокеру не отправляются');
-    renderRisk(analytics);
+    renderRisk(analytics, allInst);
     $('robot-list').innerHTML = robots.length ? robots.map(i=>{
       const s = RUNTIME[i.id]||{};
       return `<button class="pick" data-id="${esc(i.id)}" onclick="pickRobot('${esc(i.id)}')">
