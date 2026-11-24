@@ -33,4 +33,5 @@ done
 echo "6/6 статус сервисов"
 printf '  postgresql: '; sudo -n systemctl is-active postgresql
 printf '  web:        '; sudo -n systemctl is-active algotrading-web.service
+printf '  live timer: '; sudo -n systemctl is-active algotrading-live.timer 2>/dev/null || echo "отключён панелью"
 echo "готово: GUI http://127.0.0.1:8080/"
