@@ -134,7 +134,10 @@ def parse_settings(data: dict[str, Any]) -> LiveSettings:
         robots[str(cfg_id)] = RobotSettings(
             config_id=str(cfg_id),
             account=acc_id,
-            pricing=_pricing(raw.get("pricing", d_pricing), f"robots.{cfg_id}.pricing"),
+            # d_pricing уже разобран в PricingMode — повторный _pricing() от
+            # enum давал "pricingmode.marketable" и падал без явного pricing.
+            pricing=_pricing(raw["pricing"], f"robots.{cfg_id}.pricing")
+            if "pricing" in raw else d_pricing,
             trade_on_expiry=_flag(raw.get("trade_on_expiry", d_expiry),
                                   f"robots.{cfg_id}.trade_on_expiry"),
             max_exposure=acc.max_exposure,

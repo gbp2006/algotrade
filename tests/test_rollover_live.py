@@ -32,6 +32,46 @@ class FakeBroker:
         return self.frames.get(symbol)
 
 
+class TestRolloverRunnerSafety(unittest.TestCase):
+    def test_no_equity_skips_roll_and_uses_own_order_lock(self):
+        import json
+        import tempfile
+        from algo import live_config as lc
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            settings = lc.parse_settings({
+                "accounts": {"A1": {}},
+                "robots": {"r1": {"account": "A1", "pricing": "marketable"}}})
+
+            class Broker:
+                def account(self, acc=None):
+                    return {"positions": []}
+
+            patches = [
+                mock.patch.object(rl, "LOCK", d / "rollover.lock"),
+                mock.patch.object(rl, "ORDER_LOCK", d / "rollover_orders.lock"),
+                mock.patch.object(rl, "LIVE", d / "live.csv"),
+                mock.patch.object(rl, "SUMMARY", d / "rollover_run.json"),
+                mock.patch.object(rl, "STOP", d / "STOP"),
+                mock.patch.object(rl, "STOP_REAL", d / "STOP_REAL"),
+                mock.patch.object(rl, "FinamBroker", lambda: Broker()),
+                mock.patch.object(rl, "live_settings_from_store", lambda: settings),
+                mock.patch.object(rl, "account_equity", lambda broker, acc: 0),
+            ]
+            for p in patches:
+                p.start()
+            try:
+                self.assertEqual(rl.main([]), 0)
+            finally:
+                for p in reversed(patches):
+                    p.stop()
+            data = json.loads((d / "rollover_run.json").read_text(encoding="utf-8"))
+            self.assertTrue(any("нет equity" in n for n in data["notes"]))
+            self.assertEqual(data["results"], {})
+            self.assertFalse((d / "rollover.lock").exists())
+            self.assertNotEqual(str(rl.ORDER_LOCK).split("/")[-1], "live.lock")
+
+
 class TestActiveContracts(unittest.TestCase):
     def test_perpetual(self):
         out = inst_mod.active_contracts(inst_mod.INSTRUMENTS["CNY"], dt.date(2026, 11, 23))

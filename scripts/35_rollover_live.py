@@ -42,6 +42,8 @@ from algo.rollover_integration import volumes_for  # noqa: E402
 LIVE = ROOT / "results" / "live.csv"
 STOP = ROOT / "results" / "STOP"
 LOCK = ROOT / "results" / "rollover.lock"
+# Отдельный лок заявок: ролл не должен делить live.lock с боевым раннером
+ORDER_LOCK = ROOT / "results" / "rollover_orders.lock"
 SUMMARY = ROOT / "results" / "rollover_run.json"
 
 
@@ -98,18 +100,24 @@ def main(argv: list[str] | None = None) -> int:
             response = broker.account(acc_id)
             actual = positions_from_response(response.get("positions", response))
             model = {s: q for s, q in actual.items() if q != 0}
+            # Ролл — перекладка, а не новый бой: расхождение с брокером только
+            # логируем, STOP не выставляем (режим репетиции контура).
             try:
                 reconcile_guard(broker, model, account=acc_id,
                                 stop=STOP_REAL, enforce=False)
             except Exception as exc:  # noqa: BLE001 — информационно
-                notes.append(f"{acc_id}: сверка {type(exc).__name__}: {exc}")
+                notes.append(f"{acc_id}: сверка (информационно) "
+                             f"{type(exc).__name__}: {exc}")
 
             equity = account_equity(broker, acc_id) or 0
+            if equity <= 0:
+                notes.append(f"{acc_id}: нет equity — перекладка пропущена")
+                continue
             gateway = OrderGateway(
                 broker,
-                limits=battle_limits(equity or 1, max_exposure=acc.max_exposure,
+                limits=battle_limits(equity, max_exposure=acc.max_exposure,
                                      max_qty=acc.max_qty).as_limits(),
-                journal=LIVE, lock=ROOT / "results" / "live.lock")
+                journal=LIVE, lock=ORDER_LOCK)
 
             for sym, qty in actual.items():
                 if qty == 0 or is_perpetual(sym):
