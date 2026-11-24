@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { api, keys } from '../lib/api';
@@ -31,6 +31,7 @@ const schema = z.object({
   tp_pct: z.coerce.number().min(0),
   trailing_pct: z.coerce.number().min(0),
   close_time: z.string(),
+  params: z.record(z.union([z.string(), z.number(), z.boolean()])),
 });
 type RobotForm = z.infer<typeof schema>;
 
@@ -74,9 +75,17 @@ export function Robots() {
       account: '', exposure: 2, sizing_mode: 'PERCENT', sizing_value: 200,
       reaction: 'IMMEDIATE', smoothing_pct: 5, on_insufficient: 'PAUSE',
       min_lots: 1, max_lots: 100, sl_pct: 0, tp_pct: 0, trailing_pct: 0,
-      close_time: '',
+      close_time: '', params: {},
     },
   });
+
+  // Параметры алгоритма зависят от выбранного шаблона — не одни и те же для всех.
+  const specId = form.watch('spec_id');
+  const currentSpec = (specs.data ?? []).find((item) => item.id === specId);
+  useEffect(() => {
+    const spec = (specs.data ?? []).find((item) => item.id === specId);
+    if (spec) form.setValue('params', { ...spec.defaults }, { shouldValidate: true });
+  }, [specId, specs.data, form]);
 
   const create = useMutation({
     mutationFn: (payload: Record<string, unknown>) => api.createInstance(payload),
@@ -153,6 +162,7 @@ export function Robots() {
       account: values.account || undefined,
       note: values.name,
       exposure: values.exposure,
+      params: values.params,
       capital: values.mode === 'paper' ? 200_000 : undefined,
     });
   });
@@ -194,6 +204,29 @@ export function Robots() {
                   {(specs.data ?? []).map((spec) => <option key={spec.id} value={spec.id}>{spec.title}</option>)}
                 </select>
               </label>
+              {currentSpec && (
+                <div className="md:col-span-2 rounded-lg border border-line p-3">
+                  <div className="panel-title">Параметры алгоритма: {currentSpec.title}</div>
+                  <div className="mt-2 grid gap-3 md:grid-cols-3">
+                    {Object.entries(currentSpec.schema).map(([key, kind]) => (
+                      <label key={key} className="text-xs">
+                        {key.replace(/_/g, ' ')}
+                        {kind === 'bool' ? (
+                          <input type="checkbox" className="mt-1 block"
+                            {...form.register(`params.${key}` as const)} />
+                        ) : (
+                          <input className="input mt-1"
+                            type={kind === 'int' || kind === 'float' ? 'number' : 'text'}
+                            step={kind === 'float' ? '0.01' : undefined}
+                            {...form.register(`params.${key}` as const,
+                              kind === 'int' || kind === 'float' ? { valueAsNumber: true } : {})}
+                          />
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
               <label className="text-xs">Инструмент
                 <input className="input mt-1" {...form.register('instrument')} />
               </label>
