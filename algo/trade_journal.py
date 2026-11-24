@@ -226,7 +226,7 @@ def refresh_executions(broker: Any, account: str, *, path: Path | None = None,
                        csv_path: Path | None = None) -> dict:
     """Сверить отправленные заявки с брокером и дописать исполнения в журнал."""
     sent = [r for r in records(limit=500, account=account, path=path)
-            if r["status"] in ("sent", "partial")]
+            if r["status"] in ("sent", "partial", "uncertain")]
     if not sent:
         return {"checked": 0, "updated": 0, "details": {}}
     by_cid: dict[str, dict] = {}

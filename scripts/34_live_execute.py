@@ -206,6 +206,14 @@ def main(argv: list[str] | None = None) -> int:
                          f"{sorted(set().union(*(p['exposures'] for p in symbols.values())))}")
             model, uncertain = journal_positions(acc_id)
             if uncertain:
+                # F03: ответ мог потеряться, но заявка исполнена — опрашиваем
+                # брокера ещё раз до STOP, чтобы не блокировать торговлю зря.
+                try:
+                    tj.refresh_executions(broker, acc_id, csv_path=LIVE)
+                    model, uncertain = journal_positions(acc_id)
+                except Exception as exc:  # noqa: BLE001 — при недоступности API STOP как раньше
+                    print(f"{acc_id}: повторная сверка недоступна — {exc}")
+            if uncertain:
                 note = f"{acc_id}: {uncertain} неопределённых заявок — ручная сверка"
                 STOP_REAL.write_text(note + "\n", encoding="utf-8")
                 print(note)

@@ -104,6 +104,24 @@ class TestTradeJournal(unittest.TestCase):
             self.assertEqual(result["details"]["a"]["price"], 12.35)
             self.assertEqual(tj.records(limit=10, path=db)[0]["status"], "filled")
 
+    def test_confirmed_uncertain_is_refreshed_not_stale(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Path(tmp) / "trades.db"
+            tj.append(row("unc-1", "uncertain"), db)
+
+            class Broker:
+                def orders(self, account):
+                    return [{"order_id": "ord-1", "status": "ORDER_STATUS_FILLED",
+                             "executed_quantity": {"value": "1"},
+                             "transact_at": "2026-11-24T14:00:24",
+                             "order": {"client_order_id": "unc-1",
+                                       "limit_price": {"value": "12.35"}}}]
+
+            result = tj.refresh_executions(Broker(), "2102993", path=db)
+            self.assertEqual((result["checked"], result["updated"]), (1, 1))
+            self.assertEqual(tj.records(limit=10, path=db)[0]["status"], "filled")
+            self.assertEqual(tj.executed_qty("unc-1", db), 1)
+
     def test_backup_is_readable(self):
         with tempfile.TemporaryDirectory() as tmp:
             db = Path(tmp) / "trades.db"
