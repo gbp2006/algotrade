@@ -43,6 +43,7 @@ FILES=(
   web/*.py web/templates/*.html web/static/*.css web/static/*.js web/static/img/*
   docs/*.md docs/strategies/*.md docs/sources/*.md
   infra/db/memory.py infra/db/schema.sql infra/systemd/*.service infra/systemd/*.timer
+  infra/systemd/*.conf infra/logrotate/*
 )
 
 # Защита от случайного попадания секретов и состояния в выгрузку.

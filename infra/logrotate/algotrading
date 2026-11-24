@@ -1,0 +1,11 @@
+# Ротация текстовых логов сервисов песочницы (журнал сделок живёт в SQLite).
+/home/zt/algotrading/results/*.log {
+  weekly
+  rotate 8
+  compress
+  delaycompress
+  missingok
+  notifempty
+  copytruncate
+  su zt zt
+}
