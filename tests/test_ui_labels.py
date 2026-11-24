@@ -49,9 +49,10 @@ class TestUILabels(unittest.TestCase):
             f"require({str(STATIC / 'ui-labels.js')!r});"
             "const U=window.UILabels;"
             "console.log(JSON.stringify({"
-            "name:U.humanName({id:'p-base',note:'как в ТЗ: MA40 M5, 13:50, фильтр 15 мин'}),"
-            "long:U.humanName({id:'cb-day',about:'Пробой временного канала (OsEngine): ...',"
-            "note:'пробой дневного канала 09:00→13:00, вход после пробоя HH, выход в 09:00'}),"
+            "name:U.humanName({id:'proxy',about:'Простушка (Примечание №6): тренд',"
+            "note:'Простушка Тест 1'}),"
+            "long:U.humanName({id:'p-base',about:'Простушка (Примечание №6): тренд',"
+            "note:'как в ТЗ: MA40 M5, 13:50, фильтр 15 мин'}),"
             "spec:U.strategyName({id:'prostushka',about:'Простушка (Примечание №6 автора): тренд'}),"
             "log:U.logText('robot sell 2 @12 — filled'),"
             "types:U.byTypePhrase({CURRENCIES:8,EQUITIES:30})"
@@ -59,8 +60,8 @@ class TestUILabels(unittest.TestCase):
         res = subprocess.run([node, "-e", script], capture_output=True, text=True, timeout=20)
         self.assertEqual(res.returncode, 0, res.stderr[:400])
         out = res.stdout
-        self.assertIn('"name":"как в ТЗ', out)
-        self.assertIn('"long":"Пробой временного канала · cb-day"', out)
+        self.assertIn('"name":"Простушка Тест 1"', out)
+        self.assertIn('"long":"Простушка · p-base"', out)
         self.assertIn('"spec":"Простушка"', out)
         self.assertIn('Исполнена', out)
         self.assertIn('Валютные фьючерсы: 8', out)

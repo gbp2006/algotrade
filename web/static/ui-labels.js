@@ -70,10 +70,12 @@
     const direct = item.label || item.title || item.display || item.name;
     if (direct) return String(direct);
     const note = String(item.note || item.description || '');
-    // Длинные примечания — это описание, а не имя: берём имя стратегии + id.
-    if (note && note.length <= 60) return note;
+    // Именем считаем короткую подпись с заглавной буквы без «:»/«;» —
+    // остальные примечания это описания, а не названия («как в ТЗ: MA40…»).
+    if (note && note.length <= 40 && /^[А-ЯA-Z]/.test(note) && !/[:;]/.test(note))
+      return note;
     if (item.about) return `${strategyName(item)} · ${item.id || ''}`.trim();
-    return note ? note.slice(0, 57) + '…' : String(item.id || '—');
+    return note ? note.slice(0, 37) + '…' : String(item.id || '—');
   }
 
   const num = (v, digits) => (v == null || v === '')
