@@ -49,7 +49,8 @@ node webui/check-all.mjs http://192.168.0.230:8080/ui/   # headless: 7 разд�
 ```
 
 `scripts/start_project.sh` вызывается при старте/перезапуске WSL: он включает
-PostgreSQL, применяет схему и миграцию, чистит остатки старого Jinja-UI,
+PostgreSQL, применяет схему и миграцию, чистит `__pycache__` (rsync сохраняет
+mtime — иначе сервер поднимает старый байткод) и остатки старого Jinja-UI,
 устанавливает юнит `algotrading-web.service` (зависит от PostgreSQL),
 перезапускает панель и проверяет HTTP-коды.
 
