@@ -155,7 +155,9 @@ def create_view(store: RobotStore, payload: dict) -> dict:
 
 @router.post("/instances", status_code=201)
 def create(payload: dict, store: RobotStore = Depends(get_store)):
-    return create_view(store, payload)
+    result = create_view(store, payload)
+    invalidate_analytics()  # виртуальный equity/position в аналитике
+    return result
 
 
 @router.get("/instances/{iid}")
@@ -185,7 +187,9 @@ def update_view(store: RobotStore, iid: str, payload: dict) -> dict:
 
 @router.patch("/instances/{iid}")
 def update(iid: str, payload: dict, store: RobotStore = Depends(get_store)):
-    return update_view(store, iid, payload)
+    result = update_view(store, iid, payload)
+    invalidate_analytics()
+    return result
 
 
 _ACTIONS = {"start": "active", "pause": "paused", "stop": "stopped",
@@ -224,14 +228,18 @@ def action_view(store: RobotStore, iid: str, action: str,
 @router.post("/instances/{iid}/{action}")
 def action(iid: str, action: str, payload: dict | None = None,
            store: RobotStore = Depends(get_store)):
-    return action_view(store, iid, action, payload)
+    result = action_view(store, iid, action, payload)
+    invalidate_analytics()
+    return result
 
 
 @router.delete("/instances/{iid}")
 def delete_instance(iid: str, store: RobotStore = Depends(get_store)):
     """Полное удаление архивного/чернового робота (не боевого и не активного)."""
     try:
-        return store.delete_instance(iid)
+        result = store.delete_instance(iid)
+        invalidate_analytics()
+        return result
     except StoreError as exc:
         raise HTTPException(400, str(exc))
 
@@ -270,7 +278,9 @@ def runtime(store: RobotStore = Depends(get_store)):
 
 @router.post("/runtime/migrate")
 def runtime_migrate(store: RobotStore = Depends(get_store)):
-    return {"migrated": migrate_runtime_from_paper(store)}
+    result = {"migrated": migrate_runtime_from_paper(store)}
+    invalidate_analytics()
+    return result
 
 
 @router.get("/accounts")
@@ -447,10 +457,12 @@ def mm_rebalance(iid: str, payload: dict | None = None,
                  store: RobotStore = Depends(get_store)):
     """Ребалансировка фонда денежного рынка (по образцу TmonRebalancer)."""
     try:
-        return pos.mm_rebalance(
+        result = pos.mm_rebalance(
             store, iid,
             dry_run=os.environ.get("ALGO_MM_ARMED") != "1",
             regime=(payload or {}).get("regime"))
+        invalidate_analytics()
+        return result
     except pos.OpError as exc:
         raise HTTPException(400, str(exc))
 
@@ -459,9 +471,11 @@ def mm_rebalance(iid: str, payload: dict | None = None,
 def mm_close(iid: str, store: RobotStore = Depends(get_store)):
     try:
         fund = pos._context(store, iid)["params"].get("symbol")
-        return pos.close_instance(
+        result = pos.close_instance(
             store, iid, dry_run=os.environ.get("ALGO_MM_ARMED") != "1",
             symbol=str(fund) if fund else None)
+        invalidate_analytics()
+        return result
     except pos.OpError as exc:
         raise HTTPException(400, str(exc))
 
@@ -494,6 +508,7 @@ def _live_run_view(payload: dict) -> dict:
     with log.open("a", encoding="utf-8") as f:
         f.write(f"{datetime.now().isoformat(timespec='seconds')} arm={arm} "
                 f"day={day} rc={proc.returncode} {proc.stdout.strip()[:160]}\n")
+    invalidate_analytics()  # прогон мог изменить позиции/equity
     return {"ok": proc.returncode == 0, "arm": arm, "summary": summary,
             "stdout": proc.stdout.strip()[-800:], "stderr": proc.stderr.strip()[-400:]}
 

@@ -49,6 +49,18 @@ class TestApiViews(unittest.TestCase):
         self.assertEqual(upd["params"]["ma_window"], 77)
         self.assertEqual(upd["version"], 2)
 
+    def test_mutations_invalidate_analytics(self):
+        created = api.create({"id": "p-cache", "spec_id": "prostushka",
+                              "instrument": "CNY", "mode": "paper"}, store=self.store)
+        with mock.patch.object(api, "invalidate_analytics") as inv:
+            api.update("p-cache", {"version": created["version"],
+                                   "params": {"ma_window": 77}}, store=self.store)
+            api.action("p-cache", "start", store=self.store)
+            api.action("p-cache", "pause", store=self.store)
+            api.action("p-cache", "archive", store=self.store)
+            api.delete_instance("p-cache", store=self.store)
+        self.assertEqual(inv.call_count, 5)
+
     def test_brokers_list(self):
         self.assertIn("finam", [b["name"] for b in api.brokers()])
 

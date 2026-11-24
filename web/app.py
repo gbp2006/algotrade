@@ -11,6 +11,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import queue
 import subprocess
 import threading
 import time
@@ -78,19 +79,52 @@ templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "tem
 app.mount("/static", StaticFiles(directory=str(Path(__file__).resolve().parent / "static")), name="static")
 
 _cache: dict[str, tuple[float, object]] = {}
+_refresh_q: queue.Queue = queue.Queue()
+_refreshing: set[str] = set()
 
 
-def _cached(key: str, ttl: int, fn):
+def _cached(key: str, ttl: int, fn, *, stale: bool = False):
+    """TTL-кэш с stale-while-revalidate для сетевых вызовов.
+
+    `stale=True`: если значение есть, но TTL истёк — отдаём его сразу, а
+    обновление ставим в фоновую очередь (без блокировки запроса и без шторма
+    параллельных рефрешей по одному ключу).
+    """
     now = time.time()
-    if key in _cache and now - _cache[key][0] < ttl:
-        return _cache[key][1]
+    hit = _cache.get(key)
+    if hit is not None and now - hit[0] < ttl:
+        return hit[1]
+    if stale and hit is not None:
+        if key not in _refreshing:
+            _refreshing.add(key)
+            _refresh_q.put((key, ttl, fn))
+        return hit[1]
     val = fn()
     _cache[key] = (now, val)
     return val
 
-# Фоновое обновление health.json каждые 5 минут
-import threading
-import time
+
+def _refresh_worker() -> None:
+    while True:
+        key, ttl, fn = _refresh_q.get()
+        try:
+            _cache[key] = (time.time(), fn())
+        except Exception:  # noqa: BLE001 — сеть не должна ронять панель
+            pass
+        finally:
+            _refreshing.discard(key)
+            _refresh_q.task_done()
+
+
+def _cache_refresh_loop() -> None:
+    """Раз в 20 с греем котировки/свечи — «первый клик» не ждёт Finam."""
+    while True:
+        time.sleep(20)
+        try:
+            _warm_cache()
+        except Exception:  # noqa: BLE001
+            pass
+
 
 def _health_refresh_loop() -> None:
     """Каждые 5 мин пересчитывает results/health.json через scripts/40_watchdog.py."""
@@ -118,7 +152,9 @@ def _warm_cache() -> None:
 @app.on_event("startup")
 def _startup_health() -> None:
     threading.Thread(target=_health_refresh_loop, daemon=True).start()
+    threading.Thread(target=_refresh_worker, daemon=True).start()
     threading.Thread(target=_warm_cache, daemon=True).start()
+    threading.Thread(target=_cache_refresh_loop, daemon=True).start()
 
 REMOTE = os.environ.get("ALGO_PANEL_REMOTE", "").rstrip("/")
 
@@ -176,7 +212,7 @@ def quote_for(inst, day=None) -> dict:
         q = b.quote(sym)
         return {"symbol": sym, "bid": q.bid, "ask": q.ask, "last": q.last,
                 "spread_ticks": round((q.ask - q.bid) / inst.tick), "ts": q.timestamp}
-    return _cached(f"quote:{sym}", 15, fetch)
+    return _cached(f"quote:{sym}", 15, fetch, stale=True)
 
 
 ALL_CONFIGS = CONFIGS + ROBOT_CONFIGS
@@ -200,7 +236,7 @@ def price_series(inst=None) -> list[list]:
         df = b.bars(sym, "TIME_FRAME_M5", start, end)
         return [[d.strftime("%H:%M"), round(float(v), inst.digits)] for d, v in
                 zip(df.index, df["close"])]
-    return _cached(f"price:{inst.code}", 60, fetch)
+    return _cached(f"price:{inst.code}", 60, fetch, stale=True)
 
 
 TF_MAP = {
