@@ -15,6 +15,7 @@ from algo import account_poller as poller
 from algo.cash_flow_store import CashFlowStore
 from algo.cash_flows import (CashFlow, CashFlowType, InsufficientPolicy,
                              Reaction, RobotSizing, preview_cash_flow)
+from algo.pg_store import PgStore
 from algo.portfolio import GO, MULT
 from algo.portfolio_metrics import EquityPoint, summarize
 from algo.robot_store import RobotStore
@@ -133,6 +134,27 @@ def _preview_payload(flow: CashFlow, preview, account_id: str) -> dict:
     }
 
 
+def _pg_snapshots(account_id: str | None, limit: int, since: str = "") -> list[dict]:
+    """Снимки из PostgreSQL, если DSN настроен; иначе пусто (есть SQLite)."""
+    pg = PgStore()
+    rows = pg.list_snapshots(account_id or "", limit)
+    if since:
+        rows = [row for row in rows if str(row.get("time") or "") >= since]
+    return [{
+        "account_id": row.get("account_id", ""),
+        "timestamp": str(row.get("time") or ""),
+        "equity": float(row.get("equity") or 0),
+        "balance": float(row.get("balance") or 0),
+        "cash_flow": 0.0,
+        "drawdown_pct": float(row.get("drawdown_pct") or 0),
+    } for row in rows][::-1]
+
+
+def _pg_flows(account_id: str | None, limit: int) -> list[dict]:
+    pg = PgStore()
+    return pg.list_flows(account_id or "", limit)
+
+
 # ---------- чистые view-функции (тестируются без HTTP) ----------
 def preview_view(payload: dict, store: RobotStore) -> dict:
     balance = _balance_for(payload, store)
@@ -196,14 +218,20 @@ def sync_view(payload: dict, store: RobotStore, flows: CashFlowStore,
 
 def history_view(account_id: str | None, limit: int,
                  flows: CashFlowStore) -> dict:
+    pg_rows = _pg_flows(account_id, limit)
+    if pg_rows:
+        return {"items": pg_rows, "source": "postgres"}
     rows = flows.list_flows(account_id, limit)
-    return {"items": [{**r, "impacts": flows.list_impacts(r["id"])} for r in rows]}
+    return {"items": [{**r, "impacts": flows.list_impacts(r["id"])} for r in rows],
+            "source": "sqlite"}
 
 
 def equity_view(account_id: str | None, limit: int, since: str,
                 flows: CashFlowStore) -> dict:
-    snapshots = flows.list_snapshots(account_id, limit, since)
-    flow_rows = flows.list_flows(account_id, min(limit, 200))
+    pg_rows = _pg_snapshots(account_id, limit, since)
+    snapshots = pg_rows or flows.list_snapshots(account_id, limit, since)
+    flow_rows = _pg_flows(account_id, min(limit, 200)) or flows.list_flows(
+        account_id, min(limit, 200))
     markers = [{"timestamp": r["created_at"], "type": r["type"],
                 "amount": r["amount"], "balance_before": r["balance_before"],
                 "balance_after": r["balance_after"]} for r in reversed(flow_rows)]
@@ -218,12 +246,13 @@ def portfolio_analytics_view(account_id: str | None, store: RobotStore,
                              flows: CashFlowStore) -> dict:
     """Старые поля `/api/accounts/analytics` сохраняются, добавляется portfolio."""
     base = cached_analytics(store)
-    snapshots = flows.list_snapshots(account_id, limit=2000)
+    snapshots = _pg_snapshots(account_id, 2000) or flows.list_snapshots(account_id, limit=2000)
     points = [EquityPoint(s["timestamp"], s["equity"],
                           cash_flow=s["cash_flow"]) for s in snapshots]
     return {**base, "portfolio": {
         "account_id": account_id or "", "points": len(points),
-        "flows": len(flows.list_flows(account_id, 500)),
+        "source": "postgres" if _pg_snapshots(account_id, 1) else "sqlite",
+        "flows": len(_pg_flows(account_id, 500) or flows.list_flows(account_id, 500)),
         "metrics": summarize(points).to_dict(),
     }}
 

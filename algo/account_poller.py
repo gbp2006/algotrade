@@ -13,6 +13,7 @@ from typing import Callable, Iterable, Sequence
 
 from .cash_flow_store import CashFlowStore
 from .cash_flows import (CashFlow, CashFlowType, preview_cash_flow)
+from .pg_store import PgStore
 from .portfolio import size_contracts
 
 Reporter = Callable[[str, str, object], list[dict]]
@@ -54,6 +55,7 @@ def poll_account(account_id: str, broker: object, flows: CashFlowStore,
                  delta_abs: float = 1_000.0, delta_pct: float = 1.0,
                  timestamp: str = "", force_report: bool = False) -> PollOutcome:
     """Опросить один счёт, записать снимок и, только по отчёту, потоки."""
+    pg = PgStore()
     try:
         data = broker.account(account_id)  # type: ignore[attr-defined]
     except Exception as exc:  # noqa: BLE001 — сеть не должна ронять панель
@@ -93,6 +95,13 @@ def poll_account(account_id: str, broker: object, flows: CashFlowStore,
                                  "amount": flow.amount, "delta": flow.delta})
                 running_before = flow.balance_after
                 flow_sum += flow.delta
+                try:
+                    pg.save_flow(account_id, flow.type.value, flow.amount,
+                                 flow.balance_before, flow.balance_after,
+                                 flow.created_at or timestamp,
+                                 flow.broker_tx_id, flow.client_key, "BROKER")
+                except Exception:  # noqa: BLE001 — PG не должна ломать SQLite-контур
+                    pass
             except (ValueError, TypeError):
                 continue
 
@@ -101,6 +110,13 @@ def poll_account(account_id: str, broker: object, flows: CashFlowStore,
     drawdown_pct = 100.0 * (equity - peak) / peak if peak > 0 else 0.0
     flows.add_snapshot(account_id, equity, balance, timestamp=timestamp or None,
                        cash_flow=flow_sum, drawdown_pct=drawdown_pct)
+    try:
+        latest = flows.latest_snapshot(account_id)
+        if latest:
+            pg.save_snapshot(account_id, str(latest["timestamp"]), equity, balance,
+                             flow_sum, drawdown_pct)
+    except Exception:  # noqa: BLE001 — SQLite остаётся рабочим источником
+        pass
     return PollOutcome(account_id, True, equity=equity, delta=delta,
                        triggered=triggered, flows=tuple(recorded))
 

@@ -3,7 +3,13 @@
 -- Денежные и лотовые поля — строго NUMERIC; финансовый журнал append-only.
 -- Секреты здесь не хранятся: только имена ссылок на ключи из auth.json.
 
-CREATE EXTENSION IF NOT EXISTS timescaledb;
+-- TimescaleDB опционален: без расширения таблицы остаются обычными (PostgreSQL).
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'timescaledb') THEN
+    CREATE EXTENSION IF NOT EXISTS timescaledb;
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS brokers (
     id            TEXT PRIMARY KEY,
@@ -153,8 +159,6 @@ CREATE TABLE IF NOT EXISTS market_candles (
     volume        NUMERIC(20, 4) NOT NULL DEFAULT 0,
     UNIQUE (symbol, timeframe, time)
 );
-SELECT create_hypertable('market_candles', 'time', if_not_exists => TRUE);
-
 CREATE TABLE IF NOT EXISTS equity_snapshots (
     account_id      TEXT NOT NULL REFERENCES accounts(id),
     robot_id        TEXT REFERENCES robots(id),
@@ -165,5 +169,13 @@ CREATE TABLE IF NOT EXISTS equity_snapshots (
     drawdown_pct    NUMERIC(10, 4) NOT NULL DEFAULT 0,
     UNIQUE (account_id, time)
 );
-SELECT create_hypertable('equity_snapshots', 'time', if_not_exists => TRUE);
 CREATE INDEX IF NOT EXISTS idx_equity_account_time ON equity_snapshots(account_id, time DESC);
+
+-- Гипертаблицы создаются только при установленном расширении.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    PERFORM create_hypertable('market_candles', 'time', if_not_exists => TRUE);
+    PERFORM create_hypertable('equity_snapshots', 'time', if_not_exists => TRUE);
+  END IF;
+END $$;

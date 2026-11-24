@@ -5,3 +5,4 @@ uvicorn>=0.54
 jinja2>=3.1
 requests>=2.34
 finam-sdk>=2.24  # скрипты скилла .agents/skills/trade-api
+psycopg2-binary>=2.9  # целевая БД PostgreSQL/TimescaleDB

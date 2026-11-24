@@ -43,7 +43,7 @@ FILES=(
   web/*.py web/templates/*.html web/static/*.css web/static/*.js web/static/img/*
   webui/dist/index.html webui/dist/assets/*
   docs/*.md docs/strategies/*.md docs/sources/*.md
-  infra/db/memory.py infra/db/schema.sql infra/systemd/*.service infra/systemd/*.timer
+  infra/db/memory.py infra/db/schema.sql infra/db/schema_timescale.sql infra/systemd/*.service infra/systemd/*.timer
   infra/systemd/*.conf infra/logrotate/*
 )
 

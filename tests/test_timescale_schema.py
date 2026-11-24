@@ -22,7 +22,8 @@ class TestTimescaleSchema(unittest.TestCase):
         tables = set(re.findall(r"CREATE TABLE IF NOT EXISTS (\w+)", sql))
         self.assertTrue(set(required).issubset(tables), set(required) - tables)
         self.assertIn("CREATE EXTENSION IF NOT EXISTS timescaledb", sql)
-        self.assertEqual(sql.count("SELECT create_hypertable("), 2)
+        self.assertEqual(sql.count("PERFORM create_hypertable("), 2)
+        self.assertIn("pg_available_extensions", sql)
 
     def test_money_is_numeric_and_flows_unique(self):
         sql = SCHEMA.read_text(encoding="utf-8")
