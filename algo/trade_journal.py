@@ -138,9 +138,15 @@ def migrate_csv(csv_path: Path, path: Path | None = None) -> int:
 
 
 def executed_qty(client_order_id: str, path: Path | None = None) -> int:
-    """Фактически исполненное количество по заявке (из таблицы `trades`)."""
+    """Фактически исполненное количество по заявке (из таблицы `trades`).
+
+    `refresh_executions()` пишет в `trades` **накопительное** `executed_quantity`
+    брокера: partial(2) → filled(5). Поэтому SUM тут был бы неверен (7 вместо 5) —
+    берём последнее/максимальное значение. Это число идёт в модель позиций для
+    сверки, ошибка означала бы ложный STOP_REAL.
+    """
     with connect(path) as c:
-        row = c.execute("SELECT COALESCE(SUM(qty),0) AS q FROM trades "
+        row = c.execute("SELECT COALESCE(MAX(qty),0) AS q FROM trades "
                         "WHERE client_order_id=?", (str(client_order_id),)).fetchone()
     return int(row["q"] if row else 0)
 

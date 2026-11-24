@@ -15,7 +15,7 @@ import csv
 import json
 import os
 import sys
-from datetime import date, datetime
+from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -78,6 +78,9 @@ def plan_targets(rows: list[dict], settings, day: date) -> dict:
         plan = plans.setdefault((rs.account, rs.key_ref), {}).setdefault(sym, {
             "target": 0, "price": float(last["price"]), "robots": [],
             "pricings": set(), "expiry": True, "exposures": [],
+            # детерминированное время решения из paper.csv, а не время запуска:
+            # повторный --arm того же дня не должен создавать вторую заявку (F01)
+            "when": last.get("time", ""),
         })
         plan["target"] += int(last["target"])
         # expositions из самих конфигов: 2.0 база, 0.6 RTS, 0.7 золото (ADR 24)
@@ -186,7 +189,6 @@ def main(argv: list[str] | None = None) -> int:
         notes: list[str] = []
         fills: list[dict] = []
         paper_signals: dict[str, dict] = {}
-        now = datetime.now().strftime("%H%M%S")
 
         for (acc_id, key_ref), symbols in plans.items():
             acc = settings.accounts[acc_id]
@@ -237,7 +239,7 @@ def main(argv: list[str] | None = None) -> int:
                 target = direction * lots  # бумага даёт направление, счёт — размер
                 client_id = decision_client_id(
                     ids, day, "buy" if target >= actual.get(sym, 0) else "sell",
-                    now, abs(target))
+                    plan["when"], abs(target))
                 status = reason = note = ""
                 delta = 0
                 order = None

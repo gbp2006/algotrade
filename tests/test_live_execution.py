@@ -141,6 +141,46 @@ class TestSourceConfig(unittest.TestCase):
         self.assertEqual(model, {"CNYRUBF@RTSX": -2})
         self.assertEqual(uncertain, 0)
 
+    def test_executed_qty_is_cumulative_max_not_sum(self):
+        """F02: partial(2) → filled(5) даёт 5, а не 7 (иначе ложный STOP)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Path(tmp) / "trades.db"
+            row = {"ts": "2026-11-24T14:00:24", "client_id": "r:d",
+                   "client_order_id": "cid-partial", "order_id": "1", "config": "r",
+                   "symbol": "CNYRUBF@RTSX", "side": "sell", "qty": 2,
+                   "price": 12.288, "multiplier": 1000.0, "status": "sent",
+                   "reason": "", "response": "", "account": "A1",
+                   "pricing": "marketable", "order_type": "limit"}
+            tj.append(row, db)
+            self.assertTrue(tj.mark_execution("cid-partial", status="partial",
+                                              executed_qty=2, price=12.288,
+                                              path=db))
+            self.assertTrue(tj.mark_execution("cid-partial", status="filled",
+                                              executed_qty=5, price=12.288,
+                                              path=db))
+            self.assertEqual(tj.executed_qty("cid-partial", db), 5)
+
+    def test_decision_time_comes_from_paper_not_wallclock(self):
+        """F01: client_id детерминирован — повторный --arm не создаёт дубль."""
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "live_exec_time", Path(__file__).resolve().parent.parent /
+            "scripts" / "34_live_execute.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        settings = lc.parse_settings({
+            "accounts": {"A1": {}},
+            "robots": {"live-1": {"account": "A1", "pricing": "marketable",
+                                  "source_config": "p-base", "exposure": 2.0}},
+        })
+        rows = [{"config": "p-base", "symbol": "CNYRUBF@RTSX", "time": "13:50",
+                 "price": "12.3", "target": "32"}]
+        plan = mod.plan_targets(rows, settings, date(2026, 11, 24))[("A1", "")]["CNYRUBF@RTSX"]
+        self.assertEqual(plan["when"], "13:50")
+        cid1 = mod.decision_client_id("live-1", "2026-11-24", "buy", plan["when"], 4)
+        cid2 = mod.decision_client_id("live-1", "2026-11-24", "buy", plan["when"], 4)
+        self.assertEqual(cid1, cid2)
+
     def test_live_robot_follows_paper_config(self):
         import importlib.util
         spec = importlib.util.spec_from_file_location(
