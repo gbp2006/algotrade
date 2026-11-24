@@ -115,6 +115,8 @@ update-live и channel каждые 10 минут. Они запускают с�
   для LIVE — только запись обнаруженного брокером потока.
 - Адаптеры: `finam` рабочий, `tinvest` зарегистрирован, но без токена и gRPC
   инертен (`NotConfiguredError`); маппинг тикеров — `algo/broker/instrument_map.py`.
+- Модули `algo/robot_modules.py` (сайзинг и выходы) пока не подключены к раннеру:
+  это чистые функции для будущего конвейера, модель сигналов не меняется.
 - Параллельный фронт `webui/` (React 18 + TS strict + Vite + Tailwind/Radix,
   TanStack Query/Zustand, RHF/Zod, lightweight-charts, react-table) работает
   с теми же API через прокси и не заменяет старую панель. Доменные расчёты
