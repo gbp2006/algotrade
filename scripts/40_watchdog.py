@@ -152,6 +152,12 @@ def check() -> dict:
         # проверяем только дни начиная с даты старта теста (первой записи в журнале)
         start_date = date.fromisoformat(min(r["date"] for r in rows))
         expected_configs = decision_configs(rows)
+        # Робот, добавленный 24.11, не должен давать «нет решений» за 20.11.
+        first_seen: dict[str, str] = {}
+        for r in rows:
+            cfg, when = str(r.get("config") or ""), str(r.get("date") or "")
+            if cfg and when:
+                first_seen[cfg] = min(first_seen.get(cfg, when), when)
 
         # после 14:00 по будням должны быть решения по всем конфигурациям
         for d in trading_days_back(MAX_LOOKBACK):
@@ -167,7 +173,8 @@ def check() -> dict:
                     problems.append(f"{d}: нет ни одной записи")
                 continue
             have = {r["config"] for r in day_rows}
-            missing = [c for c in expected_configs if c not in have]
+            missing = [c for c in expected_configs
+                       if c not in have and first_seen.get(c, "9999-12-31") <= str(d)]
             if missing:
                 problems.append(f"{d}: нет решений по {', '.join(missing)}")
 

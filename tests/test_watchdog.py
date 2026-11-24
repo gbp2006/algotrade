@@ -6,7 +6,7 @@ import importlib.util
 import sys
 import tempfile
 import unittest
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from unittest import mock
 
@@ -54,6 +54,28 @@ class TestWatchdog(unittest.TestCase):
         with mock.patch("algo.instance_configs.active_configs",
                         side_effect=RuntimeError("нет store")):
             self.assertEqual(wd.decision_configs(rows), wd.DECISION_CONFIGS)
+
+    def test_new_config_not_expected_on_old_days(self):
+        today, old = date.today(), date.today() - timedelta(days=1)
+        header = ("date,time,config,instrument,symbol,strategy,price,signal,target,"
+                  "contracts,equity_before,action,position_after,note\n")
+        lines = [header]
+        for d in (old, today):
+            for cfg in wd.DECISION_CONFIGS:
+                lines.append(f"{d},13:50,{cfg},CNY,CNYRUBF@RTSX,prostushka,12.29,0,0,0,200000,решение,0,тест\n")
+        lines.append(f"{today},13:50,p-new,CNY,CNYRUBF@RTSX,prostushka,12.29,0,0,0,200000,решение,0,новый\n")
+        self.paper.write_text("".join(lines), encoding="utf-8")
+        patches = self._patches()[:-1] + [
+            mock.patch.object(wd, "decision_configs",
+                              lambda rows: list(wd.DECISION_CONFIGS) + ["p-new"])]
+        for p in patches:
+            p.start()
+        try:
+            res = wd.check()
+        finally:
+            for p in reversed(patches):
+                p.stop()
+        self.assertFalse(any(str(old) in p for p in res["problems"]), res["problems"])
 
     def test_check_ok_when_all_present(self):
         self._journal()
