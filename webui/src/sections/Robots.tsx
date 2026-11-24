@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { api, keys } from '../lib/api';
 import { money } from '../lib/format';
-import type { Robot, RuntimeState } from '../lib/types';
+import type { CashFlowPreview, Robot, RuntimeState } from '../lib/types';
 import { useUi } from '../store/ui';
 import {
   Badge, Card, ConfirmDialog, DataTable, ErrorBox, Loading,
@@ -20,7 +20,17 @@ const schema = z.object({
   mode: z.enum(['paper', 'live']),
   account: z.string(),
   exposure: z.coerce.number().min(0.1).max(10),
+  sizing_mode: z.enum(['PERCENT', 'FIXED', 'STEPPED']),
+  sizing_value: z.coerce.number().min(0),
+  reaction: z.enum(['IMMEDIATE', 'AFTER_CLOSE', 'SMOOTHED']),
+  smoothing_pct: z.coerce.number().min(0).max(100),
+  on_insufficient: z.enum(['PAUSE', 'MIN_LOT', 'SKIP']),
   min_lots: z.coerce.number().int().min(1).max(1000),
+  max_lots: z.coerce.number().int().min(1).max(10000),
+  sl_pct: z.coerce.number().min(0),
+  tp_pct: z.coerce.number().min(0),
+  trailing_pct: z.coerce.number().min(0),
+  close_time: z.string(),
 });
 type RobotForm = z.infer<typeof schema>;
 
@@ -42,6 +52,8 @@ export function Robots() {
   const [selected, setSelected] = useState<string | null>(null);
   const [pendingAccount, setPendingAccount] = useState<string | null>(null);
   const [filter, setFilter] = useState('');
+  const [calcAmount, setCalcAmount] = useState(100_000);
+  const [calcKind, setCalcKind] = useState('DEPOSIT');
 
   const robots = useQuery({ queryKey: keys.robots, queryFn: api.robots, refetchInterval: 30_000 });
   const runtime = useQuery({ queryKey: keys.runtime, queryFn: api.runtime, refetchInterval: 30_000 });
@@ -52,7 +64,10 @@ export function Robots() {
     resolver: zodResolver(schema),
     defaultValues: {
       name: '', spec_id: 'prostushka', instrument: 'CNY', mode: 'paper',
-      account: '', exposure: 2, min_lots: 1,
+      account: '', exposure: 2, sizing_mode: 'PERCENT', sizing_value: 200,
+      reaction: 'IMMEDIATE', smoothing_pct: 5, on_insufficient: 'PAUSE',
+      min_lots: 1, max_lots: 100, sl_pct: 0, tp_pct: 0, trailing_pct: 0,
+      close_time: '',
     },
   });
 
@@ -66,6 +81,22 @@ export function Robots() {
   const action = useMutation({
     mutationFn: ({ id, name }: { id: string; name: string }) => api.instanceAction(id, name),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: keys.robots }),
+  });
+  const calc = useMutation({
+    mutationFn: () => {
+      const values = form.getValues();
+      return api.preview({
+        type: calcKind, amount: calcAmount, balance_before: 200_000, live: false,
+        robots: [{
+          robot_id: values.name || 'новый-робот', name: values.name || 'Новый робот',
+          price: 12.29, exposure: values.sizing_mode === 'PERCENT'
+            ? values.sizing_value / 100 : values.exposure,
+          reaction: values.reaction, smoothing_pct: values.smoothing_pct,
+          min_lots: values.min_lots, max_lots: values.max_lots,
+          on_insufficient: values.on_insufficient,
+        }],
+      });
+    },
   });
   const switchAccount = useMutation({
     mutationFn: ({ id, account }: { id: string; account: string }) =>
@@ -172,19 +203,65 @@ export function Robots() {
                   <option value="paper">TEST</option><option value="live">LIVE</option>
                 </select>
               </label>
-              <label className="text-xs">Экспозиция
+              <label className="text-xs">Режим сайзинга
+                <select className="input mt-1" {...form.register('sizing_mode')}>
+                  <option value="PERCENT">% от баланса</option>
+                  <option value="FIXED">Фиксированный</option>
+                  <option value="STEPPED">Шаговый</option>
+                </select>
+              </label>
+              <label className="text-xs">Значение сайзинга (% / лоты)
+                <input className="input mt-1" type="number" {...form.register('sizing_value')} />
+              </label>
+              <label className="text-xs">Реакция на пополнение/снятие
+                <select className="input mt-1" {...form.register('reaction')}>
+                  <option value="IMMEDIATE">Немедленно</option>
+                  <option value="AFTER_CLOSE">После закрытия позиции</option>
+                  <option value="SMOOTHED">С порогом сглаживания</option>
+                </select>
+              </label>
+              <label className="text-xs">Порог сглаживания, %
+                <input className="input mt-1" type="number" {...form.register('smoothing_pct')} />
+              </label>
+              <label className="text-xs">При нехватке средств
+                <select className="input mt-1" {...form.register('on_insufficient')}>
+                  <option value="PAUSE">Пауза</option>
+                  <option value="MIN_LOT">Минимальный лот</option>
+                  <option value="SKIP">Пропустить вход</option>
+                </select>
+              </label>
+              <label className="text-xs">Экспозиция (fallback)
                 <input className="input mt-1" type="number" step="0.1" {...form.register('exposure')} />
               </label>
               <label className="text-xs">Минимальный лот
                 <input className="input mt-1" type="number" {...form.register('min_lots')} />
               </label>
-              <div className="flex items-end">
+              <label className="text-xs">Максимальный лот
+                <input className="input mt-1" type="number" {...form.register('max_lots')} />
+              </label>
+              <label className="text-xs">Stop-Loss, %
+                <input className="input mt-1" type="number" step="0.1" {...form.register('sl_pct')} />
+              </label>
+              <label className="text-xs">Take-Profit, %
+                <input className="input mt-1" type="number" step="0.1" {...form.register('tp_pct')} />
+              </label>
+              <label className="text-xs">Трейлинг, %
+                <input className="input mt-1" type="number" step="0.1" {...form.register('trailing_pct')} />
+              </label>
+              <label className="text-xs">Закрытие по времени (МСК)
+                <input className="input mt-1" placeholder="18:45" {...form.register('close_time')} />
+              </label>
+              <div className="flex items-end gap-2">
                 <button type="submit" className="btn-primary" disabled={create.isPending}>
                   {create.isPending ? 'Создание…' : 'Создать робота'}
                 </button>
+                <button type="button" className="btn" onClick={() => calc.mutate()}>Рассчитать лот</button>
               </div>
             </form>
-            <p className="mt-3 text-[11px] text-muted">Сайзинг и проверка баланса выполняются сервером через единый расчёт лотности — в интерфейсе нет второй формулы.</p>
+            <LiveCalculator data={calc.data} error={calc.error}
+              amount={calcAmount} kind={calcKind}
+              onAmount={setCalcAmount} onKind={setCalcKind} />
+            <p className="mt-3 text-[11px] text-muted">Сайзинг и проверка баланса выполняются сервером через единый расчёт лотности — в интерфейсе нет второй формулы. Модули закрытия и ATR-правка остаются выключенными до отдельного ADR.</p>
           </Card>
         </TabPanel>
       </Tabs>
@@ -210,6 +287,41 @@ export function Robots() {
           }
         }}
       />
+    </div>
+  );
+}
+
+function LiveCalculator({ data, error, amount, kind, onAmount, onKind }: {
+  data?: CashFlowPreview;
+  error: unknown;
+  amount: number;
+  kind: string;
+  onAmount: (value: number) => void;
+  onKind: (value: string) => void;
+}) {
+  return (
+    <div className="mt-4 rounded-lg border border-line p-3">
+      <div className="panel-title">Живой калькулятор лотности</div>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <select className="input w-auto" value={kind} onChange={(e) => onKind(e.target.value)}>
+          <option value="DEPOSIT">Пополнение</option>
+          <option value="WITHDRAWAL">Снятие</option>
+        </select>
+        <input className="input w-40" type="number" value={amount}
+          onChange={(e) => onAmount(Number(e.target.value))} />
+      </div>
+      {error ? <div className="mt-2"><ErrorBox error={error} /></div> : null}
+      {data ? (
+        <div className="mt-2 text-xs">
+          <div className="num">Баланс: {money(data.flow.balance_before)} → {money(data.flow.balance_after)} ₽</div>
+          {data.validation.errors.map((message) => <div key={message} className="text-loss">{message}</div>)}
+          {data.impact.map((row) => (
+            <div key={row.robot_id} className="num">
+              {row.name}: {row.lots_before} → {row.lots_after} · {row.status}
+            </div>
+          ))}
+        </div>
+      ) : <div className="mt-2 text-[11px] text-muted">Нажмите «Рассчитать лот»</div>}
     </div>
   );
 }
