@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+from dataclasses import replace
 import unittest
 from pathlib import Path
 
@@ -40,6 +41,21 @@ class TestDecisionTimes(unittest.TestCase):
         got = report.decision_times(rows, "2026-11-20")
         self.assertEqual(got["p-friday"], "13:50")
         self.assertEqual(got["u-morning"], "10:20")
+
+
+class TestVersionedExpectation(unittest.TestCase):
+    def test_cfg_for_changes_expectation_from_given_day(self):
+        bars = m5()
+        base = BY_ID["p-base"]
+        alt = replace(base, params={**base.params, "ma_window": 5})
+        args = (bars, "2026-11-16", "2026-11-20", 1000.0, 200_000)
+        flat = report.expected(base, *args, cfg_for=lambda d: base)[1]
+        switched = report.expected(
+            base, *args,
+            cfg_for=lambda d: alt if str(d) >= "2026-11-19" else base)[1]
+        self.assertIsNotNone(flat)
+        self.assertIsNotNone(switched)
+        self.assertNotEqual(flat, switched)
 
 
 class TestFridayExpectation(unittest.TestCase):

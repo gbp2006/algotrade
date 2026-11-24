@@ -43,6 +43,7 @@ class TestGateway(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.journal = Path(self.tmp.name) / "live.csv"
         self.lock = Path(self.tmp.name) / "live.lock"
+        self.stop = Path(self.tmp.name) / "STOP_REAL"
         self.broker = FakeBroker()
         self.gw = ex.OrderGateway(self.broker, journal=self.journal, lock=self.lock)
 
@@ -96,6 +97,16 @@ class TestGateway(unittest.TestCase):
         self.assertEqual(res.status, "rejected")
         self.assertIn("другая заявка", res.reason)
         self.assertEqual(self.broker.calls, [])
+
+    def test_stop_appearing_mid_session_blocks_second_order(self):
+        with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):
+            first = self.gw.submit(order(client_id="mid-1"), stop=self.stop)
+            self.stop.write_text("1", encoding="utf-8")
+            second = self.gw.submit(order(client_id="mid-2"), stop=self.stop)
+        self.assertTrue(first.sent)
+        self.assertEqual(second.status, "blocked")
+        self.assertEqual(len(self.broker.calls), 1)
+        self.assertEqual([r["status"] for r in self.gw._rows()], ["sent", "blocked"])
 
     def test_stale_lock_from_dead_process_is_cleared(self):
         self.lock.write_text("99999999:old-order", encoding="utf-8")
