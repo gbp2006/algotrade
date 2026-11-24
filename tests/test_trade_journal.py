@@ -104,6 +104,21 @@ class TestTradeJournal(unittest.TestCase):
             self.assertEqual(result["details"]["a"]["price"], 12.35)
             self.assertEqual(tj.records(limit=10, path=db)[0]["status"], "filled")
 
+    def test_corrected_price_does_not_duplicate_fill(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Path(tmp) / "trades.db"
+            tj.append(row("cid-price", "sent"), db)
+            kw = dict(status="filled", executed_qty=5,
+                      ts="2026-11-24T14:00:24", path=db)
+            self.assertTrue(tj.mark_execution("cid-price", price=12.28, **kw))
+            self.assertFalse(tj.mark_execution("cid-price", price=12.30, **kw))
+            self.assertEqual(tj.executed_qty("cid-price", db), 5)
+            with tj.connect(db) as c:
+                fills = [dict(x) for x in c.execute(
+                    "SELECT qty,price FROM trades WHERE client_order_id='cid-price'")]
+            self.assertEqual(len(fills), 1)
+            self.assertEqual(fills[0]["price"], 12.30)
+
     def test_full_broker_response_is_preserved_and_idempotent(self):
         with tempfile.TemporaryDirectory() as tmp:
             db = Path(tmp) / "trades.db"

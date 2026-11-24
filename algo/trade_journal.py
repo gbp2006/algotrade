@@ -223,11 +223,20 @@ def mark_execution(client_order_id: str, *, status: str, executed_qty: float,
         if row is None:
             return False
         qty = int(round(executed_qty))
+        fill_price = price or float(row["price"] or 0)
         marker = f"{status}:{qty}"
         done = c.execute(
-            "SELECT 1 FROM order_events WHERE client_order_id=? AND status=? "
-            "AND detail LIKE ?", (cid, status, f"{marker}%")).fetchone()
+            "SELECT ts FROM order_events WHERE client_order_id=? AND status=? "
+            "AND detail LIKE ? ORDER BY id DESC LIMIT 1",
+            (cid, status, f"{marker}%")).fetchone()
         if done is not None:
+            # Тот же статус и количество, но уточнённая цена: обновляем цену
+            # существующей сделки, не создавая вторую (иначе MAX(qty)/P&L
+            # останутся корректными, а отчёт покажет свежую цену).
+            if qty > 0 and fill_price > 0:
+                c.execute(
+                    "UPDATE trades SET price=? WHERE client_order_id=? AND qty=? "
+                    "AND ts=?", (fill_price, cid, qty, str(done["ts"] or "")))
             return False
         now = ts or datetime.now().isoformat(timespec="seconds")
         note = detail or marker
@@ -237,7 +246,6 @@ def mark_execution(client_order_id: str, *, status: str, executed_qty: float,
             "INSERT INTO order_events (client_order_id, ts, status, detail) "
             "VALUES (?,?,?,?)", (cid, now, status, note[:200]))
         if qty > 0:
-            fill_price = price or float(row["price"] or 0)
             if fill_price > 0:
                 c.execute(
                     "INSERT INTO trades (client_order_id, order_id, ts, symbol, side, "
