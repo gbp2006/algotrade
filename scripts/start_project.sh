@@ -17,6 +17,8 @@ rm -f web/templates/*.html web/static/app.css web/static/ui-state.js \
       web/static/ui-labels.js web/static/sidebar.js web/static/ui-theme.js
 
 echo "4/6 systemd-юнит панели"
+# rsync сохраняет mtime: без чистки __pycache__ сервер поднимает старый байткод.
+find . -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
 sudo -n cp infra/systemd/algotrading-web.service /etc/systemd/system/algotrading-web.service
 sudo -n systemctl daemon-reload
 sudo -n systemctl enable --now algotrading-web.service >/dev/null
