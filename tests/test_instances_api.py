@@ -61,6 +61,53 @@ class TestApiViews(unittest.TestCase):
         self.assertEqual(upd["params"]["ma_window"], 77)
         self.assertEqual(upd["version"], 2)
 
+    def test_archive_includes_stopped(self):
+        created = api.create_view(self.store, {"id": "stopped-1", "spec_id": "prostushka",
+                                               "instrument": "CNY", "mode": "paper"})
+        api.action_view(self.store, "stopped-1", "start")
+        self.store.set_status("stopped-1", "stopping", "тест")
+        api.action_view(self.store, "stopped-1", "stop")
+        self.assertEqual(created["status"], "draft")
+        self.assertIn("stopped-1", [x["id"] for x in api.archive_list(self.store)])
+
+    def test_delete_paper_draft(self):
+        api.create_view(self.store, {"id": "draft-1", "spec_id": "prostushka",
+                                     "instrument": "CNY", "mode": "paper"})
+        self.assertIsNotNone(api.delete_instance("draft-1", store=self.store))
+        self.assertIsNone(self.store.get_instance("draft-1"))
+
+    def test_analytics_cache_ttl_and_invalidation(self):
+        api.invalidate_analytics()
+        with mock.patch.object(api, "account_analytics",
+                               side_effect=lambda store: {"n": 1}) as fake:
+            first = api.cached_analytics(self.store)
+            second = api.cached_analytics(self.store)
+            self.assertEqual((first, second), ({"n": 1}, {"n": 1}))
+            self.assertEqual(fake.call_count, 1)
+            api.invalidate_analytics()
+            api.cached_analytics(self.store)
+            self.assertEqual(fake.call_count, 2)
+
+    def test_real_account_analytics_hides_secret(self):
+        self.store.create_account({"id": "acc-1", "label": "Тест", "capital": 100000,
+                                "max_exposure": 1.0, "key_ref": "acc:acc-1"})
+        class Broker:
+            def __init__(self, *a, **k): pass
+            def account(self, acc):
+                return {"equity": {"value": "123456"},
+                        "positions": [{"symbol": "CNYRUBF@RTSX",
+                                       "quantity": {"value": "-2"},
+                                       "unrealized_pnl": {"value": "15"}}]}
+        with mock.patch.object(api, "FinamBroker", Broker), \
+             mock.patch.object(api, "resolve_secret", lambda ref: "super-secret"):
+            data = api.account_analytics(self.store)
+        row = data["real"][0]
+        self.assertEqual(row["equity"], 123456.0)
+        self.assertEqual(row["positions"][0]["qty"], -2.0)
+        self.assertEqual(row["status"], "ok")
+        self.assertNotIn("super-secret", str(data))
+        self.assertNotIn("key_ref", str(data))
+
     def test_mutations_invalidate_analytics(self):
         created = api.create({"id": "p-cache", "spec_id": "prostushka",
                               "instrument": "CNY", "mode": "paper"}, store=self.store)
