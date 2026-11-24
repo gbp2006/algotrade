@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "trade-api": {
+      "source": "finamweb/finam-trade-api",
+      "sourceType": "github",
+      "skillPath": ".ai/skills/trade-api/SKILL.md",
+      "computedHash": "b1a9c507ff13b6581932ce8addff3cad087bd41956c3497309f40fba667ec617"
+    }
+  }
+}

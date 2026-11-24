@@ -27,6 +27,31 @@
 
 Полные прогоны — `scripts/NN_*.py`, по порядку номеров.
 
+## OsEngine MCP (только исследования)
+
+MCP V2 живёт внутри терминала OsEngine, отдельного сервиса нет. Если `osengine_*`
+не отвечает, проверяют `curl -s -o /dev/null -w '%{http_code}' http://localhost:6500/api/v2/mcp`
+(401 без ключа = хост жив, `000` = не поднят). Единственная рабочая копия —
+обновлённая 23.11 до 2.0.2.0 внутри `materials/04_Софт_и_инструменты/OsEngine Софт`;
+старый `/mnt/DiskD/OsEngine-master` (2.0.1.9) удалён 24.11, его уникальные
+настройки Самурая и сет `Set_ВечныйФьючЮань` сохранены в
+`.../bin/Debug/_legacy_from_diskD/`. Запуск терминала под Wine с `-data`:
+
+```bash
+cd '/mnt/DiskD/opencode-algo/materials/04_Софт_и_инструменты/OsEngine Софт/OsEngine-master/project/OsEngine/bin/Debug'
+nohup setsid env WINEPREFIX=/home/zt/.wine WINEDEBUG=-all \
+  /opt/wine-stable/bin/wine ./OsEngine.exe -data \
+  >/tmp/opencode/osengine-wine.log 2>&1 </dev/null &
+```
+
+Если `Engine/McpSettings.txt` в этой копии выключен, 3-я строка (`IsEnabled`)
+должна быть `True`. Проверка: `initialize` → `notifications/initialized` →
+`tools/list` на `/api/v2/mcp` с заголовком `X-Api-Key: osengine-mcp-default-key`
+и `MCP-Protocol-Version: 2024-11-05` (2.0.2.0, 181 инструмент,
+`terminal_get_status` → `IsOsData`). Глитчи GUI под Wine не важны — нужен только MCP. Подключать к контуру
+запрещено (ADR 18.11); если MCP отвалился после рестарта терминала, инструменты
+появятся только в новой сессии OpenCode.
+
 ## Цикл работы
 
 ```
