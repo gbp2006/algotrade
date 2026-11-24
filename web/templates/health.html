@@ -55,9 +55,9 @@ async function load(){
     const h = await (await fetch('/api/health')).json();
     $('status-line').innerHTML = `Проверка ${esc(h.checked)}: <b>${esc(h.status)}</b>, `
       + `проблем ${h.problems.length}, предупреждений ${h.warnings.length}, строк ${h.rows}`;
-    $('kpi').innerHTML = `<div class="kpi"><span>Статус</span><b>${esc(h.status)}</b></div>
-      <div class="kpi"><span>Проблемы</span><b>${h.problems.length}</b></div>
-      <div class="kpi"><span>Данные до</span><b>${esc(h.data_date)}</b></div>`;
+    $('kpi').innerHTML = `<div class="it"><span>Статус</span><b>${esc(h.status)}</b></div>
+      <div class="it"><span>Проблемы</span><b>${h.problems.length}</b></div>
+      <div class="it"><span>Данные до</span><b>${esc(h.data_date)}</b></div>`;
     const j = await (await fetch('/api/logs?limit=150', {cache:'no-store'})).json();
     ITEMS = j.items; render();
   }catch(e){ $('status-line').textContent = 'Нет данных: ' + e.message; }

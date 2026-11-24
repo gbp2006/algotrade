@@ -53,9 +53,9 @@ async function load(){
       <td>${esc(v.id)}</td><td>${num(v.equity)} ₽</td><td>${num(v.position)}</td>
       <td class="muted small">${esc(v.last_decision)}</td></tr>`).join('') : '<tr><td colspan="4" class="muted">Нет бумажных инстансов</td></tr>';
     const eq = j.real.filter(a=>a.equity).reduce((s,a)=>s+a.equity,0);
-    $('kpi').innerHTML = `<div class="kpi"><span>Реальных счетов</span><b>${j.real.length}</b></div>
-      <div class="kpi"><span>Equity реальных</span><b>${num(eq)} ₽</b></div>
-      <div class="kpi"><span>Виртуальных</span><b>${j.virtual.length}</b></div>`;
+    $('kpi').innerHTML = `<div class="it"><span>Реальных счетов</span><b>${j.real.length}</b></div>
+      <div class="it"><span>Equity реальных</span><b>${num(eq)} ₽</b></div>
+      <div class="it"><span>Виртуальных</span><b>${j.virtual.length}</b></div>`;
   }catch(e){
     $('real-rows').innerHTML = '<tr><td colspan="4" class="muted">Нет данных: '+esc(e.message)+'</td></tr>';
   }
