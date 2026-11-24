@@ -46,13 +46,14 @@ class TestDecisionTimes(unittest.TestCase):
 class TestVersionedExpectation(unittest.TestCase):
     def test_cfg_for_changes_expectation_from_given_day(self):
         bars = m5()
-        base = BY_ID["p-base"]
-        alt = replace(base, params={**base.params, "ma_window": 5})
+        # p-friday на этих барах даёт сделку; сдвиг времени входа меняет ожидание
+        base = BY_ID["p-friday"]
+        alt = replace(base, params={**base.params, "entry": "13:40"})
         args = (bars, "2026-11-16", "2026-11-20", 1000.0, 200_000)
         flat = report.expected(base, *args, cfg_for=lambda d: base)[1]
         switched = report.expected(
             base, *args,
-            cfg_for=lambda d: alt if str(d) >= "2026-11-19" else base)[1]
+            cfg_for=lambda d: alt if str(d) >= "2026-11-16" else base)[1]
         self.assertIsNotNone(flat)
         self.assertIsNotNone(switched)
         self.assertNotEqual(flat, switched)

@@ -4,12 +4,16 @@ from __future__ import annotations
 
 import asyncio
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
 
-from algo.robot_store import RobotStore
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from algo.robot_store import RobotStore  # noqa: E402
 from web import app as web_app
 from web import instances_api as api
 
