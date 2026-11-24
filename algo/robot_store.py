@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -17,6 +17,7 @@ from .robot_library import get_spec, validate_params
 
 ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = ROOT / "infra" / "db" / "robots.db"
+MSK = timezone(timedelta(hours=3))
 
 STATUSES = ("draft", "active", "paused", "stopping", "stopped", "archived")
 TRANSITIONS = {
@@ -39,7 +40,13 @@ class ConflictError(StoreError):
 
 
 def _now() -> str:
-    return datetime.now().isoformat(timespec="seconds")
+    """Время версий/событий пишем в МСК naive — как время решений в paper.csv.
+
+    Раньше использовалось локальное время хоста: на машине вне МСК версия,
+    созданная в 13:00 МСК, попадала в отчёт как 10:00 и применялась к решению
+    12:00, которого ещё не было. На хостах в МСК формат строки не меняется.
+    """
+    return datetime.now(MSK).replace(tzinfo=None).isoformat(timespec="seconds")
 
 
 def _dumps(value: Any) -> str:

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import csv
 import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable
 
@@ -24,6 +25,26 @@ from .robot_store import RobotStore
 ROOT = Path(__file__).resolve().parent.parent
 PAPER = ROOT / "results" / "paper.csv"
 STATIC = list(CONFIGS) + list(ROBOT_CONFIGS)
+MSK = timezone(timedelta(hours=3))
+
+
+def _msk_naive(value: str) -> str:
+    """Привести метку времени к naive МСК для сравнения с paper.csv.
+
+    Старые записи — naive локальное время хоста (в песочнице это МСК), новые
+    могут прийти с явным UTC/Z. Без нормализации версия из UTC применялась
+    бы к решению на 3 часа раньше реального времени.
+    """
+    s = str(value or "")
+    if not s:
+        return ""
+    try:
+        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        if dt.tzinfo is not None:
+            return dt.astimezone(MSK).replace(tzinfo=None).isoformat(timespec="seconds")
+    except ValueError:
+        pass
+    return s
 
 
 def seed_static_configs(store: RobotStore | None = None) -> int:
@@ -117,9 +138,9 @@ def configs_at(day, mode: str = "paper", store: RobotStore | None = None,
             versions = st.param_history(inst["id"])
         except Exception:  # noqa: BLE001 — старыми БД пренебрегаем
             pass
-        cutoff = f"{day}T{at}" if at else f"{day}T23:59:59"
+        cutoff = _msk_naive(f"{day}T{at}" if at else f"{day}T23:59:59")
         applicable = [v for v in versions
-                      if str(v.get("created_at") or "") <= cutoff]
+                      if _msk_naive(str(v.get("created_at") or "")) <= cutoff]
         if applicable:
             params = json.loads(applicable[-1]["params_json"])
         else:
