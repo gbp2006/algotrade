@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { api, keys } from '../lib/api';
+import { downloadCsv } from '../lib/csv';
 import { money } from '../lib/format';
 import type { CashFlowRow, LotImpact } from '../lib/types';
 import { useUi } from '../store/ui';
@@ -55,7 +56,9 @@ export function History() {
   return (
     <Tabs tabs={tabs} value={tab} onChange={setTab}>
       <TabPanel value="trades">
-        <Card title="Журнал сделок и заявок">
+        <Card title="Журнал сделок и заявок" action={
+          <button type="button" className="btn" onClick={() => downloadCsv('algo-trades.csv', journal.data ?? [])}>Экспорт CSV</button>
+        }>
           <DataTable data={journal.data ?? []} columns={tradeColumns} empty="Сделок пока нет" />
         </Card>
       </TabPanel>

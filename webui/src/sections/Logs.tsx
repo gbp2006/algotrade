@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api } from '../lib/api';
+import { downloadCsv } from '../lib/csv';
 import { time } from '../lib/format';
 import type { LogItem } from '../lib/types';
 import { useUi } from '../store/ui';
@@ -46,6 +47,7 @@ export function Logs() {
       <TabPanel value={tab}>
         <Card title="Логи" action={
           <div className="flex gap-2">
+            <button type="button" className="btn" onClick={() => downloadCsv('algo-logs.csv', filtered)}>CSV</button>
             <select className="input w-28" value={level} onChange={(e) => setLevel(e.target.value)}>
               <option value="INFO">INFO</option><option value="WARN">WARN</option><option value="ERROR">ERROR</option>
             </select>
