@@ -49,7 +49,7 @@ function render(){
   const rows = ITEMS.filter(x => src === 'all' || x.source === src);
   $('log-rows').innerHTML = rows.length ? rows.map(x=>`<tr>
     <td class="muted">${esc(String(x.ts||'').replace('T',' ').slice(0,19))}</td>
-    <td>${esc(L.source(x.source))}</td><td>${esc(x.text)}</td></tr>`).join('')
+    <td>${esc(L.source(x.source))}</td><td>${esc(L.logText(x.text))}</td></tr>`).join('')
     : '<tr><td colspan="3" class="muted">Событий нет</td></tr>';
 }
 async function load(){

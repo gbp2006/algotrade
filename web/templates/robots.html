@@ -301,7 +301,7 @@ async function loadAll() {
       api('/runtime'), api('/keys')]);
     specs = sp; accounts = acc;
     $('strategy-cards').innerHTML = sp.map(s => `<div class="card">
-      <h4>${esc(s.title || s.display || s.id)} <small class="muted">${esc(s.id)}</small></h4>
+      <h4>${esc(L.strategyName(s))} <small class="muted">${esc(s.id)}</small></h4>
       <p class="muted small" style="min-height:70px">${esc(s.about || s.description || '—')}</p>
       <p class="hint">Параметров: ${Object.keys(s.defaults || {}).length} · инструментов: ${(s.instruments || []).length}</p>
       <button class="btn" onclick="openCreate('${esc(s.id)}')">Создать робота</button></div>`).join('') || '<div class="muted">библиотека пуста</div>';
@@ -340,7 +340,7 @@ async function loadAll() {
       }
       const params = Object.entries(i.params || {}).map(([k,v]) => `${k}=${esc(v)}`).join(' ');
       const spec = specs.find(x => x.id === i.spec_id);
-      const specName = spec ? (spec.title || spec.display || spec.id) : (i.spec_id || '—');
+      const specName = spec ? L.strategyName(spec) : (i.spec_id || '—');
       return `<tr><td><b>${esc(L.humanName(i))}</b><br><span class="muted small">${esc(i.id)}</span></td>
         <td>${esc(specName)}<br><span class="muted small">${esc(i.instrument||'')}</span>
           <details class="tech-details"><summary>Параметры (${Object.keys(i.params||{}).length})</summary><code>${params}</code></details></td>

@@ -19,8 +19,8 @@ class TestUILabels(unittest.TestCase):
     def test_helpers_defined(self):
         js = (STATIC / "ui-labels.js").read_text(encoding="utf-8")
         for name in ("orderStatus", "robotStatus", "mode", "health", "side",
-                     "source", "humanName", "money", "qty", "instrumentGroup",
-                     "byTypePhrase", "decision"):
+                     "source", "humanName", "strategyName", "money", "qty",
+                     "instrumentGroup", "byTypePhrase", "decision", "logText"):
             self.assertIn(name + ",", js, name)
 
     def test_every_page_loads_dictionary(self):
@@ -39,6 +39,31 @@ class TestUILabels(unittest.TestCase):
         for group in ("Валютные фьючерсы", "Индексы", "Сырьё и золото",
                       "Акции", "Фонды и паи"):
             self.assertIn(group, js)
+
+    def test_label_helpers(self):
+        node = shutil.which("node")
+        if not node:
+            self.skipTest("node недоступен")
+        script = (
+            "global.window={};"
+            f"require({str(STATIC / 'ui-labels.js')!r});"
+            "const U=window.UILabels;"
+            "console.log(JSON.stringify({"
+            "name:U.humanName({id:'p-base',note:'как в ТЗ: MA40 M5, 13:50, фильтр 15 мин'}),"
+            "long:U.humanName({id:'cb-day',about:'Пробой временного канала (OsEngine): ...',"
+            "note:'пробой дневного канала 09:00→13:00, вход после пробоя HH, выход в 09:00'}),"
+            "spec:U.strategyName({id:'prostushka',about:'Простушка (Примечание №6 автора): тренд'}),"
+            "log:U.logText('robot sell 2 @12 — filled'),"
+            "types:U.byTypePhrase({CURRENCIES:8,EQUITIES:30})"
+            "}));")
+        res = subprocess.run([node, "-e", script], capture_output=True, text=True, timeout=20)
+        self.assertEqual(res.returncode, 0, res.stderr[:400])
+        out = res.stdout
+        self.assertIn('"name":"как в ТЗ', out)
+        self.assertIn('"long":"Пробой временного канала · cb-day"', out)
+        self.assertIn('"spec":"Простушка"', out)
+        self.assertIn('Исполнена', out)
+        self.assertIn('Валютные фьючерсы: 8', out)
 
     def test_ui_state_set_accepts_both_call_styles(self):
         node = shutil.which("node")

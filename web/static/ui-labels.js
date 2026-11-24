@@ -53,12 +53,27 @@
   const source = v => pick(SOURCE, v);
   const runStatus = v => pick(RUN, v);
 
+  // Короткое имя стратегии берём из первого предложения описания:
+  // «Простушка (Примечание №6 автора): …» → «Простушка».
+  function strategyName(spec) {
+    if (!spec) return '—';
+    if (spec.title || spec.display) return spec.title || spec.display;
+    const head = String(spec.about || spec.description || '')
+      .split('(')[0].split(':')[0].trim();
+    return head || spec.id || '—';
+  }
+
   // Приоритет: human-readable имя конфигурации; technical id — второстепенный слой.
   function humanName(item) {
     if (!item) return '—';
     if (typeof item === 'string') return item;
-    return String(item.description || item.note || item.label || item.title ||
-                  item.display || item.name || item.id || '—');
+    const direct = item.label || item.title || item.display || item.name;
+    if (direct) return String(direct);
+    const note = String(item.note || item.description || '');
+    // Длинные примечания — это описание, а не имя: берём имя стратегии + id.
+    if (note && note.length <= 60) return note;
+    if (item.about) return `${strategyName(item)} · ${item.id || ''}`.trim();
+    return note ? note.slice(0, 57) + '…' : String(item.id || '—');
   }
 
   const num = (v, digits) => (v == null || v === '')
@@ -89,6 +104,13 @@
     return parts.length ? parts.join(', ') : '—';
   }
 
+  // В тексте лога переводим только статусы — ids и числа оставляем нетронутыми.
+  function logText(text) {
+    return String(text == null ? '' : text)
+      .replace(/\b(planned|sent|partial|filled|cancelled|rejected|uncertain)\b/g,
+               m => ORDER[m] || m);
+  }
+
   // Служебное решение превращаем в фразу; неизвестный текст оставляем как есть.
   function decision(text) {
     if (text == null || text === '') return '—';
@@ -100,8 +122,8 @@
   }
 
   window.UILabels = {
-    orderStatus, robotStatus, mode, health, side, source, runStatus, humanName,
-    num, money, qty, instrumentGroup, byTypePhrase, decision,
+    orderStatus, robotStatus, mode, health, side, source, runStatus, humanName, strategyName,
+    num, money, qty, instrumentGroup, byTypePhrase, decision, logText,
     ORDER, ROBOT, MODE, HEALTH, SIDE, SOURCE, TYPE,
   };
 })();
