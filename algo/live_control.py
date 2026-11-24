@@ -10,7 +10,9 @@ systemd, поэтому фоновые скрипты и бумага остаю
 
 from __future__ import annotations
 
+import json
 import subprocess
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -18,6 +20,8 @@ UNIT_DIR = ROOT / "infra" / "systemd"
 SYSTEM_DIR = Path("/etc/systemd/system")
 SERVICE = "algotrading-live.service"
 TIMER = "algotrading-live.timer"
+AUDIT_LOG = ROOT / "results" / "trading_toggle.jsonl"
+MSK = timezone(timedelta(hours=3))
 
 SERVICE_TEXT = """[Unit]
 Description=Боевой контур: реальные заявки по решениям бумаги
@@ -82,6 +86,27 @@ def _install_units() -> None:
                                    f"{proc.stderr.strip()[:200]}")
 
 
+def _audit(action: str, detail: str) -> None:
+    """Небольшой append-only журнал вкл/выкл: кто/когда/результат."""
+    AUDIT_LOG.parent.mkdir(parents=True, exist_ok=True)
+    row = {"ts": datetime.now(MSK).isoformat(timespec="seconds"),
+           "action": action, "detail": detail}
+    with AUDIT_LOG.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+
+def audit(limit: int = 50) -> list[dict]:
+    if not AUDIT_LOG.exists():
+        return []
+    rows: list[dict] = []
+    for line in AUDIT_LOG.read_text(encoding="utf-8").splitlines():
+        try:
+            rows.append(json.loads(line))
+        except ValueError:
+            continue
+    return rows[-max(1, min(limit, 200)):][::-1]
+
+
 def status() -> dict:
     installed = (SYSTEM_DIR / TIMER).exists()
     active = False
@@ -120,10 +145,14 @@ def enable(store) -> dict:
     _install_units()
     _systemctl("daemon-reload")
     _systemctl("enable", "--now", TIMER)
-    return status()
+    result = status()
+    _audit("enable", f"живых роботов: {len(live)}; next_run={result.get('next_run')}")
+    return result
 
 
 def disable() -> dict:
     if (SYSTEM_DIR / TIMER).exists():
         _systemctl("disable", "--now", TIMER)
-    return status()
+    result = status()
+    _audit("disable", "таймер остановлен")
+    return result

@@ -18,6 +18,11 @@ def status():
     return live_control.status()
 
 
+@router.get("/audit")
+def audit(limit: int = 50):
+    return {"items": live_control.audit(limit)}
+
+
 @router.post("/toggle")
 def toggle(payload: dict):
     wanted = bool(payload.get("enabled"))

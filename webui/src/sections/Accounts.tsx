@@ -39,6 +39,9 @@ export function Accounts() {
   const flows = useQuery({
     queryKey: keys.flows(accountId), queryFn: () => api.flows(accountId), refetchInterval: 30_000,
   });
+  const tradingAudit = useQuery({
+    queryKey: ['trading-audit'], queryFn: () => api.tradingAudit(20), refetchInterval: 60_000,
+  });
   const preview = useMutation({
     mutationFn: () => api.preview({
       account_id: accountId, type: kind, amount, live: false,
@@ -134,6 +137,19 @@ export function Accounts() {
                 </div>
               ))}
             </div>
+          </Card>
+          <Card title="Журнал вкл/выкл торговли" className="mt-4">
+            {(tradingAudit.data?.items ?? []).length ? (
+              <div className="grid gap-2">
+                {(tradingAudit.data?.items ?? []).map((row, index) => (
+                  <div key={`${row.ts}-${index}`} className="flex justify-between border-b border-line py-1.5 text-xs">
+                    <span className="num text-muted">{time(row.ts)}</span>
+                    <span>{row.action === 'enable' ? 'включено' : 'выключено'}</span>
+                    <span className="text-muted">{row.detail}</span>
+                  </div>
+                ))}
+              </div>
+            ) : <div className="empty">Переключений пока не было</div>}
           </Card>
         </TabPanel>
         <TabPanel value="flows">

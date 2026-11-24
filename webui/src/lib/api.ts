@@ -68,6 +68,9 @@ export const api = {
   }>(`/api/trades${config ? `?config=${encodeURIComponent(config)}` : ''}`),
   accounts: () => get<Record<string, unknown>[]>('/api/accounts'),
   stopAll: () => post<{ stop_real: boolean }>('/api/stop-real', { action: 'set' }),
+  tradingAudit: (limit = 50) => get<{ items: {
+    ts: string; action: string; detail: string;
+  }[] }>(`/api/trading/audit?limit=${limit}`),
   tradingStatus: () => get<{
     timer_installed: boolean; enabled: boolean; next_run: string | null;
     stop_real: boolean; env_flag: string;
