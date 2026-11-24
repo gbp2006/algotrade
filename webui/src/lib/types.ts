@@ -143,6 +143,17 @@ export interface RuntimeState {
   last_decision: string | null;
 }
 
+export interface InstanceEvent {
+  id: number;
+  instance_id: string;
+  action: string;
+  before_json: string | null;
+  after_json: string | null;
+  reason: string;
+  actor: string;
+  created_at: string;
+}
+
 export interface LogItem {
   ts: string;
   source: string;

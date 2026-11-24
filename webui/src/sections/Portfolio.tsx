@@ -38,24 +38,23 @@ export function Portfolio() {
     queryKey: ['reconciliation'], queryFn: api.reconciliation, refetchInterval: 60_000,
   });
 
-  if (analytics.isLoading) return <Loading />;
-  if (analytics.error) return <ErrorBox error={analytics.error} />;
   const data = analytics.data;
-  if (!data) return <Loading />;
-  const metrics = data.portfolio?.metrics;
-  const totalPnl = data.real.flatMap((a) => a.positions).reduce((s, p) => s + p.pnl, 0);
-  const totalEquity = data.real.reduce((s, a) => s + (a.equity ?? 0), 0);
-  const virtual = data.virtual.reduce((s, v) => s + (v.equity ?? 0), 0);
+  const metrics = data?.portfolio?.metrics;
+  const totalPnl = (data?.real ?? []).flatMap((a) => a.positions)
+    .reduce((s, p) => s + p.pnl, 0);
+  const totalEquity = (data?.real ?? []).reduce((s, a) => s + (a.equity ?? 0), 0);
+  const virtual = (data?.virtual ?? []).reduce((s, v) => s + (v.equity ?? 0), 0);
 
+  // Все хуки вызываются до раннего return — иначе порядок хуков ломается.
   const positions = useMemo<PositionRow[]>(() => {
     const rows: PositionRow[] = [];
-    for (const acc of data.real) {
+    for (const acc of data?.real ?? []) {
       for (const p of acc.positions) {
         rows.push({ symbol: p.symbol, account: acc.label, source: 'Ручная',
           qty: p.qty, pnl: p.pnl, share: 0 });
       }
     }
-    for (const v of data.virtual) {
+    for (const v of data?.virtual ?? []) {
       if (v.position) {
         rows.push({ symbol: v.id, account: v.id, source: 'Робот',
           qty: v.position, pnl: 0, share: 0 });
@@ -63,6 +62,16 @@ export function Portfolio() {
     }
     return rows.map((row) => ({ ...row, share: totalEquity ? row.qty / totalEquity * 100 : 0 }));
   }, [data, totalEquity]);
+
+  const allocation = useMemo(() => {
+    const groups = new Map<string, number>();
+    for (const p of positions) groups.set(p.symbol, (groups.get(p.symbol) ?? 0) + p.qty);
+    return [...groups.entries()].map(([symbol, qty]) => ({ symbol, qty }));
+  }, [positions]);
+
+  if (analytics.isLoading) return <Loading />;
+  if (analytics.error) return <ErrorBox error={analytics.error} />;
+  if (!data) return <Loading />;
 
   const positionColumns: ColumnDef<PositionRow, unknown>[] = [
     { header: 'Инструмент', cell: ({ row }) => <b>{row.original.symbol}</b> },
@@ -72,12 +81,6 @@ export function Portfolio() {
     { header: 'PnL', cell: ({ row }) => <span className="num">{money(row.original.pnl)} ₽</span> },
     { header: 'Доля', cell: ({ row }) => <span className="num">{percent(row.original.share, 1)}</span> },
   ];
-
-  const allocation = useMemo(() => {
-    const groups = new Map<string, number>();
-    for (const p of positions) groups.set(p.symbol, (groups.get(p.symbol) ?? 0) + p.qty);
-    return [...groups.entries()].map(([symbol, qty]) => ({ symbol, qty }));
-  }, [positions]);
 
   return (
     <div>

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { api, keys } from '../lib/api';
-import { money } from '../lib/format';
+import { money, time } from '../lib/format';
 import type { CashFlowPreview, Robot, RuntimeState } from '../lib/types';
 import { useUi } from '../store/ui';
 import {
@@ -43,6 +43,7 @@ const tabs = [
   { id: 'mine', label: 'Мои роботы' },
   { id: 'templates', label: 'Алгоритмы' },
   { id: 'wizard', label: 'Мастер робота' },
+  { id: 'history', label: 'Дневник изменений' },
 ];
 
 export function Robots() {
@@ -54,11 +55,17 @@ export function Robots() {
   const [filter, setFilter] = useState('');
   const [calcAmount, setCalcAmount] = useState(100_000);
   const [calcKind, setCalcKind] = useState('DEPOSIT');
+  const [historyId, setHistoryId] = useState('');
 
   const robots = useQuery({ queryKey: keys.robots, queryFn: api.robots, refetchInterval: 30_000 });
   const runtime = useQuery({ queryKey: keys.runtime, queryFn: api.runtime, refetchInterval: 30_000 });
   const specs = useQuery({ queryKey: keys.specs, queryFn: api.specs });
   const accounts = useQuery({ queryKey: keys.accounts, queryFn: api.accounts });
+  const changes = useQuery({
+    queryKey: ['robot-history', historyId],
+    queryFn: () => api.instanceHistory(historyId),
+    enabled: Boolean(historyId),
+  });
 
   const form = useForm<RobotForm>({
     resolver: zodResolver(schema),
@@ -262,6 +269,38 @@ export function Robots() {
               amount={calcAmount} kind={calcKind}
               onAmount={setCalcAmount} onKind={setCalcKind} />
             <p className="mt-3 text-[11px] text-muted">Сайзинг и проверка баланса выполняются сервером через единый расчёт лотности — в интерфейсе нет второй формулы. Модули закрытия и ATR-правка остаются выключенными до отдельного ADR.</p>
+          </Card>
+        </TabPanel>
+        <TabPanel value="history">
+          <Card title="Дневник изменений робота" action={
+            <select className="input w-64" value={historyId}
+              onChange={(e) => setHistoryId(e.target.value)}>
+              <option value="">Выберите робота</option>
+              {(robots.data ?? []).map((robot) => (
+                <option key={robot.id} value={robot.id}>{robot.note || robot.id}</option>
+              ))}
+            </select>
+          }>
+            {!historyId ? <div className="empty">Выберите робота, чтобы увидеть историю параметров, счёта и статусов</div>
+              : changes.isLoading ? <div className="skeleton h-20" />
+              : (changes.data ?? []).length ? (
+                <div className="grid gap-2">
+                  {(changes.data ?? []).map((event) => (
+                    <div key={event.id} className="rounded-lg border-l-2 border-accent bg-elevated p-3">
+                      <div className="flex justify-between text-[11px] text-muted">
+                        <span>{time(event.created_at)} · {event.actor}</span>
+                        <span>{event.action}</span>
+                      </div>
+                      {event.reason && <div className="mt-1 text-xs">{event.reason}</div>}
+                      {event.after_json && (
+                        <pre className="num mt-1 overflow-x-auto text-[10px] text-muted">
+                          {event.after_json.slice(0, 240)}
+                        </pre>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : <div className="empty">Событий пока нет</div>}
           </Card>
         </TabPanel>
       </Tabs>

@@ -57,8 +57,10 @@ export const api = {
   logs: (limit = 100) => get<{ items: LogItem[] }>(`/api/logs?limit=${limit}`),
   health: () => get<Health>('/api/health'),
   journal: (limit = 100) => get<Record<string, unknown>[]>(`/api/journal?limit=${limit}`),
-  candles: (tf: string, days: number, config = '') => get<[string, number, number, number, number][]>(
-    `/api/candles?tf=${tf}&days=${days}${config ? `&config=${encodeURIComponent(config)}` : ''}`),
+  candles: (tf: string, days: number, config = '') =>
+    get<{ candles: [string, number, number, number, number][]; error?: string }>(
+      `/api/candles?tf=${tf}&days=${days}${config ? `&config=${encodeURIComponent(config)}` : ''}`
+    ).then((data) => data.candles ?? []),
   trades: (config = '') => get<{
     config: string;
     trades: { dir: string; in: string; in_px: number; out: string; out_px: number; pnl: number }[];

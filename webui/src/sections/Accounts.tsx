@@ -84,7 +84,7 @@ export function Accounts() {
     { header: 'Equity', cell: ({ row }) => <span className="num">{money(row.original.equity)} ₽</span> },
     { header: 'Роботов', cell: ({ row }) => row.original.robots },
     { header: 'Статус', cell: ({ row }) => <span className="text-[11px] text-muted">{row.original.status}</span> },
-    { header: '', cell: ({ row }) => <button className="btn" onClick={() => setAccount(row.original.id)}>Выбрать</button> },
+    { id: 'select', header: ' ', cell: ({ row }) => <button className="btn" onClick={() => setAccount(row.original.id)}>Выбрать</button> },
   ];
 
   const flowColumns: ColumnDef<CashFlowRow, unknown>[] = [

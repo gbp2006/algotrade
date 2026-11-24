@@ -39,7 +39,7 @@ export function Logs() {
     { header: 'Время', cell: ({ row }) => time(row.original.ts) },
     { header: 'Источник', cell: ({ row }) => row.original.source },
     { header: 'Событие', cell: ({ row }) => row.original.text },
-    { header: '', cell: ({ row }) => <button className="btn" onClick={() => setInspect(row.original)}>JSON</button> },
+    { id: 'json', header: ' ', cell: ({ row }) => <button className="btn" onClick={() => setInspect(row.original)}>JSON</button> },
   ];
 
   return (
