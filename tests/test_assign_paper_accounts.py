@@ -28,8 +28,7 @@ class TestAssignPaper(unittest.TestCase):
             store.init_db()
             for rid, mode in (("p1", "paper"), ("p2", "paper"), ("live-1", "live")):
                 store.create_instance({"id": rid, "spec_id": "prostushka",
-                                       "instrument": "CNY", "mode": mode,
-                                       "capital": 200_000})
+                                       "instrument": "CNY", "mode": mode})
             with mock.patch.object(assign_paper, "RobotStore", return_value=store):
                 assign_paper.main()
                 assign_paper.main()
