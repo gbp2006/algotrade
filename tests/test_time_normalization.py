@@ -13,13 +13,14 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from algo import instance_configs as ic  # noqa: E402
+from algo import robot_store as rs  # noqa: E402
 from algo.robot_store import RobotStore  # noqa: E402
 
 
 class TestTimeNormalization(unittest.TestCase):
     def test_store_now_is_msk_naive(self):
         before = datetime.now(ic.MSK).replace(tzinfo=None)
-        value = RobotStore._now()
+        value = rs._now()
         after = datetime.now(ic.MSK).replace(tzinfo=None) + timedelta(seconds=2)
         self.assertLessEqual(before.isoformat(timespec="seconds"), value)
         self.assertLessEqual(value, after.isoformat(timespec="seconds"))
@@ -37,11 +38,12 @@ class TestTimeNormalization(unittest.TestCase):
             store = RobotStore(Path(tmp) / "robots.db")
             store.init_db()
             store.create_instance({"id": "tz-1", "spec_id": "prostushka",
-                                   "instrument": "CNY", "mode": "paper"})
+                                   "instrument": "CNY", "mode": "paper",
+                                   "status": "active", "params": {"ma_window": 250}})
             with store._conn() as c:
-                c.execute("INSERT INTO param_versions(instance_id,version,params_json,"
-                          "created_at) VALUES ('tz-1", 1, ?, ?)",
-                          (json.dumps({"ma_window": 7}), "2026-11-24T10:00:00Z"))
+                c.execute("UPDATE param_versions SET params_json=?, created_at=? "
+                          "WHERE instance_id=? AND version=1",
+                          (json.dumps({"ma_window": 7}), "2026-11-24T10:00:00Z", "tz-1"))
             got = ic.configs_at("2026-11-24", at="13:50", store=store)
             self.assertEqual({c.id: c for c in got}["tz-1"].params["ma_window"], 7)
             got = ic.configs_at("2026-11-24", at="12:00", store=store)

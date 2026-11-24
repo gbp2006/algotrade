@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="/static/app.css">
 <script src="/static/ui-state.js"></script>
 <script src="/static/ui-labels.js"></script>
+<script src="/static/ui-theme.js"></script>
 </head>
 <body>
 <div class="layout">
@@ -26,6 +27,15 @@
     <div class="pf" id="kpi"></div>
     <div class="card mt"><h3>Портфель против депозита</h3>
       <div id="compare-body" class="small muted">Загрузка…</div></div>
+    <div class="card mt"><h3>Денежные потоки и чистая кривая</h3>
+      <div id="flow-metrics" class="kpi-mini mb muted">Загрузка…</div>
+      <div class="row"><button type="button" class="btn" id="stress-btn">Стресс-сценарий: снятие 30%</button></div>
+      <div id="stress-out" class="small muted mt"></div>
+      <div class="table-wrap mt"><table class="table"><thead><tr>
+        <th>Дата</th><th>Тип</th><th>Сумма</th><th>Баланс до → после</th><th>Источник</th>
+      </tr></thead><tbody id="flow-rows"><tr><td colspan="5" class="muted">Загрузка…</td></tr></tbody></table></div>
+      <p class="hint">Пополнения и снятия обнаруживаются опросом брокера или применяются только к виртуальным депозитам. В доходность они не входят: кривая очищена от потоков.</p>
+    </div>
     <div class="cols-2 mt">
       <div class="card"><h3>Реальные счета</h3>
         <div class="table-wrap"><table class="table"><thead><tr>
@@ -45,11 +55,16 @@ const $ = id => document.getElementById(id);
 const L = window.UILabels;
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const num = v => (v === null || v === undefined || v === '') ? '—' : Number(v).toLocaleString('ru-RU', {maximumFractionDigits:0});
+const metric = (v, pct) => v === null || v === undefined ? 'н/д' : pct ? (v*100).toFixed(1)+' %' : num(v);
+let lastAnalytics = null;
 async function load(){
   try{
-    const [j, insts] = await Promise.all([
+    const [j, insts, flows, equity] = await Promise.all([
       fetch('/api/accounts/analytics', {cache:'no-store'}).then(r=>r.json()),
-      fetch('/api/instances', {cache:'no-store'}).then(r=>r.json()).catch(()=>[])]);
+      fetch('/api/instances', {cache:'no-store'}).then(r=>r.json()).catch(()=>[]),
+      fetch('/api/cash-flows?limit=50', {cache:'no-store'}).then(r=>r.json()).catch(()=>({items:[]})),
+      fetch('/api/portfolio/equity?limit=500', {cache:'no-store'}).then(r=>r.json()).catch(()=>({metrics:{}}))]);
+    lastAnalytics = j;
     const names = Object.fromEntries((insts||[]).map(i=>[i.id, L.humanName(i)]));
     $('real-rows').innerHTML = j.real.length ? j.real.map(a=>`<tr>
       <td><b>${esc(a.label)}</b><br><span class="muted small">${esc(a.id)}</span></td>
@@ -70,10 +85,37 @@ async function load(){
       <span>Разница <b>${L.money(virtEq-eq)}</b></span>
       <span>Во сколько раз <b>${eq ? (virtEq/eq).toFixed(1)+'×' : '—'}</b></span></div>
       <p class="muted small">Бумажный капитал — сумма виртуальных депозитов роботов, а не деньги на счёте.</p>`;
+    const m = equity.metrics || {};
+    $('flow-metrics').innerHTML = `<span>TWR <b>${metric(m.twr, true)}</b></span>
+      <span>MWR <b>${metric(m.mwr, true)}</b></span>
+      <span>Макс. DD <b>${metric(m.max_dd)}</b></span>
+      <span>Чистый результат <b>${metric(m.net_pnl)} ₽</b></span>`;
+    const items = flows.items || [];
+    $('flow-rows').innerHTML = items.length ? items.map(f=>`<tr>
+      <td>${esc(f.created_at || '')}</td><td>${esc(f.type)}</td>
+      <td>${num(f.amount)} ₽</td>
+      <td>${num(f.balance_before)} → ${num(f.balance_after)} ₽</td>
+      <td class="muted small">${esc(f.source || '')}</td></tr>`).join('')
+      : '<tr><td colspan="5" class="muted">Операций пока нет — пополнения брокера появятся после опроса</td></tr>';
   }catch(e){
     $('real-rows').innerHTML = '<tr><td colspan="4" class="muted">Нет данных: '+esc(e.message)+'</td></tr>';
   }
 }
+$('stress-btn').addEventListener('click', async () => {
+  const virtual = lastAnalytics?.virtual || [];
+  const total = virtual.reduce((s, v) => s + Number(v.equity || 0), 0);
+  if (!total) { $('stress-out').textContent = 'Нет виртуального депозита для сценария'; return; }
+  const amount = Math.round(total * 0.3);
+  const robots = virtual.map(v => ({
+    robot_id: v.id, name: v.label, price: Number(v.last_price) || 12.29, exposure: 1.0}));
+  try {
+    const r = await fetch('/api/cash-flows/preview', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({type: 'WITHDRAWAL', amount, balance_before: total, robots})}).then(x=>x.json());
+    const rows = (r.impact || []).map(x => `${esc(x.name)}: ${x.lots_before} → ${x.lots_after} (${esc(x.status)})`);
+    $('stress-out').textContent = `Снятие ${num(amount)} ₽. ` + (rows.length ? rows.join('; ') : 'нет роботов для пересчёта');
+  } catch(e) { $('stress-out').textContent = 'Не удалось рассчитать: ' + e.message; }
+});
 load();
 </script>
 </body>

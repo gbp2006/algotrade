@@ -32,3 +32,8 @@ INDEX.md.bak-*
 cache/
 
 opencode.jsonc.bak-*
+
+# Параллельный React/TS-фронт: зависимости и сборка не хранятся в git
+webui/node_modules/
+webui/dist/
+webui/*.tsbuildinfo

@@ -63,7 +63,11 @@ from algo.instruments import DEFAULT, INSTRUMENTS, margin, symbol as inst_symbol
 from algo.portfolio import (CAPITAL, account_card, drawdown_stats,  # noqa: E402
                             exposure_of, ledger)
 from algo import metrics_store  # noqa: E402
-from web.instances_api import router as instances_router  # noqa: E402
+from algo.account_poller import finam_report, sync_accounts  # noqa: E402
+from algo.cash_flow_store import CashFlowStore  # noqa: E402
+from web.instances_api import (get_store, invalidate_analytics,  # noqa: E402
+                               router as instances_router)
+from web.cash_flows_api import router as cash_flows_router  # noqa: E402
 
 
 def instrument_of(cfg):
@@ -75,6 +79,7 @@ def capital_of(cfg) -> float:
 
 app = FastAPI(title="Algo dashboard")
 app.include_router(instances_router)
+app.include_router(cash_flows_router)
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
 app.mount("/static", StaticFiles(directory=str(Path(__file__).resolve().parent / "static")), name="static")
 
@@ -136,6 +141,33 @@ def _health_refresh_loop() -> None:
             pass
         time.sleep(300)
 
+def _cash_flow_poll_loop() -> None:
+    """Фоновый опрос всех счетов: снимки equity, потоки — только из отчёта.
+
+    Один владелец цикла — процесс панели (ADR 24.11). При недоступном API
+    старый снимок остаётся, сайзинг перед сделкой проверяется раннером отдельно.
+    """
+    if os.environ.get("ALGO_CASH_POLL", "1") != "1":
+        return
+    interval = max(30, int(os.environ.get("ALGO_CASH_POLL_SEC", "60")))
+    every = max(1, int(os.environ.get("ALGO_CASH_REPORT_EVERY", "15")))
+    cycle = 0
+    while True:
+        try:
+            cycle += 1
+            store = get_store()
+            flow_store = CashFlowStore(store)
+            flow_store.init_db()
+            # Периодическая сверка страхует поток, маскированный PnL.
+            sync_accounts(store.list_accounts(), flow_store,
+                          reporter=finam_report(),
+                          force_report=cycle % every == 0)
+            invalidate_analytics()
+        except Exception:  # noqa: BLE001 — опрос не должен ронять панель
+            pass
+        time.sleep(interval)
+
+
 def _warm_cache() -> None:
     """Подогреть тяжёлые вызовы `/api/state`, чтобы первый запрос не ждал сеть."""
     jobs = [quote, price_series,
@@ -155,6 +187,7 @@ def _startup_health() -> None:
     threading.Thread(target=_refresh_worker, daemon=True).start()
     threading.Thread(target=_warm_cache, daemon=True).start()
     threading.Thread(target=_cache_refresh_loop, daemon=True).start()
+    threading.Thread(target=_cash_flow_poll_loop, daemon=True).start()
 
 REMOTE = os.environ.get("ALGO_PANEL_REMOTE", "").rstrip("/")
 

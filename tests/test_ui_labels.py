@@ -37,7 +37,7 @@ class TestUILabels(unittest.TestCase):
     def test_risk_and_comparative_panels(self):
         trade = (TEMPLATES / "trade.html").read_text(encoding="utf-8")
         self.assertIn('id="risk-card"', trade)
-        self.assertIn('renderRisk(analytics)', trade)
+        self.assertIn('renderRisk(analytics, allInst)', trade)
         accounts = (TEMPLATES / "accounts.html").read_text(encoding="utf-8")
         self.assertIn('id="compare-body"', accounts)
         self.assertIn('Портфель против депозита', accounts)

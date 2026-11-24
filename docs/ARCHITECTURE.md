@@ -94,6 +94,31 @@ update-live и channel каждые 10 минут. Они запускают с�
 4. Любой прогон пишется в журнал; консоль — одна строка сводки.
 5. Сначала тесты, потом деплой на WSL через `scripts/deploy_wsl.sh`.
 
+## 8. Подсистема денежных потоков (добавлена 24.11 без ломки старого)
+
+- Чистые расчёты: `algo/cash_flows.py` (лотность до/после, валидация) и
+  `algo/portfolio_metrics.py` (доходность без потоков). Лотность — только
+  через `size_contracts()`; каждая таблица чисел в UI — `tabular-nums`.
+- Хранение: `algo/cash_flow_store.py` добавляет в `robots.db` три новые таблицы
+  (`cash_flows`, `cash_flow_lot_impacts`, `equity_snapshots`) через
+  `CREATE TABLE IF NOT EXISTS`. Схема `accounts`/`instances`/`runtime_state`
+  не менялась — виртуальные и боевые счета панели работают как прежде.
+- Опрос: `algo/account_poller.py` — снимки equity по всем счетам с ключами,
+  принудительный `fresh_equity()` перед сделкой (0 лотов при недоступном API),
+  подтверждение потока из `GET /v1/accounts/{id}/transactions` Финам только
+  по денежным категориям; дельта equity сама по себе потоком не считается.
+- Владелец фонового цикла — процесс панели (`ALGO_CASH_POLL_SEC`, по умолчанию
+  60 с; полная сверка транзакций раз в 15 циклов). Раннер не пишет дубли.
+- API: `web/cash_flows_api.py` добавляет `/api/cash-flows/*` и
+  `/api/portfolio/*`; старые ответы `/api/accounts/analytics` и страницы
+  сохраняются. Ручное применение денег разрешено только виртуальным роботам,
+  для LIVE — только запись обнаруженного брокером потока.
+- Параллельный фронт `webui/` (React 18 + TS strict + Vite + Tailwind/Radix,
+  TanStack Query/Zustand, RHF/Zod, lightweight-charts, react-table) работает
+  с теми же API через прокси и не заменяет старую панель. Доменные расчёты
+  остаются на Python: в TS нет второй формулы лотности. Сборка — `npm run build`
+  в `webui/`, тесты — `npm test`.
+
 Детали: `docs/service-design.md`, `docs/robot-registry-design.md`,
 `docs/live-design.md`, `docs/live-execution.md`, `docs/rollover-design.md`,
 `docs/panel-tabs-design.md`.

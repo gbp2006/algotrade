@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import sqlite3
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-from algo.robot_store import RobotStore
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from algo.robot_store import RobotStore  # noqa: E402
 
 
 class TestRobotStoreStorage(unittest.TestCase):
@@ -18,7 +22,7 @@ class TestRobotStoreStorage(unittest.TestCase):
             store.init_db()
             with store._conn() as c:
                 mode = c.execute("PRAGMA journal_mode").fetchone()[0]
-                names = {r[0] for r in c.execute("PRAGMA index_list(param_versions)")}
+                names = {r[1] for r in c.execute("PRAGMA index_list(param_versions)")}
                 all_idx = {r[0] for r in c.execute(
                     "SELECT name FROM sqlite_master WHERE type='index'")}
                 timeout = c.execute("PRAGMA busy_timeout").fetchone()[0]

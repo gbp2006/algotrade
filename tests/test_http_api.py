@@ -83,6 +83,30 @@ class TestHTTPApi(unittest.TestCase):
         self.assertIn("real", data)
         self.assertIn("virtual", data)
 
+    def test_cash_flow_endpoints_are_additive(self):
+        status, data = request(web_app.app, "GET", "/api/cash-flows?limit=10")
+        self.assertEqual(status, 200)
+        self.assertEqual(data["items"], [])
+        status, preview = request(web_app.app, "POST", "/api/cash-flows/preview", {
+            "type": "DEPOSIT", "amount": 100_000, "balance_before": 200_000,
+            "robots": [{"robot_id": "p-base", "price": 12.29, "exposure": 2.0}]})
+        self.assertEqual(status, 200)
+        self.assertEqual(preview["impact"][0]["lots_after"], 48)
+        status, equity = request(web_app.app, "GET", "/api/portfolio/equity")
+        self.assertEqual(status, 200)
+        self.assertIn("markers", equity)
+        status, analytics = request(web_app.app, "GET", "/api/portfolio/analytics")
+        self.assertEqual(status, 200)
+        self.assertIn("real", analytics)
+        self.assertIn("portfolio", analytics)
+
+    def test_accounts_page_keeps_old_and_loads_new_ui(self):
+        status, html = request(web_app.app, "GET", "/accounts")
+        self.assertEqual(status, 200)
+        self.assertIn('/static/ui-theme.js', html)
+        self.assertIn('id="flow-rows"', html)
+        self.assertIn('id="virtual-rows"', html)  # старый блок на месте
+
     def test_logs_limit_clamped(self):
         status, data = request(web_app.app, "GET", "/api/logs?limit=99999")
         self.assertEqual(status, 200)

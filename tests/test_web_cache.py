@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import sys
 import time
 import unittest
+from pathlib import Path
 
-from web import app as web_app
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from web import app as web_app  # noqa: E402
 
 
 class TestCached(unittest.TestCase):
