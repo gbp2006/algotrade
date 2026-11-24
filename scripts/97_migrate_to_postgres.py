@@ -42,8 +42,9 @@ def main() -> int:
         with connection.cursor() as cursor:  # type: ignore[attr-defined]
             for code, name in (("finam", "Финам"), ("tinvest", "Т-Инвестиции"),
                                ("virtual", "Виртуальный")):
-                cursor.execute("INSERT INTO brokers (code, display_name) VALUES (%s,%s) "
-                               "ON CONFLICT (code) DO NOTHING", (code, name))
+                cursor.execute("INSERT INTO brokers (id, code, display_name) "
+                               "VALUES (%s,%s,%s) ON CONFLICT (id) DO NOTHING",
+                               (code, code, name))
             cursor.execute("INSERT INTO accounts (id, broker_code, name, mode, equity) "
                            "VALUES ('virtual','virtual','Виртуальные','TEST',0) "
                            "ON CONFLICT (id) DO NOTHING")
