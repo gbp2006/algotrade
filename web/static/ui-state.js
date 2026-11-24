@@ -2,8 +2,12 @@
 (() => {
   const KEY = 'algo.ui.v1';
   const read = () => {
-    try { return JSON.parse(localStorage.getItem(KEY) || '{}'); }
-    catch (_) { return {}; }
+    try {
+      const v = JSON.parse(localStorage.getItem(KEY) || '{}');
+      // Защита от старого повреждённого состояния (строки/массивы вместо объекта):
+      // Object.assign со строкой превращал ключи в позиции и ломал запоминание выбора.
+      return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+    } catch (_) { return {}; }
   };
   const write = (patch) => {
     const state = Object.assign(read(), patch);
@@ -13,7 +17,9 @@
   window.UIState = {
     state: read,
     get: (k, fallback) => (k in read() ? read()[k] : fallback),
-    set: write,
+    // Поддерживаем оба вызова: set({k: v}) и set('k', v) — последний раньше
+    // записывал в localStorage символы ключа вместо самих настроек.
+    set: (patch, value) => write(typeof patch === 'string' ? { [patch]: value } : (patch || {})),
   };
 
   document.addEventListener('DOMContentLoaded', () => {

@@ -610,7 +610,7 @@ async function submitEdit(){
 }
 // Запоминаем фильтр режима, чтобы повторное открытие вернулось на ту же вкладку.
 document.querySelectorAll('#mode-tabs a').forEach(a =>
-  a.addEventListener('click', () => UIState.set('robotsMode', a.dataset.mode)));
+  a.addEventListener('click', () => UIState.set({robotsMode: a.dataset.mode})));
 if(!location.search.includes('mode=')){
   const saved = UIState.get('robotsMode', '');
   if(['live','paper','all'].includes(saved) && saved !== 'all')

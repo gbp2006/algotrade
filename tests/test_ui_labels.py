@@ -40,6 +40,23 @@ class TestUILabels(unittest.TestCase):
                       "Акции", "Фонды и паи"):
             self.assertIn(group, js)
 
+    def test_ui_state_set_accepts_both_call_styles(self):
+        node = shutil.which("node")
+        if not node:
+            self.skipTest("node недоступен")
+        script = (
+            "global.window={};"
+            "global.localStorage={_d:{},getItem(k){return this._d[k]||null},"
+            "setItem(k,v){this._d[k]=v}};global.document={addEventListener(){}};"
+            f"require({str(STATIC / 'ui-state.js')!r});"
+            "window.UIState.set('tradeRobot','p-base');window.UIState.set({robotsMode:'live'});"
+            "console.log(JSON.stringify({r:window.UIState.get('tradeRobot'),"
+            "m:window.UIState.get('robotsMode')}));")
+        res = subprocess.run([node, "-e", script], capture_output=True, text=True, timeout=20)
+        self.assertEqual(res.returncode, 0, res.stderr[:400])
+        self.assertIn('"r":"p-base"', res.stdout)
+        self.assertIn('"m":"live"', res.stdout)
+
     def test_inline_scripts_parse(self):
         node = shutil.which("node")
         if not node:

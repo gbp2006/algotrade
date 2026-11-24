@@ -119,14 +119,14 @@ async function api(p, opts){
 let ROBOTS = [], ACCS = [], RUNTIME = {};
 function num(v, digits=0){ return (v===null||v===undefined||v==='') ? '—' : Number(v).toLocaleString('ru-RU',{maximumFractionDigits:digits}); }
 function pickRobot(id){
-  UIState.set('tradeRobot', id);
+  UIState.set({tradeRobot: id});
   renderRobotDetail();
   document.querySelectorAll('#robot-list [data-id]').forEach(el =>
     el.classList.toggle('on', el.dataset.id === id));
   document.querySelectorAll('#account-list [data-id]').forEach(el => el.classList.remove('on'));
 }
 function pickAccount(key){
-  UIState.set('tradeAccount', key);
+  UIState.set({tradeAccount: key});
   renderAccountDetail();
   document.querySelectorAll('#account-list [data-id]').forEach(el =>
     el.classList.toggle('on', el.dataset.id === key));
