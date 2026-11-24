@@ -16,6 +16,7 @@ CSV ``results/live.csv`` остаётся человекочитаемым зе�
 from __future__ import annotations
 
 import csv
+import json
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime
@@ -55,7 +56,15 @@ CREATE TABLE IF NOT EXISTS trades (
 );
 CREATE INDEX IF NOT EXISTS idx_orders_ts ON orders(ts);
 CREATE INDEX IF NOT EXISTS idx_orders_account ON orders(account, ts);
-CREATE INDEX IF NOT EXISTS idx_events_cid ON order_events(client_order_id);
+CREATE TABLE IF NOT EXISTS order_responses (
+  seq INTEGER PRIMARY KEY AUTOINCREMENT,
+  client_order_id TEXT NOT NULL,
+  response_json TEXT NOT NULL,
+  received_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_responses_cid ON order_responses(client_order_id);
+CREATE INDEX IF NOT EXISTS idx_events_ts ON order_events(ts);
+CREATE INDEX IF NOT EXISTS idx_trades_cid ON trades(client_order_id, ts);
 """
 
 
@@ -135,6 +144,45 @@ def migrate_csv(csv_path: Path, path: Path | None = None) -> int:
             if row.get("client_order_id") and append(row, path):
                 count += 1
     return count
+
+
+def store_response(client_order_id: str, response: Any,
+                   path: Path | None = None) -> bool:
+    """Сохранить полный ответ брокера (поле `response` в orders обрезано до 300).
+
+    Идемпотентно по содержимому: повтор той же сериализации строки не дублирует.
+    """
+    if response is None:
+        return False
+    try:
+        text = json.dumps(response, sort_keys=True, default=str, ensure_ascii=False)
+    except (TypeError, ValueError):
+        text = str(response)
+    with connect(path) as c:
+        exists = c.execute(
+            "SELECT 1 FROM order_responses WHERE client_order_id=? "
+            "AND response_json=?", (str(client_order_id), text)).fetchone()
+        if exists is not None:
+            return False
+        c.execute("INSERT INTO order_responses(client_order_id,response_json,received_at) "
+                  "VALUES (?,?,?)", (str(client_order_id), text,
+                                     datetime.now().isoformat(timespec="seconds")))
+    return True
+
+
+def full_response(client_order_id: str, path: Path | None = None) -> list[Any]:
+    """Все сохранённые ответы брокера по заявке (в порядке получения)."""
+    with connect(path) as c:
+        rows = c.execute(
+            "SELECT response_json FROM order_responses WHERE client_order_id=? "
+            "ORDER BY seq", (str(client_order_id),)).fetchall()
+    out = []
+    for r in rows:
+        try:
+            out.append(json.loads(r["response_json"]))
+        except ValueError:
+            out.append(r["response_json"])
+    return out
 
 
 def executed_qty(client_order_id: str, path: Path | None = None) -> int:

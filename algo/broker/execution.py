@@ -143,6 +143,9 @@ class OrderGateway:
             "account": order.account, "pricing": order.pricing,
             "order_type": order.order_type,
         }
+        # Полный ответ брокера — в отдельную таблицу: поле response в orders/CSV
+        # оставлено коротким для человека, но диагностика терять его не должна.
+        tj.store_response(result.client_order_id, result.response, self.journal_db)
         tj.append(row, self.journal_db)  # источник правды, идемпотентно
         self.journal.parent.mkdir(parents=True, exist_ok=True)
         new = not self.journal.exists()

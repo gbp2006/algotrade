@@ -12,6 +12,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from algo import trade_journal as tj  # noqa: E402
 from algo.broker import execution as ex  # noqa: E402
 
 
@@ -97,6 +98,21 @@ class TestGateway(unittest.TestCase):
         self.assertEqual(res.status, "rejected")
         self.assertIn("другая заявка", res.reason)
         self.assertEqual(self.broker.calls, [])
+
+    def test_gateway_keeps_full_response_beside_short_csv_field(self):
+        class VerboseBroker(FakeBroker):
+            def place_limit(self, *a, **k):
+                return {"order_id": "42", "payload": {"x": "y" * 400}}
+
+        gw = ex.OrderGateway(VerboseBroker(), journal=self.journal,
+                             lock=self.lock, journal_db=self.journal.with_suffix(".db"))
+        with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):
+            res = gw.submit(order(client_id="verbose"))
+        cid = ex.client_order_id("verbose")
+        self.assertTrue(res.sent)
+        self.assertLessEqual(len(gw._rows()[0]["response"]), 300)
+        self.assertEqual(tj.full_response(cid, gw.journal_db)[0]["payload"]["x"],
+                         "y" * 400)
 
     def test_stop_appearing_mid_session_blocks_second_order(self):
         with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):

@@ -104,6 +104,16 @@ class TestTradeJournal(unittest.TestCase):
             self.assertEqual(result["details"]["a"]["price"], 12.35)
             self.assertEqual(tj.records(limit=10, path=db)[0]["status"], "filled")
 
+    def test_full_broker_response_is_preserved_and_idempotent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Path(tmp) / "trades.db"
+            response = {"order_id": "42", "status": "ORDER_STATUS_FILLED",
+                        "payload": {"nested": ["x" * 400, {"a": 1}]}}
+            self.assertTrue(tj.store_response("cid-full", response, db))
+            self.assertFalse(tj.store_response("cid-full", response, db))
+            self.assertEqual(tj.full_response("cid-full", db), [response])
+            self.assertEqual(tj.full_response("unknown", db), [])
+
     def test_confirmed_uncertain_is_refreshed_not_stale(self):
         with tempfile.TemporaryDirectory() as tmp:
             db = Path(tmp) / "trades.db"
