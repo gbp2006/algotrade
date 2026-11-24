@@ -137,6 +137,14 @@ def migrate_csv(csv_path: Path, path: Path | None = None) -> int:
     return count
 
 
+def executed_qty(client_order_id: str, path: Path | None = None) -> int:
+    """Фактически исполненное количество по заявке (из таблицы `trades`)."""
+    with connect(path) as c:
+        row = c.execute("SELECT COALESCE(SUM(qty),0) AS q FROM trades "
+                        "WHERE client_order_id=?", (str(client_order_id),)).fetchone()
+    return int(row["q"] if row else 0)
+
+
 def _scalar(value: Any) -> float:
     if isinstance(value, dict):
         value = value.get("value", 0)
@@ -212,7 +220,7 @@ def refresh_executions(broker: Any, account: str, *, path: Path | None = None,
                        csv_path: Path | None = None) -> dict:
     """Сверить отправленные заявки с брокером и дописать исполнения в журнал."""
     sent = [r for r in records(limit=500, account=account, path=path)
-            if r["status"] == "sent"]
+            if r["status"] in ("sent", "partial")]
     if not sent:
         return {"checked": 0, "updated": 0, "details": {}}
     by_cid: dict[str, dict] = {}

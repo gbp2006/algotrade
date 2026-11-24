@@ -102,11 +102,18 @@ def journal_positions(account: str) -> tuple[dict[str, int], int]:
         for r in csv.DictReader(f):
             if r.get("account") != account:
                 continue
-            if r.get("status") == "uncertain":
+            status = r.get("status")
+            if status == "uncertain":
                 uncertain += 1
-            if r.get("status") != "sent" or not r.get("symbol"):
+            # after P2 sent-заявки становятся filled: они всё ещё должны входить
+            # в модель позиций, иначе следующая сверка поставит STOP_REAL.
+            if status not in ("sent", "filled", "partial") or not r.get("symbol"):
                 continue
             qty = int(float(r.get("qty") or 0))
+            if status in ("filled", "partial"):
+                executed = tj.executed_qty(r.get("client_order_id") or "")
+                if executed:
+                    qty = executed
             signed = qty if r.get("side") == "buy" else -qty
             sym = r["symbol"]
             model[sym] = model.get(sym, 0) + signed

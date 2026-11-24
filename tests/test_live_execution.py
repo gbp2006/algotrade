@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from algo.broker import execution as ex  # noqa: E402
 from algo.broker import live_guard as lg  # noqa: E402
 from algo import live_config as lc  # noqa: E402
+from algo import trade_journal as tj  # noqa: E402
 
 
 class Quote:
@@ -113,6 +114,33 @@ class TestSettings(unittest.TestCase):
 
 
 class TestSourceConfig(unittest.TestCase):
+    def test_filled_orders_stay_in_position_model(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "live_exec_pos", Path(__file__).resolve().parent.parent /
+            "scripts" / "34_live_execute.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        with tempfile.TemporaryDirectory() as tmp:
+            live = Path(tmp) / "live.csv"
+            db = Path(tmp) / "trades.db"
+            row = {"ts": "2026-11-24T14:00:24", "client_id": "r:d",
+                   "client_order_id": "cid-1", "order_id": "1", "config": "r",
+                   "symbol": "CNYRUBF@RTSX", "side": "sell", "qty": 2,
+                   "price": 12.288, "multiplier": 1000.0, "status": "filled",
+                   "reason": "", "response": "", "account": "A1",
+                   "pricing": "marketable", "order_type": "limit"}
+            import csv
+            with live.open("w", newline="", encoding="utf-8") as f:
+                w = csv.DictWriter(f, fieldnames=tj.FIELDS)
+                w.writeheader()
+                w.writerow(row)
+            tj.append(row, db)
+            with mock.patch.object(tj, "TRADES_DB", db), mock.patch.object(mod, "LIVE", live):
+                model, uncertain = mod.journal_positions("A1")
+        self.assertEqual(model, {"CNYRUBF@RTSX": -2})
+        self.assertEqual(uncertain, 0)
+
     def test_live_robot_follows_paper_config(self):
         import importlib.util
         spec = importlib.util.spec_from_file_location(
