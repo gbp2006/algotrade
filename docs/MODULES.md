@@ -63,6 +63,7 @@
 | `webui/src/sections/History.tsx` | Журнал сделок, операции, пересчёт лотов | `/api/journal`, `/api/cash-flows` → CSV | — | `check-all.mjs` |
 | `webui/src/sections/Logs.tsx` | Фильтры, поиск, JSON-инспектор | `/api/logs` → таблица + JsonDialog | Radix | `check-all.mjs` |
 | `webui/check.mjs`, `check-all.mjs` | Обязательная headless-проверка GUI | Chrome → обход 7 разделов/вкладок; 0 ошибок JS | puppeteer-core | запуск вручную перед показом |
+| `webui/vite.config.ts` | Сборка SPA: `base=/ui/`, proxy `/api`, четыре чанка (index/query/charts/vendor) вместо одного 721 КБ | `npm run build` → `webui/dist` | Vite, Rollup | `npm test`, `check-all.mjs` |
 
 ## 4. Инфраструктура, скрипты, данные
 
