@@ -23,7 +23,10 @@ def request(app, method: str, path: str, payload=None):
     body = json.dumps(payload).encode() if payload is not None else b""
     headers = [(b"host", b"testserver"), (b"content-type", b"application/json"),
                (b"content-length", str(len(body)).encode())]
-    scope = {"type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1",
+    # spec_version 2.4: новая Starlette в FileResponse ждёт http.disconnect;
+    # фейковый receive() его не шлёт, без этого поля тест висит на WSL.
+    scope = {"type": "http", "asgi": {"version": "3.0", "spec_version": "2.4"},
+             "http_version": "1.1",
              "method": method, "scheme": "http", "path": path.split("?")[0],
              "raw_path": path.split("?")[0].encode(),
              "query_string": path.split("?")[1].encode() if "?" in path else b"",
