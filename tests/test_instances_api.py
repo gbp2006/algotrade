@@ -185,8 +185,11 @@ class TestApiViews(unittest.TestCase):
         self.assertEqual(inst["id"], "prostushka-cny")
 
     def test_form_uses_name_and_toggles(self):
-        src = (Path(__file__).resolve().parent.parent / "webui" / "src"
-               / "sections" / "Robots.tsx").read_text(encoding="utf-8")
+        path = (Path(__file__).resolve().parent.parent / "webui" / "src"
+                / "sections" / "Robots.tsx")
+        if not path.exists():
+            self.skipTest("исходники UI не входят в whitelist деплоя WSL")
+        src = path.read_text(encoding="utf-8")
         self.assertIn("register('name')", src)
         self.assertNotIn("register('id')", src)
         self.assertIn("z.enum", src)  # валидация Zod вместо ручного ввода id
@@ -214,6 +217,7 @@ class TestApiViews(unittest.TestCase):
             with mock.patch.multiple(
                     api, LIVE=live, PAPER=root / "paper.csv",
                     HEALTH=root / "health.json", SHADOW=root / "shadow.json",
+                    SHADOW_JOURNAL=root / "shadow.csv",
                     ROLLOVER=root / "rollover.json", STOP=root / "STOP",
                     STOP_REAL=stop_real):
                 orders = api.live_orders_view()
@@ -240,8 +244,11 @@ class TestPanelSafety(unittest.TestCase):
                 self.assertEqual(web_app.read_health(), {"ok": True})
 
     def test_ui_does_not_claim_live_when_only_paper(self):
-        src = (Path(__file__).resolve().parent.parent / "webui" / "src"
-               / "App.tsx").read_text(encoding="utf-8")
+        path = (Path(__file__).resolve().parent.parent / "webui" / "src"
+                / "App.tsx")
+        if not path.exists():
+            self.skipTest("исходники UI не входят в whitelist деплоя WSL")
+        src = path.read_text(encoding="utf-8")
         self.assertIn("TEST", src)
         self.assertIn("LIVE", src)
         self.assertIn("Тестовые", src)
