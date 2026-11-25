@@ -253,5 +253,77 @@ class TestMarketOrderGateway(unittest.TestCase):
         self.assertEqual(self.gw._rows()[0]["status"], "skipped")
 
 
+class TestLiveRuntime(unittest.TestCase):
+    """Видимость позиции живого робота: только запись факта, без заявок."""
+
+    @staticmethod
+    def _runner():
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "live_exec_runtime", Path(__file__).resolve().parent.parent /
+            "scripts" / "34_live_execute.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
+    def test_runtime_merge_keeps_old_fields(self):
+        from algo.robot_store import RobotStore
+        mod = self._runner()
+        with tempfile.TemporaryDirectory() as tmp:
+            store = RobotStore(Path(tmp) / "robots.db")
+            store.init_db()
+            store.set_runtime("live-1", {
+                "symbol": "CNYRUBF@RTSX", "position": 0, "equity": 49_900,
+                "last_price": 12.29, "last_decision": "старое решение",
+                "note": "старая заметка",
+            })
+            notes = mod.sync_live_runtime(store, [{
+                "instance_id": "live-1", "position": -2,
+                "last_decision": "2026-11-25 13:57 planned",
+            }])
+            row = store.get_runtime("live-1")
+        self.assertEqual(notes, [])
+        self.assertEqual(row["position"], -2)
+        self.assertEqual(row["equity"], 49_900)
+        self.assertEqual(row["last_price"], 12.29)
+        self.assertEqual(row["note"], "старая заметка")
+        self.assertEqual(row["last_decision"], "2026-11-25 13:57 planned")
+        self.assertTrue(row["updated_at"])
+
+    def test_bad_store_does_not_break_flight(self):
+        mod = self._runner()
+
+        class Broken:
+            def init_db(self):
+                pass
+
+            def get_runtime(self, iid):
+                raise RuntimeError("нет доступа к БД")
+
+            def set_runtime(self, iid, data):
+                raise AssertionError("запись не должна вызываться")
+
+        self.assertEqual(len(mod.sync_live_runtime(Broken(), [
+            {"instance_id": "live-1", "position": -2}])), 1)
+        self.assertEqual(mod.sync_live_runtime(Broken(), []), [])
+
+    def test_new_instance_gets_symbol(self):
+        from algo.robot_store import RobotStore
+        mod = self._runner()
+        with tempfile.TemporaryDirectory() as tmp:
+            store = RobotStore(Path(tmp) / "robots.db")
+            store.init_db()
+            mod.sync_live_runtime(store, [{
+                "instance_id": "live-2", "symbol": "CNYRUBF@RTSX",
+                "position": 2, "equity": 50_000, "last_price": 12.3,
+                "last_decision": "2026-11-26 13:57 planned",
+                "note": "факт позиции счёта",
+            }])
+            row = store.get_runtime("live-2")
+        self.assertEqual(row["position"], 2)
+        self.assertEqual(row["symbol"], "CNYRUBF@RTSX")
+        self.assertEqual(row["equity"], 50_000)
+
+
 if __name__ == "__main__":
     unittest.main()

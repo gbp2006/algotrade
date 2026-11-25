@@ -42,6 +42,7 @@ from algo.instance_configs import live_settings_from_store  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS  # noqa: E402
 from algo.live_config import SettingsError, load_settings  # noqa: E402
 from algo.robot_configs import ROBOT_CONFIGS  # noqa: E402
+from algo.robot_store import RobotStore  # noqa: E402
 
 PAPER = ROOT / "results" / "paper.csv"
 LIVE = ROOT / "results" / "live.csv"
@@ -135,6 +136,35 @@ def broker_positions(broker, account: str) -> dict[str, int]:
     return positions_from_response(response.get("positions", response))
 
 
+def sync_live_runtime(store, updates: list[dict]) -> list[str]:
+    """Отразить в панели фактическую позицию счёта у живых роботов.
+
+    Только наблюдение: заявки, STOP и настройки не меняются. `set_runtime`
+    перезаписывает всю строку, поэтому недостающие поля берём из прежнего
+    состояния. Ошибка одного инстанса не срывает боевой прогон.
+    """
+    notes: list[str] = []
+    try:
+        store.init_db()
+    except Exception as exc:  # noqa: BLE001 — панель не должна ронять бой
+        return [f"рантайм недоступен: {type(exc).__name__}"]
+    for u in updates:
+        iid = str(u["instance_id"])
+        try:
+            prev = store.get_runtime(iid) or {}
+            store.set_runtime(iid, {
+                "symbol": u.get("symbol") or prev.get("symbol") or "",
+                "position": int(u.get("position") or 0),
+                "equity": float(u.get("equity") or prev.get("equity") or 0),
+                "last_price": float(u.get("last_price") or prev.get("last_price") or 0),
+                "last_decision": u.get("last_decision") or prev.get("last_decision") or "",
+                "note": u.get("note") or prev.get("note") or "",
+            })
+        except Exception as exc:  # noqa: BLE001 — процедура наблюдательная
+            notes.append(f"{iid}: рантайм не обновлён ({type(exc).__name__})")
+    return notes
+
+
 def acquire_run_lock() -> int | None:
     RUN_LOCK.parent.mkdir(parents=True, exist_ok=True)
     try:
@@ -199,6 +229,8 @@ def main(argv: list[str] | None = None) -> int:
         notes: list[str] = []
         fills: list[dict] = []
         paper_signals: dict[str, dict] = {}
+        decisions: dict[tuple[str, str], str] = {}
+        runtime_updates: list[dict] = []
 
         for (acc_id, key_ref), symbols in plans.items():
             acc = settings.accounts[acc_id]
@@ -308,6 +340,9 @@ def main(argv: list[str] | None = None) -> int:
                     gateway.log_decision(stub, status, reason)
 
                 counts[status or "noop"] = counts.get(status or "noop", 0) + 1
+                decisions[(acc_id, sym)] = status or "noop"
+                if reason:
+                    decisions[(acc_id, sym)] += f": {reason}"
                 if reason or note:
                     notes.append(f"{acc_id}/{sym}: {reason or note}")
 
@@ -341,6 +376,26 @@ def main(argv: list[str] | None = None) -> int:
                 notes.append(f"{acc_id}: не удалось обновить исполнения: "
                              f"{type(exc).__name__}")
 
+            # Позиция в панели — факт счёта после прогона, а не намерение.
+            # При недоступности API остаёмся на позиции до отправки (dry-run
+            # её не меняет); ошибка наблюдения не должна рушить сводку.
+            try:
+                actual_now = broker_positions(broker, acc_id)
+            except Exception:  # noqa: BLE001 — панель наблюдательная
+                actual_now = None
+            for sym, plan in symbols.items():
+                pos = actual_now.get(sym, 0) if actual_now is not None \
+                    else actual.get(sym, 0)
+                for iid in plan["robots"]:
+                    runtime_updates.append({
+                        "instance_id": iid, "symbol": sym, "position": pos,
+                        "equity": equity, "last_price": plan["price"],
+                        "last_decision": f"{day} {plan['when']} "
+                                         f"{decisions.get((acc_id, sym), 'noop')}",
+                        "note": "факт позиции счёта (общая для роботов счёта)",
+                    })
+
+        notes.extend(sync_live_runtime(RobotStore(), runtime_updates))
         SUMMARY.parent.mkdir(parents=True, exist_ok=True)
         SUMMARY.write_text(json.dumps({
             "date": str(day), "armed": bool(args.arm), "counts": counts,

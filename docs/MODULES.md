@@ -74,7 +74,7 @@
 | `scripts/98_assign_paper_accounts.py` | Разводит бумажных роботов по отдельным TEST-счетам `paper-<id>`; идемпотентно, боевых не трогает | `./run.sh assign-paper-accounts` | `robot_store` | `test_assign_paper_accounts.py` |
 | `scripts/97_migrate_to_postgres.py` | Идемпотентная миграция SQLite→PG | `robots.db` → счета/роботы/потоки/снимки; одна строка сводки | `pg_store` | ручной прогон |
 | `scripts/deploy_wsl.sh` | Деплой только по whitelist | rsync → WSL, md5, опц. restart | ssh | `deploy --list` |
-| `scripts/34_live_execute.py` | Боевой контур | сигналы бумаги → заявки через шлюз; `--arm` + финам-флаг; свежий equity; в заявку передаётся целевая позиция для лимита | `broker`, `trade_journal` | `test_live_execution.py`, `test_execution.py` |
+| `scripts/34_live_execute.py` | Боевой контур | сигналы бумаги → заявки через шлюз; `--arm` + финам-флаг; свежий equity; в заявку передаётся целевая позиция для лимита; после прогона пишет факт позиции счёта в `runtime_state` (только наблюдение, ошибка записи не роняет бой) | `broker`, `trade_journal`, `robot_store` | `test_live_execution.py`, `test_execution.py` |
 | `scripts/*.py` (01–96) | Скачивание данных, прогоны, отчёты, уборка, бекап, MCP-профили | см. `scripts/README.md` | — | соответствующие `test_*.py` |
 | `tests/test_*.py` | 289 Python-тестов; один файл = одна тема | `./run.sh test` | unittest | — |
 | `infra/db/*.db`, `results/*` | Рабочие данные и журналы; не редактировать вручную | данные для движка/панели | — | — |
