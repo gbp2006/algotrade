@@ -36,6 +36,17 @@
 | Офлайн браузера | IndexedDB через Dexie | `webui/src/lib/offline.ts` |
 | Фон | systemd-таймеры и сервисы | `infra/systemd/` |
 
+Доступ к WSL из песочницы — только через VPN `Sysinv SSTP` (NetworkManager,
+интерфейс `ppp0`). Если `192.168.0.230` не пингуется, поднять соединение
+**самому**, не спрашивая:
+```bash
+nmcli con up "Sysinv SSTP"   # ppp0, сеть 192.168.100.x
+ssh wsl-algo                 # ~/.ssh/config: 192.168.0.230:2222, zt, ~/.ssh/wsl_algotrading
+curl http://192.168.0.230:8080/api/health
+```
+Панель и роботы живут на WSL; на десктопе только код/тесты/проверки. Секреты
+VPN и SSH в проект не писать.
+
 Адреса на WSL:
 - GUI: `http://192.168.0.230:8080/` (все старые пути отдают React);
 - API: `http://192.168.0.230:8080/api/...`;

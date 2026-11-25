@@ -91,6 +91,37 @@ class TestGateway(unittest.TestCase):
                 self.assertEqual(res.status, "rejected", (limits, kw, res))
         self.assertEqual(self.broker.calls, [])
 
+    def test_reversal_checks_resulting_position_notional(self):
+        # ADR 25.11: −2 → +2 требует заявку на 4 контракта (49 308 ₽), но итог
+        # +2 = 24 654 ₽ укладывается в потолок счёта 24 967 ₽.
+        gw = ex.OrderGateway(self.broker, ex.Limits(max_qty=10, max_notional=24_967),
+                             self.journal, self.lock)
+        with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):
+            res = gw.submit(order(client_id="rev-result", side="buy", qty=4,
+                                  price=12.327, multiplier=1000.0, result_qty=2))
+        self.assertTrue(res.sent, res.reason)
+        self.assertEqual(self.broker.calls[0][2], 4)
+        self.assertEqual(self.broker.calls[0][3], 12.327)
+
+    def test_reversal_without_result_qty_still_rejected(self):
+        gw = ex.OrderGateway(self.broker, ex.Limits(max_qty=10, max_notional=24_967),
+                             self.journal, self.lock)
+        with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):
+            res = gw.submit(order(client_id="rev-plain", side="buy", qty=4,
+                                  price=12.327, multiplier=1000.0))
+        self.assertEqual(res.status, "rejected")
+        self.assertIn("номинал", res.reason)
+        self.assertEqual(self.broker.calls, [])
+
+    def test_close_to_flat_checks_zero_notional(self):
+        gw = ex.OrderGateway(self.broker, ex.Limits(max_qty=10, max_notional=24_967),
+                             self.journal, self.lock)
+        with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):
+            res = gw.submit(order(client_id="close-flat", side="sell", qty=8,
+                                  price=12.327, multiplier=1000.0, result_qty=0))
+        self.assertTrue(res.sent, res.reason)
+        self.assertEqual(self.broker.calls[0][2], 8)
+
     def test_lock_blocks_second_launcher(self):
         self.lock.write_text("другой процесс", encoding="utf-8")
         with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):

@@ -286,7 +286,7 @@ def main(argv: list[str] | None = None) -> int:
                                     side=side, qty=abs(delta), price=price,
                                     multiplier=mult_for(sym), min_step=tick_for(sym),
                                     order_type=order_type, account=acc_id,
-                                    pricing=pricing.value,
+                                    pricing=pricing.value, result_qty=target,
                                 )
 
                 if order is not None and not status:
@@ -304,7 +304,7 @@ def main(argv: list[str] | None = None) -> int:
                                  side="buy" if delta > 0 else "sell",
                                  qty=abs(delta), price=plan["price"],
                                  multiplier=mult_for(sym), min_step=tick_for(sym),
-                                 account=acc_id)
+                                 account=acc_id, result_qty=target)
                     gateway.log_decision(stub, status, reason)
 
                 counts[status or "noop"] = counts.get(status or "noop", 0) + 1

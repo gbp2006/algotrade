@@ -40,7 +40,7 @@
 | `broker/tinvest_adapter.py` | Адаптер Т‑Инвестиций | без токена/gRPC инертен: `NotConfiguredError`; sandbox=LIVE метка TEST | `secrets` | `test_broker_adapters.py` |
 | `broker/secrets.py` | Секреты по имени | `auth.json` или `{env:...}` → строка; значения не логируются | — | `test_secrets.py` |
 | `broker/instrument_map.py` | Маппинг тикеров | ticker → FIGI/UID/Board/Finam symbol | — | `test_broker_adapters.py` |
-| `broker/execution.py`, `live_guard.py`, `position_ops.py` | Шлюз заявок | `OrderRequest` → `OrderResult`, LOCAL lock, STOP, battle limits, reconcile | `trade_journal` | `test_execution.py`, `test_live_guard.py` |
+| `broker/execution.py`, `live_guard.py`, `position_ops.py` | Шлюз заявок | `OrderRequest` → `OrderResult`, LOCAL lock, STOP, battle limits (номинал по итоговой позиции `Order.result_qty`, ADR 25.11), reconcile | `trade_journal` | `test_execution.py`, `test_live_guard.py` |
 
 ## 3. Web и интерфейс
 
@@ -74,7 +74,7 @@
 | `scripts/98_assign_paper_accounts.py` | Разводит бумажных роботов по отдельным TEST-счетам `paper-<id>`; идемпотентно, боевых не трогает | `./run.sh assign-paper-accounts` | `robot_store` | `test_assign_paper_accounts.py` |
 | `scripts/97_migrate_to_postgres.py` | Идемпотентная миграция SQLite→PG | `robots.db` → счета/роботы/потоки/снимки; одна строка сводки | `pg_store` | ручной прогон |
 | `scripts/deploy_wsl.sh` | Деплой только по whitelist | rsync → WSL, md5, опц. restart | ssh | `deploy --list` |
-| `scripts/34_live_execute.py` | Боевой контур | сигналы бумаги → заявки через шлюз; `--arm` + финам-флаг; свежий equity | `broker`, `trade_journal` | `test_live_execution.py` |
+| `scripts/34_live_execute.py` | Боевой контур | сигналы бумаги → заявки через шлюз; `--arm` + финам-флаг; свежий equity; в заявку передаётся целевая позиция для лимита | `broker`, `trade_journal` | `test_live_execution.py`, `test_execution.py` |
 | `scripts/*.py` (01–96) | Скачивание данных, прогоны, отчёты, уборка, бекап, MCP-профили | см. `scripts/README.md` | — | соответствующие `test_*.py` |
 | `tests/test_*.py` | 289 Python-тестов; один файл = одна тема | `./run.sh test` | unittest | — |
 | `infra/db/*.db`, `results/*` | Рабочие данные и журналы; не редактировать вручную | данные для движка/панели | — | — |

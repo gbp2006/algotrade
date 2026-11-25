@@ -85,6 +85,10 @@ class Order:
     order_type: str = "limit"  # limit / market
     account: str = ""       # реальный счёт из live_settings.json
     pricing: str = ""       # signal / marketable / market
+    # Подписанная позиция по символу после исполнения заявки. Лимит номинала
+    # проверяется по ней, а не по qty: разворот −2 → +2 требует 4 контракта,
+    # но итог +2 укладывается в потолок счёта. None — старая проверка по qty.
+    result_qty: int | None = None
 
 
 @dataclass(frozen=True)
@@ -177,7 +181,9 @@ class OrderGateway:
             return f"символ не разрешён: {order.symbol}"
         if order.qty > lim.max_qty:
             return f"количество {order.qty} выше лимита {lim.max_qty}"
-        notional = order.qty * order.price * order.multiplier
+        # ADR 25.11: потолок — на итоговую позицию, а не на оборот заявки.
+        check_qty = abs(order.result_qty) if order.result_qty is not None else order.qty
+        notional = check_qty * order.price * order.multiplier
         if notional > lim.max_notional:
             return f"номинал {notional:.0f} выше лимита {lim.max_notional:.0f}"
         if order.daily_pnl < -lim.max_daily_loss:
