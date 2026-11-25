@@ -57,7 +57,7 @@
 | `webui/src/lib/format.ts`, `csv.ts` | Форматирование и экспорт | числа→«н/д»/рубли/%, строки→CSV (BOM) | — | `format.test.ts` |
 | `webui/src/sections/Portfolio.tsx` | KPI, кривая, позиции, аллокация, метрики, сверка факт | `/api/portfolio/*` → графики/таблицы | lightweight-charts | `check-all.mjs` |
 | `webui/src/sections/Charts.tsx` | Свечи, маркеры сделок/потоков, предупреждение о корреляции | `/api/candles`, `/api/trades`, `/api/runtime` | lightweight-charts | `check-all.mjs` |
-| `webui/src/sections/Robots.tsx` | Таблица, шаблоны, мастер, дневник изменений | RHF+Zod → `/api/instances` | RHF, Zod, Radix | `check-all.mjs` |
+| `webui/src/sections/Robots.tsx` | Таблица (позиция, equity, источник сигнала), шаблоны, мастер с предупреждением про `source_config`, дневник изменений | RHF+Zod → `/api/instances`, `/api/runtime` | RHF, Zod, Radix | `check-all.mjs` |
 | `webui/src/sections/Simulation.tsx` | Песочница и симулятор потоков | `/api/cash-flows/preview` → таблица «лот до→после» | — | `check-all.mjs` |
 | `webui/src/sections/Accounts.tsx` | Счета, коннекторы, потоки, sync | `/api/accounts`, `/api/cash-flows` → таблицы/диалоги | — | `check-all.mjs` |
 | `webui/src/sections/History.tsx` | Журнал сделок, операции, пересчёт лотов | `/api/journal`, `/api/cash-flows` → CSV | — | `check-all.mjs` |

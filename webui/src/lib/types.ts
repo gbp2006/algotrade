@@ -125,6 +125,7 @@ export interface Robot {
   exposure?: number | null;
   max_qty?: number | null;
   version?: number;
+  source_config?: string | null;
   params?: Record<string, string | number | boolean>;
 }
 

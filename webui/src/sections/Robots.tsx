@@ -58,6 +58,7 @@ export function Robots() {
   const [calcKind, setCalcKind] = useState('DEPOSIT');
   const [historyId, setHistoryId] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingSource, setEditingSource] = useState('');
 
   const robots = useQuery({ queryKey: keys.robots, queryFn: api.robots, refetchInterval: 30_000 });
   const runtime = useQuery({ queryKey: keys.runtime, queryFn: api.runtime, refetchInterval: 30_000 });
@@ -104,6 +105,7 @@ export function Robots() {
       params: robot.params ?? {},
     });
     setEditingId(id);
+    setEditingSource(robot.source_config || '');
     setTab('wizard');
   };
 
@@ -111,6 +113,7 @@ export function Robots() {
     mutationFn: (payload: Record<string, unknown>) => api.createInstance(payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: keys.robots });
+      setEditingSource('');
       setTab('mine');
     },
   });
@@ -140,6 +143,7 @@ export function Robots() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: keys.robots });
       setEditingId(null);
+      setEditingSource('');
       setTab('mine');
     },
   });
@@ -168,7 +172,11 @@ export function Robots() {
 
   const columns: ColumnDef<RobotRow, unknown>[] = [
     { header: 'Робот', cell: ({ row }) => <div><b>{row.original.note || row.original.id}</b>
-      <div className="text-[10px] text-muted">{row.original.strategy_name || row.original.strategy}</div></div> },
+      <div className="text-[10px] text-muted">
+        {row.original.strategy_name || row.original.strategy}
+        {row.original.mode === 'live' && row.original.source_config
+          && ` · сигнал: ${row.original.source_config}`}
+      </div></div> },
     { header: 'Счёт', cell: ({ row }) => row.original.account || '—' },
     { header: 'Режим', cell: ({ row }) => <Badge live={row.original.mode === 'live'} /> },
     { header: 'Статус', cell: ({ row }) => row.original.status },
@@ -226,6 +234,7 @@ export function Robots() {
                 <p className="text-xs text-muted">{spec.description || spec.about}</p>
                 <button className="btn-primary mt-3" onClick={() => {
                   form.setValue('spec_id', spec.id);
+                  setEditingSource('');
                   setTab('wizard');
                 }}>Создать робота</button>
               </Card>
@@ -247,6 +256,11 @@ export function Robots() {
               {currentSpec && (
                 <div className="md:col-span-2 rounded-lg border border-line p-3">
                   <div className="panel-title">Параметры алгоритма: {currentSpec.title}</div>
+                  {editingSource && (
+                    <div className="mt-2 text-[11px] text-warn">
+                      Боевой сигнал берётся из «{editingSource}» — поля ниже не управляют сделками.
+                    </div>
+                  )}
                   <div className="mt-2 grid gap-3 md:grid-cols-3">
                     {Object.entries(currentSpec.schema).map(([key, kind]) => (
                       <label key={key} className="text-xs">

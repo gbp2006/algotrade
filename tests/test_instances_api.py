@@ -179,6 +179,18 @@ class TestApiViews(unittest.TestCase):
         self.assertEqual(inst["params"]["ma_window"], 48)
         self.assertEqual(inst["params"]["entry"], "13:50")
 
+    def test_api_exposes_source_config_of_live_robot(self):
+        api.create_account({"id": "live-acc", "label": "Бой", "capital": 50_000},
+                           self.store)
+        api.create_view(self.store, {
+            "id": "live-1", "spec_id": "prostushka", "instrument": "CNY",
+            "mode": "live", "account": "live-acc", "pricing": "marketable",
+            "source_config": "p-base",
+            "params": {"ma_window": 200, "entry": "13:50"},
+        })
+        row = api.instances_view(self.store, "live")[0]
+        self.assertEqual(row["source_config"], "p-base")
+
     def test_generated_id_fallback(self):
         inst = api.create_view(self.store, {"spec_id": "prostushka",
                                             "instrument": "CNY", "mode": "paper"})
@@ -193,6 +205,7 @@ class TestApiViews(unittest.TestCase):
         self.assertIn("register('name')", src)
         self.assertNotIn("register('id')", src)
         self.assertIn("z.enum", src)  # валидация Zod вместо ручного ввода id
+        self.assertIn("сигнал:", src)  # живой робот показывает источник сигнала
 
     def test_backtest_preview(self):
         r = api.backtest_preview_view({
