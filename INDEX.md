@@ -12,6 +12,7 @@
 
 ## Хронология (новые сверху)
 
+- `2026-11-26_00-45_battle-watch-update` — 2026-11-26_00-45_battle-watch-update. Статус: **решено**.
 - `2026-11-26_00-40_decisions-trim` — 2026-11-26_00-40_decisions-trim. Статус: **решено**.
 - `2026-11-26_00-34_live-preflight` — 2026-11-26_00-34_live-preflight. Статус: **решено**.
 - `2026-11-26_00-25_bundle-shadow-diagnostics` — 2026-11-26_00-25_bundle-shadow-diagnostics. Статус: **решено**.
