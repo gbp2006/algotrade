@@ -65,6 +65,12 @@ cd webui && npm run build# сборка в webui/dist
 ./run.sh migrate-pg      # однократная миграция SQLite → PG (идемпотентна)
 ```
 
+Деплой идёт whitelist'ом **без `--delete`**: файлы, убранные из репозитория
+или из whitelist, остаются на WSL. Если такой файл — тест, `./run.sh test` на
+WSL подхватит устаревший код (например, тест удалённого Jinja-UI). После удаления
+файла удаляйте его и на WSL вручную:
+`ssh wsl-algo 'rm -f ~/algotrading/tests/<файл>'`.
+
 `scripts/start_project.sh` вызывается при старте/перезапуске WSL: он включает
 PostgreSQL, применяет схему и миграцию, чистит `__pycache__` (rsync сохраняет
 mtime — иначе сервер поднимает старый байткод) и остатки старого Jinja-UI,
