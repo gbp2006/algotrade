@@ -12,6 +12,7 @@
 
 ## Хронология (новые сверху)
 
+- `2026-11-26_00-16_source-config-ui` — 2026-11-26_00-16_source-config-ui. Статус: **решено**.
 - `2026-11-26_00-04_live-runtime-visibility` — 2026-11-26_00-04_live-runtime-visibility. Статус: **решено**.
 - `2026-11-25_23-45_wsl-tests-and-watch` — 2026-11-25_23-45_wsl-tests-and-watch. Статус: **решено**.
 - `2026-11-25_23-20_prostushka-live-audit` — 2026-11-25_23-20_prostushka-live-audit. Статус: **решено**.
