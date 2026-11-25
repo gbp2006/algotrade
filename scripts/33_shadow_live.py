@@ -113,12 +113,15 @@ def main(day: date | None = None) -> int:
             expected[sym] = expected.get(sym, 0) + int(mine[-1]["target"])
 
     issues: list[str] = []
+    reconcile_error = ""
     try:
         account = FinamBroker().account()
         actual = positions_from_response(account.get("positions", account))
         issues = reconcile(expected, actual)
     except Exception as exc:  # noqa: BLE001 — сверка не обязательна для репетиции
-        issues = [f"нет данных о позициях: {str(exc)[:80]}"]
+        # Недоступность API — не расхождение позиций: иначе transient 404
+        # засоряет метрику G3 и выглядит как реальная ошибка робота.
+        reconcile_error = str(exc)[:200]
 
     counts: dict[str, int] = {}
     for r in results:
@@ -127,6 +130,7 @@ def main(day: date | None = None) -> int:
     SHADOW.write_text(json.dumps({
         "date": str(day), "orders": len(orders), "counts": counts,
         "issues": issues,
+        "reconcile_error": reconcile_error,
         "reconcile_note": "бумажные позиции не уходят брокеру — расхождения с реальным счётом ожидаемы",
     }, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"{day}: запланировано {len(orders)}, статусы {counts}, "

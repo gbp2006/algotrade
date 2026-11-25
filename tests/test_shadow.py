@@ -83,6 +83,22 @@ class TestShadow(unittest.TestCase):
         self.assertEqual(data["counts"], {"planned": 1})
         self.assertTrue(data["issues"])
 
+    def test_broker_error_is_not_a_position_discrepancy(self):
+        """Transient 404/`FinamError` — отдельная диагностика, не issue G3."""
+        today = date.today()
+        self._journal(today)
+        broker = FakeBroker()
+
+        def broken_account():
+            raise RuntimeError("GET /v1/accounts/2102993: 404")
+
+        broker.account = broken_account
+        with mock.patch.object(shadow, "FinamBroker", lambda: broker):
+            self.assertEqual(shadow.main(today), 0)
+        data = json.loads(self.shadow.read_text(encoding="utf-8"))
+        self.assertEqual(data["issues"], [])
+        self.assertIn("404", data["reconcile_error"])
+
     def test_client_id_is_deterministic(self):
         today = date.today()
         self._journal(today)

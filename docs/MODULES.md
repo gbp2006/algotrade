@@ -21,6 +21,7 @@
 | `trade_journal.py` | SQLite `trades.db`, journal заявок и исполнений | заявки → статусы/журнал/CSV; `executed_qty()` = MAX | sqlite3 | `test_trade_journal.py`, `test_execution.py` |
 | `metrics_store.py`, `results.py` | История метрик и журнал прогонов | метрики → `paper_metrics.db`, `results/runs.csv` | sqlite3 | `test_metrics_store.py` |
 | `scheduler.py` | Планировщик заданий (shadow) | jobs → запуски в `robots.db` | `robot_store` | `test_scheduler.py` |
+| `scripts/33_shadow_live.py` | Теневой прогон G3: только `planned`-журнал | `paper.csv` → `shadow.json` (counts/issues); ошибка API сверки пишется в `reconcile_error`, не в `issues` | `broker`, `portfolio` | `test_shadow.py` |
 | `strategy_descriptions.py`, `robot_library.py` | Единые описания/схемы стратегий | id → name/description/defaults/schema | `strategies` | `test_instance_configs.py` |
 | `instruments.py`, `instruments_catalog.py`, `iss.py` | Справочник инструментов и MOEX ISS | symbol → mult/tick digits; каталог (~595k) | requests | `test_instruments_catalog.py` |
 | `money_market.py`, `rollover.py`, `rollover_integration.py` | Фонд денежного рынка и перекладка контрактов | H1→FMMM, roll → planned-заявки; не включены по умолчанию | `broker`, `portfolio` | `test_money_market.py`, `test_rollover*.py` |
