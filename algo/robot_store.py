@@ -376,12 +376,24 @@ class RobotStore:
         if status not in TRANSITIONS[old["status"]]:
             raise StoreError(
                 f"переход {old['status']} → {status} запрещён")
-        self._check_live(old["mode"], status, old)
+        data = dict(old)
+        pricing_fix = None
+        # Панель может создать боевого робота без явного pricing (например,
+        # сервисный money_market). При старте подставляем режим цены из параметров
+        # робота — иначе «Старт» молча падал с 400 (ADR 26.11).
+        if old["mode"] == "live" and status == "active" and not old.get("pricing"):
+            candidate = str((old.get("params") or {}).get("pricing") or "marketable")
+            pricing_fix = candidate if candidate in PRICING else "marketable"
+            data["pricing"] = pricing_fix
+        self._check_live(old["mode"], status, data)
         now = _now()
         with self._conn() as c:
             c.execute("UPDATE instances SET status=?,updated_at=? WHERE id=?",
                       (status, now, iid))
-            self._event(c, iid, f"status:{status}", old, status, reason, actor, now)
+            if pricing_fix:
+                c.execute("UPDATE instances SET pricing=? WHERE id=?",
+                          (pricing_fix, iid))
+            self._event(c, iid, f"status:{status}", old, data, reason, actor, now)
         return self.get_instance(iid)  # type: ignore[return-value]
 
     def archive(self, iid: str, reason: str = "", actor: str = "panel") -> dict:

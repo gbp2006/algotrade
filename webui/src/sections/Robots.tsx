@@ -170,10 +170,12 @@ export function Robots() {
     mutationFn: ({ id, action }: { id: string; action: 'rebalance' | 'close' }) =>
       action === 'rebalance' ? api.mmRebalance(id) : api.mmClose(id),
     onSuccess: (data) => { setNotice(JSON.stringify(data)); refreshAll(); },
+    onError: (error) => setNotice(`Ошибка фонда: ${error.message}`),
   });
   const liveRun = useMutation({
     mutationFn: ({ arm, day }: { arm: boolean; day?: string }) => api.liveRun(arm, day),
     onSuccess: (data) => { setNotice(data.stdout || 'прогон завершён'); refreshAll(); },
+    onError: (error) => setNotice(`Ошибка прогона: ${error.message}`),
   });
   const flag = useMutation({
     mutationFn: async ({ kind, value }: { kind: 'real' | 'paper'; value: 'set' | 'clear' }): Promise<Record<string, unknown>> =>
@@ -217,6 +219,7 @@ export function Robots() {
       void queryClient.invalidateQueries({ queryKey: ['robot-schedules'] });
       void queryClient.invalidateQueries({ queryKey: ['robot-schedule'] });
     },
+    onError: (error) => setNotice(`Ошибка расписания: ${error.message}`),
   });
   const schedulerMut = useMutation({
     mutationFn: ({ action, id }: { action: 'create' | 'delete'; id?: string }) =>
@@ -284,6 +287,8 @@ export function Robots() {
   const action = useMutation({
     mutationFn: ({ id, name }: { id: string; name: string }) => api.instanceAction(id, name),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: keys.robots }),
+    // Раньше ошибка старта (например, отсутствующий pricing) пропадала молча.
+    onError: (error) => setNotice(`Ошибка действия робота: ${error.message}`),
   });
   const calc = useMutation({
     mutationFn: () => {

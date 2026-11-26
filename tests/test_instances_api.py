@@ -39,6 +39,15 @@ class TestApiViews(unittest.TestCase):
         self.assertEqual(row["strategy_name"], "Простушка")
         self.assertTrue(row["about"].startswith("Простушка"))
 
+    def test_start_live_without_pricing_uses_param_default(self):
+        api.create_view(self.store, {
+            "id": "fund-api", "spec_id": "money_market", "mode": "live",
+            "account": "2102993", "params": {},
+        })
+        started = api.action_view(self.store, "fund-api", "start")
+        self.assertEqual(started["status"], "active")
+        self.assertEqual(started["pricing"], "marketable")
+
     def test_create_list_action_history(self):
         created = api.create_view(self.store, {
             "id": "p-api", "spec_id": "prostushka", "instrument": "CNY",
