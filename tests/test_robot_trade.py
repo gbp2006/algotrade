@@ -42,6 +42,21 @@ class TestRobotTrade(unittest.TestCase):
             self.assertFalse(after["enabled"])
             self.assertEqual(after["times"], ["09:15", "18:30"])
 
+    def test_live_start_enables_timer_with_store(self):
+        from unittest import mock
+        from algo import arm_state, live_control
+
+        with tempfile.TemporaryDirectory() as tmp:
+            store = RobotStore(Path(tmp) / "robots.db")
+            store.init_db()
+            store.create_instance({"id": "fund-1", "spec_id": "money_market",
+                                   "mode": "live", "account": "2102993"})
+            with mock.patch.object(live_control, "enable", return_value={"ok": True}) as enable, \
+                 mock.patch.object(arm_state, "ARM_STATE", Path(tmp) / "arm.json"):
+                result = robot_trade.start(store, "fund-1")
+            enable.assert_called_once_with(store)
+            self.assertTrue(result["armed_mm"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -32,7 +32,7 @@ def start(store: RobotStore, iid: str) -> dict[str, Any]:
             arm_state.set_enabled("mm", True)
             armed = True
         try:
-            timer = live_control.enable()
+            timer = live_control.enable(store)
         except live_control.LiveControlError as exc:
             timer = {"error": str(exc)}
     return {
