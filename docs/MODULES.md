@@ -59,12 +59,12 @@
 | `webui/src/lib/offline.ts` | Dexie/IndexedDB | ошибка сети → кэш счетов/роботов/сделок/потоков/логов | dexie | `offline.test.ts` |
 | `webui/src/lib/format.ts`, `csv.ts` | Форматирование и экспорт | числа→«н/д»/рубли/%, строки→CSV (BOM) | — | `format.test.ts` |
 | `webui/src/sections/Portfolio.tsx` | KPI, кривая, позиции, аллокация, метрики, сверка факт | `/api/portfolio/*` → графики/таблицы | lightweight-charts | `check-all.mjs` |
-| `webui/src/sections/Charts.tsx` | Свечи, маркеры сделок/потоков, предупреждение о корреляции | `/api/candles`, `/api/trades`, `/api/runtime` | lightweight-charts | `check-all.mjs` |
+| `webui/src/sections/Charts.tsx` | Свечи; выбор робота/инструмента (вместо всегда первого), маркеры сделок, заявок и потоков по включённым слоям, вкладка «Заявки брокера», предупреждение о корреляции | `/api/candles`, `/api/trades`, `/api/live-orders`, `/api/cash-flows`, `/api/runtime` + фильтр ALL/TEST/LIVE | lightweight-charts | `check-all.mjs` |
 | `webui/src/sections/Robots.tsx` | Полный цикл робота: фильтр ALL/TEST/LIVE, живые роботы сверху, действия `start/pause/stop/archive/promote/delete/close`, смена счёта, money-market rebalance/close; вкладки «Боевой контур» (ручной прогон dry-run/arm, таймер, STOP, флаги ARM, заявки), «Инструменты» (поиск, избранное, обновление каталога, создание робота по тикеру), «Расписание» (jobs/runs), галка «Расписание» и появляющаяся подвкладка «Расписание робота» (дни/времена/интервал/окно/команда), русские подписи параметров алгоритмов, шаблоны, мастер, дневник | RHF+Zod и TanStack Query → `/api/instances`, `/api/live-*`, `/api/instruments*`, `/api/scheduler/*`, `/api/arm-state` | RHF, Zod, Radix | `check-all.mjs`, `npm test` |
 | `webui/src/sections/Simulation.tsx` | Песочница и симулятор потоков | `/api/cash-flows/preview` → таблица «лот до→после» | — | `check-all.mjs` |
-| `webui/src/sections/Accounts.tsx` | Счета, коннекторы, потоки, sync | `/api/accounts`, `/api/cash-flows` → таблицы/диалоги | — | `check-all.mjs` |
-| `webui/src/sections/History.tsx` | Журнал сделок, операции, пересчёт лотов | `/api/journal`, `/api/cash-flows` → CSV | — | `check-all.mjs` |
-| `webui/src/sections/Logs.tsx` | Фильтры, поиск, JSON-инспектор | `/api/logs` → таблица + JsonDialog | Radix | `check-all.mjs` |
+| `webui/src/sections/Accounts.tsx` | Счета, реальные брокеры с кнопкой «Проверить», сервисный ключ, потоки, sync | `/api/accounts`, `/api/brokers`, `/api/brokers/{name}/check`, `/api/service-key`, `/api/cash-flows` → таблицы/диалоги | — | `check-all.mjs` |
+| `webui/src/sections/History.tsx` | Журнал сделок с фильтрами по роботу/счёту/дате, операции, пересчёт лотов, CSV | `/api/journal`, `/api/cash-flows` → таблицы | — | `check-all.mjs` |
+| `webui/src/sections/Logs.tsx` | Фильтры по реальным источникам (`orders`, `instances`, `scheduler`, `health`), поиск, JSON-инспектор | `/api/logs` → таблица + JsonDialog | Radix | `check-all.mjs` |
 | `webui/check.mjs`, `check-all.mjs` | Обязательная headless-проверка GUI | Chrome → обход 7 разделов/вкладок; 0 ошибок JS | puppeteer-core | запуск вручную перед показом |
 | `webui/vite.config.ts` | Сборка SPA: `base=/ui/`, proxy `/api`, четыре чанка (index/query/charts/vendor) вместо одного 721 КБ | `npm run build` → `webui/dist` | Vite, Rollup | `npm test`, `check-all.mjs` |
 

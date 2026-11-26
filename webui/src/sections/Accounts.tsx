@@ -45,6 +45,7 @@ export function Accounts() {
   const [keySecret, setKeySecret] = useState('');
   const [editAccount, setEditAccount] = useState<Record<string, unknown> | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [notice, setNotice] = useState('');
 
   const analytics = useQuery({ queryKey: keys.analytics, queryFn: api.analytics, refetchInterval: 30_000 });
   const flows = useQuery({
@@ -55,6 +56,25 @@ export function Accounts() {
   });
   const accQuery = useQuery({
     queryKey: keys.accounts, queryFn: api.accounts, refetchInterval: 30_000,
+  });
+  const brokers = useQuery({
+    queryKey: ['brokers'], queryFn: api.brokers, enabled: tab === 'connections',
+  });
+  const serviceKey = useQuery({
+    queryKey: ['service-key'], queryFn: api.serviceKey, enabled: tab === 'connections',
+  });
+  const [serviceSecret, setServiceSecret] = useState('');
+  const brokerCheck = useMutation({
+    mutationFn: (name: string) => api.brokerCheck(name),
+    onSuccess: (data) => setNotice(data.detail || (data.ok ? 'соединение OK' : 'нет соединения')),
+  });
+  const saveServiceKey = useMutation({
+    mutationFn: () => api.setServiceKey(serviceSecret),
+    onSuccess: () => {
+      setServiceSecret('');
+      setNotice('сервисный ключ сохранён');
+      void queryClient.invalidateQueries({ queryKey: ['service-key'] });
+    },
   });
   const preview = useMutation({
     mutationFn: () => api.preview({
@@ -190,6 +210,9 @@ export function Accounts() {
         ) : null}
       </div>
       {sync.error && <div className="mt-2"><ErrorBox error={sync.error} /></div>}
+      {notice && <div className="mt-2 rounded-lg border border-line bg-elevated p-2 text-xs">
+        {notice} <button className="btn ml-2" onClick={() => setNotice('')}>Закрыть</button>
+      </div>}
       <Tabs tabs={tabs} value={tab} onChange={setTab}>
         <TabPanel value="list">
           <Card title="Добавить счёт">
@@ -228,18 +251,38 @@ export function Accounts() {
           </Card>
         </TabPanel>
         <TabPanel value="connections">
-          <Card title="Брокеры и коннекторы">
-            <div className="grid gap-3 md:grid-cols-3">
-              {[
-                ['Финам', 'REST / gRPC · сервисный и рабочий ключи в auth.json'],
-                ['Т‑Инвестиции', 'боевой контур и песочница · токен не хранится в UI'],
-                ['Виртуальный счёт', 'локальная симуляция по рыночным котировкам'],
-              ].map(([name, detail]) => (
-                <div key={name} className="rounded-lg border border-line p-3">
-                  <b className="text-xs">{name}</b>
-                  <p className="mt-1 text-[11px] text-muted">{detail}</p>
-                </div>
-              ))}
+          <Card title="Брокеры и соединение">
+            <div className="grid gap-3 md:grid-cols-2">
+              {(brokers.data ?? []).map((row) => {
+                const name = String(row.name ?? row.id ?? '');
+                return <div key={name} className="rounded-lg border border-line p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <b className="text-xs">{name}</b>
+                    <button className="btn" disabled={brokerCheck.isPending}
+                      onClick={() => brokerCheck.mutate(name)}>Проверить</button>
+                  </div>
+                  <p className="mt-1 text-[11px] text-muted">
+                    {String(row.status ?? row.detail ?? row.description ?? 'статус неизвестен')}
+                  </p>
+                </div>;
+              })}
+              {!brokers.data?.length && <div className="empty">Брокеры не зарегистрированы</div>}
+            </div>
+          </Card>
+          <Card title="Сервисный ключ" className="mt-4">
+            <p className="text-[11px] text-muted">
+              Используется каталогом инструментов, добором данных и shadow-проверкой.
+              Рабочий ключ счёта задаётся в таблице счетов. Секрет пишется только в `auth.json`.
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="text-xs">Текущий: {serviceKey.data?.set
+                ? `задан (${String(serviceKey.data.ref ?? '')})` : 'не задан'}
+                {serviceKey.data?.env_fallback ? ' · есть env-fallback' : ''}</span>
+              <input className="input w-72" type="password" value={serviceSecret}
+                placeholder="новый сервисный ключ"
+                onChange={(e) => setServiceSecret(e.target.value)} />
+              <button className="btn" disabled={!serviceSecret.trim() || saveServiceKey.isPending}
+                onClick={() => saveServiceKey.mutate()}>Сохранить</button>
             </div>
           </Card>
           <Card title="Журнал вкл/выкл торговли" className="mt-4">

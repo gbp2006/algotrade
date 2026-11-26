@@ -8,12 +8,14 @@ import { useUi } from '../store/ui';
 import { Card, DataTable, ErrorBox, JsonDialog, Loading, TabPanel, Tabs } from '../components/ui';
 import type { ColumnDef } from '@tanstack/react-table';
 
+// Источники берутся из /api/logs (web/instances_api.py: logs_aggregate).
+// Раньше здесь были «счета/валидация» и «система» — пустые вкладки.
 const categories = [
   { id: 'all', label: 'Все логи' },
-  { id: 'orders', label: 'Исполнение и сделки' },
-  { id: 'instances', label: 'Роботы и стратегии' },
-  { id: 'validation', label: 'Счета и валидация' },
-  { id: 'system', label: 'Система, API и БД' },
+  { id: 'orders', label: 'Заявки и сделки' },
+  { id: 'instances', label: 'Роботы' },
+  { id: 'scheduler', label: 'Планировщик' },
+  { id: 'health', label: 'Здоровье и API' },
 ];
 
 export function Logs() {

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { api, keys } from '../lib/api';
 import { downloadCsv } from '../lib/csv';
@@ -21,6 +22,17 @@ export function History() {
   const setTab = useUi((s) => s.setTab);
   const journal = useQuery({ queryKey: keys.journal, queryFn: () => api.journal(200), refetchInterval: 30_000 });
   const flows = useQuery({ queryKey: ['flows-history'], queryFn: () => api.flows(''), refetchInterval: 30_000 });
+  const [robotFilter, setRobotFilter] = useState('');
+  const [accountFilter, setAccountFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
+  const configs = useMemo(() => [...new Set(
+    (journal.data ?? []).map((row) => text(row.config)).filter((value) => value !== '—'))], [journal.data]);
+  const accounts = useMemo(() => [...new Set(
+    (journal.data ?? []).map((row) => text(row.account)).filter((value) => value !== '—'))], [journal.data]);
+  const filteredTrades = (journal.data ?? []).filter((row) =>
+    (!robotFilter || text(row.config) === robotFilter)
+    && (!accountFilter || text(row.account) === accountFilter)
+    && (!dateFilter || text(row.ts).startsWith(dateFilter)));
 
   if (journal.isLoading || flows.isLoading) return <Loading />;
   if (journal.error) return <ErrorBox error={journal.error} />;
@@ -57,9 +69,25 @@ export function History() {
     <Tabs tabs={tabs} value={tab} onChange={setTab}>
       <TabPanel value="trades">
         <Card title="Журнал сделок и заявок" action={
-          <button type="button" className="btn" onClick={() => downloadCsv('algo-trades.csv', journal.data ?? [])}>Экспорт CSV</button>
+          <button type="button" className="btn" onClick={() => downloadCsv('algo-trades.csv', filteredTrades)}>Экспорт CSV</button>
         }>
-          <DataTable data={journal.data ?? []} columns={tradeColumns} empty="Сделок пока нет" />
+          <div className="mb-3 flex flex-wrap gap-2">
+            <select className="input w-auto" value={robotFilter} onChange={(e) => setRobotFilter(e.target.value)}>
+              <option value="">Все роботы</option>
+              {configs.map((value) => <option key={value} value={value}>{value}</option>)}
+            </select>
+            <select className="input w-auto" value={accountFilter} onChange={(e) => setAccountFilter(e.target.value)}>
+              <option value="">Все счета</option>
+              {accounts.map((value) => <option key={value} value={value}>{value}</option>)}
+            </select>
+            <input className="input w-40" placeholder="Дата ГГГГ-MM" value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)} />
+          </div>
+          <DataTable data={filteredTrades} columns={tradeColumns} empty="Сделок по фильтру нет" />
+          <p className="mt-2 text-[11px] text-muted">
+            Источник правды — `infra/db/trades.db`; `live.csv` — зеркало. Статус `planned`
+            означает проверку без отправки (dry-run).
+          </p>
         </Card>
       </TabPanel>
       <TabPanel value="operations">

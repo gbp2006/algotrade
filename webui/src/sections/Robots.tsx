@@ -288,11 +288,20 @@ export function Robots() {
   const calc = useMutation({
     mutationFn: () => {
       const values = form.getValues();
+      // Для существующего робота берём реальную цену и equity из runtime_state,
+      // а не фиктивные 12.29 / 200 000.
+      const current = editingId ? robots.data?.find((item) => item.id === editingId) : undefined;
+      const state = editingId
+        ? runtime.data?.find((item) => item.instance_id === editingId) : undefined;
       return api.preview({
-        type: calcKind, amount: calcAmount, balance_before: 200_000, live: false,
+        type: calcKind, amount: calcAmount,
+        balance_before: state?.equity ?? 200_000,
+        live: current?.mode === 'live',
         robots: [{
-          robot_id: values.name || 'новый-робот', name: values.name || 'Новый робот',
-          price: 12.29, exposure: values.sizing_mode === 'PERCENT'
+          robot_id: current?.id || values.name || 'новый-робот',
+          name: values.name || current?.note || 'Новый робот',
+          price: state?.last_price ?? 12.29,
+          exposure: values.sizing_mode === 'PERCENT'
             ? values.sizing_value / 100 : values.exposure,
           reaction: values.reaction, smoothing_pct: values.smoothing_pct,
           min_lots: values.min_lots, max_lots: values.max_lots,
@@ -840,7 +849,7 @@ export function Robots() {
             <LiveCalculator data={calc.data} error={calc.error}
               amount={calcAmount} kind={calcKind}
               onAmount={setCalcAmount} onKind={setCalcKind} />
-            <p className="mt-3 text-[11px] text-muted">Сайзинг и проверка баланса выполняются сервером через единый расчёт лотности — в интерфейсе нет второй формулы. Модули закрытия и ATR-правка остаются выключенными до отдельного ADR.</p>
+            <p className="mt-3 text-[11px] text-muted">Сайзинг и проверка баланса выполняются сервером через единый расчёт лотности — в интерфейсе нет второй формулы. Для существующего робота калькулятор берёт реальные цену и equity из `runtime_state`; для нового — значения по умолчанию. Модули закрытия и ATR-правка остаются выключенными до отдельного ADR.</p>
           </Card>
         </TabPanel>
         <TabPanel value="history">
