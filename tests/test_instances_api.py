@@ -39,6 +39,13 @@ class TestApiViews(unittest.TestCase):
         self.assertEqual(row["strategy_name"], "Простушка")
         self.assertTrue(row["about"].startswith("Простушка"))
 
+    def test_repeated_start_is_idempotent(self):
+        api.create_view(self.store, {"id": "p-repeat", "spec_id": "prostushka",
+                                     "mode": "paper"})
+        api.action_view(self.store, "p-repeat", "start")
+        again = api.action_view(self.store, "p-repeat", "start")
+        self.assertEqual(again["status"], "active")
+
     def test_start_live_without_pricing_uses_param_default(self):
         api.create_view(self.store, {
             "id": "fund-api", "spec_id": "money_market", "mode": "live",

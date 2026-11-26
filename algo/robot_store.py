@@ -373,6 +373,10 @@ class RobotStore:
         old = self.get_instance(iid)
         if old is None:
             raise StoreError(f"нет инстанса {iid}")
+        if status == old["status"]:
+            # Повторный «Старт» у уже активного робота — не ошибка: таблица в UI
+            # может быть на 30 с устаревшей. Ничего не меняем и событие не пишем.
+            return old
         if status not in TRANSITIONS[old["status"]]:
             raise StoreError(
                 f"переход {old['status']} → {status} запрещён")
