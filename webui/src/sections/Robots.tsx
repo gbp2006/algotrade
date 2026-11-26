@@ -40,6 +40,54 @@ interface RobotRow extends Robot {
   equity: number | null;
 }
 
+// Человеческие подписи параметров алгоритмов вместо сырых ключей из API.
+const PARAM_LABELS: Record<string, string> = {
+  regime: 'Режим работы',
+  symbol: 'Тикер фонда',
+  min_balance: 'Минимальный остаток денег, ₽',
+  allowed_spread_pct: 'Предельный спред, %',
+  time_buy: 'Время покупки, МСК',
+  time_sell: 'Время продажи, МСК',
+  trade_mon: 'Покупать в понедельник',
+  trade_tue: 'Покупать во вторник',
+  trade_wed: 'Покупать в среду',
+  trade_thu: 'Покупать в четверг',
+  trade_fri: 'Покупать в пятницу',
+  trade_sat: 'Покупать в субботу',
+  trade_sun: 'Покупать в воскресенье',
+  reserve_pct: 'Резерв, % от капитала',
+  reserve_abs: 'Резерв, ₽ (не меньше)',
+  min_trade: 'Минимальная сделка, ₽',
+  max_units: 'Максимум паёв в портфеле',
+  max_qty: 'Лимит паёв на заявку, штук',
+  max_exposure: 'Лимит номинала, доля капитала',
+  pricing: 'Режим цены',
+  ma_window: 'Окно скользящей средней',
+  entry: 'Время входа, МСК',
+  entry_time: 'Время входа, МСК',
+  exit_time: 'Время выхода, МСК',
+  filter_bars: 'Фильтр: баров против тренда',
+  allow_short: 'Разрешить короткие позиции',
+  short_friday: 'Разрешить шорт в пятницу',
+  ref: 'Время репера, МСК',
+  long_off: 'Порог входа в лонг, %',
+  short_off: 'Порог входа в шорт, %',
+  hold: 'Время удержания',
+  close_friday: 'Закрывать перед выходными',
+};
+
+const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+const REGIME_OPTIONS = [
+  { value: 'Off', label: 'Выключен' },
+  { value: 'TwiceADay', label: 'Дважды в день: покупка и продажа' },
+  { value: 'OnceADay', label: 'Один раз в день' },
+  { value: 'OnlyClose', label: 'Только закрытие позиции' },
+];
+
+const paramLabel = (key: string): string =>
+  PARAM_LABELS[key] ?? key.replace(/_/g, ' ');
+
 const tabs = [
   { id: 'mine', label: 'Мои роботы' },
   { id: 'live', label: 'Боевой контур' },
@@ -64,6 +112,8 @@ export function Robots() {
   const [editingSource, setEditingSource] = useState('');
   const [instSearch, setInstSearch] = useState('');
   const [job, setJob] = useState({ id: '', command: '', times: '', note: '' });
+  const [scheduleFor, setScheduleFor] = useState<string | null>(null);
+  const [scheduleDraft, setScheduleDraft] = useState<Record<string, unknown>>({});
 
   const robots = useQuery({ queryKey: keys.robots, queryFn: () => api.robots(), refetchInterval: 30_000 });
   const runtime = useQuery({ queryKey: keys.runtime, queryFn: api.runtime, refetchInterval: 30_000 });
@@ -149,6 +199,25 @@ export function Robots() {
       void queryClient.invalidateQueries({ queryKey: ['instrument-stats'] });
     },
   });
+  const schedules = useQuery({
+    queryKey: ['robot-schedules'], queryFn: api.schedules, refetchInterval: 30_000,
+  });
+  const scheduleEdit = useQuery({
+    queryKey: ['robot-schedule', scheduleFor],
+    queryFn: () => api.schedule(scheduleFor ?? ''),
+    enabled: Boolean(scheduleFor),
+  });
+  useEffect(() => {
+    if (scheduleEdit.data) setScheduleDraft(scheduleEdit.data);
+  }, [scheduleEdit.data]);
+  const scheduleSave = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Record<string, unknown> }) =>
+      api.scheduleSave(id, payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['robot-schedules'] });
+      void queryClient.invalidateQueries({ queryKey: ['robot-schedule'] });
+    },
+  });
   const schedulerMut = useMutation({
     mutationFn: ({ action, id }: { action: 'create' | 'delete'; id?: string }) =>
       action === 'create'
@@ -195,7 +264,9 @@ export function Robots() {
       reaction: 'IMMEDIATE', smoothing_pct: 5, on_insufficient: 'PAUSE',
       min_lots: 1, max_lots: Number(robot.max_qty ?? 100),
       sl_pct: 0, tp_pct: 0, trailing_pct: 0, close_time: '',
-      params: robot.params ?? {},
+      // Новые поля spec (например, лимиты фонда) должны появиться и у старых роботов.
+      params: { ...((specs.data ?? []).find((s) => s.id === robot.spec_id)?.defaults ?? {}),
+                ...(robot.params ?? {}) },
     });
     setEditingId(id);
     setEditingSource(robot.source_config || '');
@@ -252,6 +323,14 @@ export function Robots() {
 
   if (robots.isLoading) return <Loading />;
   if (robots.error) return <ErrorBox error={robots.error} />;
+
+  // Подвкладка появляется только после включения галки у конкретного робота.
+  const draftSet = (key: string, value: unknown) =>
+    setScheduleDraft((current) => ({ ...current, [key]: value }));
+
+  const shownTabs = scheduleFor
+    ? [...tabs.slice(0, 4), { id: 'robot-schedule', label: 'Расписание робота' }, ...tabs.slice(4)]
+    : tabs;
 
   const runtimeById = new Map<string, RuntimeState>(
     (runtime.data ?? []).map((item) => [item.instance_id, item]));
@@ -315,6 +394,18 @@ export function Robots() {
             Закрыть фонд
           </button>
         </>}
+        <label className="flex items-center gap-1 text-[11px]" title="Включить своё расписание робота">
+          <input type="checkbox" checked={Boolean(schedules.data?.[robot.id]?.enabled)}
+            onChange={(e) => {
+              const enabled = e.target.checked;
+              void (async () => {
+                const current = await api.schedule(robot.id);
+                await scheduleSave.mutateAsync({ id: robot.id, payload: { ...current, enabled } });
+                if (enabled) { setScheduleFor(robot.id); setTab('robot-schedule'); }
+                else if (scheduleFor === robot.id) setScheduleFor(null);
+              })();
+            }} /> Расписание
+        </label>
         <button className="btn" onClick={() => void startEdit(robot.id)}>Настроить</button>
         {(robot.status === 'draft' || robot.status === 'archived') && <button className="btn-danger"
           onClick={() => { if (window.confirm(`Удалить ${robot.id} из базы? Журнал сделок не трогается.`)) remove.mutate(robot.id); }}>
@@ -354,7 +445,7 @@ export function Robots() {
         <span className="text-muted">Результат: </span>{notice}
         <button className="btn ml-2" onClick={() => setNotice('')}>Закрыть</button>
       </div>}
-      <Tabs tabs={tabs} value={tab} onChange={setTab}>
+      <Tabs tabs={shownTabs} value={tab} onChange={setTab}>
         <TabPanel value="mine">
           <Card title="Роботы" action={
             <input className="input w-56" placeholder="Поиск по имени" value={filter}
@@ -516,6 +607,94 @@ export function Robots() {
           </div>
         </TabPanel>
 
+        <TabPanel value="robot-schedule">
+          <Card title={scheduleFor ? `Расписание робота ${scheduleFor}` : 'Расписание робота'}>
+            {!scheduleFor ? <div className="empty">Включите галку «Расписание» у робота в таблице</div> : (
+              <div className="grid gap-3 md:grid-cols-3">
+                <label className="text-xs">Робот
+                  <select className="input mt-1" value={scheduleFor}
+                    onChange={(e) => setScheduleFor(e.target.value)}>
+                    {(robots.data ?? []).map((robot) => (
+                      <option key={robot.id} value={robot.id}>{robot.note || robot.id}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-xs">Включено
+                  <input type="checkbox" className="mt-1 block"
+                    checked={Boolean(scheduleDraft.enabled)}
+                    onChange={(e) => draftSet('enabled', e.target.checked)} />
+                </label>
+                <label className="text-xs">Времена, HH:MM через запятую
+                  <input className="input mt-1" placeholder="13:50, 18:45"
+                    value={Array.isArray(scheduleDraft.times)
+                      ? scheduleDraft.times.join(', ') : String(scheduleDraft.times ?? '')}
+                    onChange={(e) => draftSet('times', e.target.value)} />
+                </label>
+                <div className="md:col-span-2">
+                  <div className="text-xs">Дни недели</div>
+                  <div className="mt-1 flex flex-wrap gap-3">
+                    {WEEKDAYS.map((label, index) => {
+                      const days: number[] = Array.isArray(scheduleDraft.weekdays)
+                        ? scheduleDraft.weekdays as number[] : [];
+                      return <label key={label} className="flex items-center gap-1 text-xs">
+                        <input type="checkbox" checked={days.includes(index)}
+                          onChange={(e) => draftSet('weekdays',
+                            e.target.checked ? [...days, index].sort((a, b) => a - b)
+                              : days.filter((d) => d !== index))} />
+                        {label}
+                      </label>;
+                    })}
+                  </div>
+                </div>
+                <label className="text-xs">Интервал, минут
+                  <input className="input mt-1" type="number"
+                    value={String(scheduleDraft.interval_min ?? '')}
+                    onChange={(e) => draftSet('interval_min', e.target.value)} />
+                </label>
+                <label className="text-xs">Окно: с часа
+                  <input className="input mt-1" type="number"
+                    value={String(scheduleDraft.hours_from ?? '')}
+                    onChange={(e) => draftSet('hours_from', e.target.value)} />
+                </label>
+                <label className="text-xs">Окно: до часа
+                  <input className="input mt-1" type="number"
+                    value={String(scheduleDraft.hours_to ?? '')}
+                    onChange={(e) => draftSet('hours_to', e.target.value)} />
+                </label>
+                <label className="text-xs">Таймаут, секунд
+                  <input className="input mt-1" type="number"
+                    value={String(scheduleDraft.timeout ?? 1800)}
+                    onChange={(e) => draftSet('timeout', e.target.value)} />
+                </label>
+                <label className="text-xs md:col-span-2">Команда задания
+                  <input className="input mt-1"
+                    value={String(scheduleDraft.command ?? '')}
+                    onChange={(e) => draftSet('command', e.target.value)} />
+                </label>
+                <label className="text-xs">Описание
+                  <input className="input mt-1"
+                    value={String(scheduleDraft.note ?? '')}
+                    onChange={(e) => draftSet('note', e.target.value)} />
+                </label>
+                <label className="flex items-end gap-1 pb-2 text-xs">
+                  <input type="checkbox" checked={Boolean(scheduleDraft.stop_aware)}
+                    onChange={(e) => draftSet('stop_aware', e.target.checked)} />
+                  Учитывать STOP
+                </label>
+                <div className="md:col-span-3 flex gap-2">
+                  <button className="btn-primary"
+                    onClick={() => scheduleSave.mutate({ id: scheduleFor, payload: scheduleDraft })}>
+                    Сохранить расписание
+                  </button>
+                  <button className="btn" onClick={() => { setScheduleFor(null); setTab('mine'); }}>
+                    Закрыть
+                  </button>
+                </div>
+              </div>
+            )}
+          </Card>
+        </TabPanel>
+
         <TabPanel value="templates">
           <div className="grid gap-3 md:grid-cols-2">
             {(specs.data ?? []).map((spec) => (
@@ -553,8 +732,14 @@ export function Robots() {
                   <div className="mt-2 grid gap-3 md:grid-cols-3">
                     {Object.entries(currentSpec.schema).map(([key, kind]) => (
                       <label key={key} className="text-xs">
-                        {key.replace(/_/g, ' ')}
-                        {kind === 'bool' ? (
+                        {paramLabel(key)}
+                        {key === 'regime' ? (
+                          <select className="input mt-1" {...form.register(`params.${key}` as const)}>
+                            {REGIME_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
+                          </select>
+                        ) : kind === 'bool' ? (
                           <input type="checkbox" className="mt-1 block"
                             {...form.register(`params.${key}` as const)} />
                         ) : (
@@ -568,6 +753,13 @@ export function Robots() {
                       </label>
                     ))}
                   </div>
+                  {specId === 'money_market' && (
+                    <p className="mt-3 text-[11px] text-warn">
+                      Лимиты фонда задаются здесь — «Лимит паёв на заявку» и «Лимит номинала,
+                      доля капитала». Они действуют вместо лимитов счёта, которые настроены
+                      под фьючерсные контракты.
+                    </p>
+                  )}
                 </div>
               )}
               <label className="text-xs">Инструмент

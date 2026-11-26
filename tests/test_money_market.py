@@ -146,5 +146,29 @@ class TestSeries(unittest.TestCase):
             self.assertAlmostEqual(rate(D3), 0.120)
 
 
+
+class TestMmLimits(unittest.TestCase):
+    """Лимиты фонда задаёт пользователь в карточке робота, а не счёт (ADR 26.11)."""
+
+    def test_limits_come_from_robot_params(self):
+        from algo.broker.position_ops import mm_limits
+
+        ctx = {"capital": 50_000.0,
+               "acc": {"max_qty": 100, "max_exposure": 0.5},
+               "params": {"max_qty": 3043, "max_exposure": 0.9, "max_units": 100000}}
+        limits = mm_limits(ctx)
+        self.assertEqual(limits.max_qty, 3043)
+        self.assertAlmostEqual(limits.max_notional, 45_000.0)
+
+    def test_fallback_to_max_units_and_full_capital(self):
+        from algo.broker.position_ops import mm_limits
+
+        ctx = {"capital": 50_000.0, "acc": {},
+               "params": {"max_units": 7000}}
+        limits = mm_limits(ctx)
+        self.assertEqual(limits.max_qty, 7000)
+        self.assertAlmostEqual(limits.max_notional, 50_000.0)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -79,6 +79,10 @@ def _build() -> dict[str, RobotSpec]:
         "reserve_abs": 20000.0,
         "min_trade": 5000.0,
         "max_units": 100000,
+        # Лимиты фонда задаёт пользователь в карточке робота (не счёта):
+        # паи считаются штуками, а не фьючерсными контрактами (ADR 26.11).
+        "max_qty": 100000,
+        "max_exposure": 1.0,
         "pricing": "marketable",
     }
     specs["money_market"] = RobotSpec(

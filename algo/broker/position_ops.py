@@ -65,15 +65,32 @@ def _context(store: Any, iid: str) -> dict[str, Any]:
             "capital": equity}
 
 
-def _gateway(ctx: dict[str, Any]) -> OrderGateway:
+def _gateway(ctx: dict[str, Any], limits=None) -> OrderGateway:
     acc = ctx["acc"]
     return OrderGateway(
         ctx["broker"],
-        limits=battle_limits(ctx["capital"],
-                             max_exposure=float(acc.get("max_exposure") or 1.0),
-                             max_qty=int(acc.get("max_qty") or 100)).as_limits(),
+        limits=limits or battle_limits(ctx["capital"],
+                                       max_exposure=float(acc.get("max_exposure") or 1.0),
+                                       max_qty=int(acc.get("max_qty") or 100)).as_limits(),
         journal=LIVE, lock=ROOT / "results" / "live.lock",
     )
+
+
+def mm_limits(ctx: dict[str, Any]):
+    """Паи фонда считаются штуками, а не фьючерсными контрактами счёта.
+
+    Лимиты счёта (`max_qty=100`, `max_exposure=0.5`) калиброваны под CNY
+    (~12 000 ₽ за контракт). Пай стоит ~14 ₽, поэтому парковка свободного кэша
+    упиралась в эти лимиты. Плеча нет: покупаем только на свободные деньги,
+    потолок — `max_units` из параметров робота (ADR 26.11).
+    """
+    p = ctx["params"]
+    # Значения задаются пользователем в карточке робота; по умолчанию берём
+    # max_units и полный капитал (паи без плеча).
+    max_qty = int(p.get("max_qty") or p.get("max_units") or 100000)
+    max_exposure = float(p.get("max_exposure") or 1.0)
+    return battle_limits(ctx["capital"], max_exposure=max_exposure,
+                         max_qty=max_qty).as_limits()
 
 
 def _quote(broker: Any, symbol: str, tick: float):
@@ -101,7 +118,8 @@ def available_cash(broker: Any, account: str) -> float:
 
 
 def _send_close(ctx: dict[str, Any], symbol: str, qty: int,
-                *, dry_run: bool, note: str) -> dict[str, Any]:
+                *, dry_run: bool, note: str, limits=None,
+                multiplier: float | None = None) -> dict[str, Any]:
     if STOP_REAL.exists():
         raise OpError("STOP_REAL установлен")
     broker, acc_id = ctx["broker"], ctx["acc_id"]
@@ -116,11 +134,13 @@ def _send_close(ctx: dict[str, Any], symbol: str, qty: int,
         client_id=decision_client_id("close:" + ctx["inst"]["id"],
                                      dt.date.today().isoformat(), side, now, abs(qty)),
         config="close:" + ctx["inst"]["id"], symbol=symbol, side=side,
-        qty=abs(qty), price=price, multiplier=inst.mult, min_step=tick,
+        qty=abs(qty), price=price,
+        multiplier=inst.mult if multiplier is None else multiplier,
+        min_step=tick,
         order_type=order_type, account=acc_id, pricing="marketable",
     )
-    result = _gateway(ctx).submit(order, account=acc_id, stop=STOP_REAL,
-                                 dry_run=dry_run)
+    result = _gateway(ctx, limits).submit(order, account=acc_id, stop=STOP_REAL,
+                                          dry_run=dry_run)
     if result.sent:
         ctx["store"].set_runtime(ctx["inst"]["id"],
                                  {"symbol": symbol, "position": 0,
@@ -168,7 +188,8 @@ def mm_rebalance(store: Any, iid: str, *, dry_run: bool = True,
         if fund == 0:
             return {"ok": True, "closed": 0, "reason": "нечего закрывать",
                     "symbol": symbol}
-        return _send_close(ctx, symbol, int(fund), dry_run=dry_run, note="фонд")
+        return _send_close(ctx, symbol, int(fund), dry_run=dry_run, note="фонд",
+                           limits=mm_limits(ctx), multiplier=1.0)
 
     quote = _quote(ctx["broker"], symbol, 0.0001)
     mid = (quote.ask + quote.bid) / 2
@@ -195,8 +216,8 @@ def mm_rebalance(store: Any, iid: str, *, dry_run: bool = True,
         qty=volume, price=quote.ask, multiplier=1.0, min_step=0.0001,
         order_type="limit", account=ctx["acc_id"], pricing="marketable",
     )
-    result = _gateway(ctx).submit(order, account=ctx["acc_id"], stop=STOP_REAL,
-                                 dry_run=dry_run)
+    result = _gateway(ctx, mm_limits(ctx)).submit(order, account=ctx["acc_id"],
+                                                  stop=STOP_REAL, dry_run=dry_run)
     return {"ok": result.status in ("sent", "planned"), "status": result.status,
             "reason": result.reason, "symbol": symbol, "qty": volume,
             "side": "buy", "price": quote.ask, "free_cash": free,

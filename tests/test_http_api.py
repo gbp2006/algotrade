@@ -94,6 +94,21 @@ class TestHTTPApi(unittest.TestCase):
                               {"kind": "unknown", "enabled": True})
         self.assertEqual(status, 400)
 
+    def test_robot_schedule_endpoints(self):
+        self.store.create_instance({"id": "sched-1", "spec_id": "prostushka",
+                                    "mode": "paper", "params": {"entry": "13:50"}})
+        status, data = request(web_app.app, "GET", "/api/instances/sched-1/schedule")
+        self.assertEqual(status, 200)
+        self.assertEqual(data["times"], ["13:50"])
+        self.assertFalse(data["enabled"])
+        status, saved = request(web_app.app, "POST", "/api/instances/sched-1/schedule",
+                                {**data, "enabled": True})
+        self.assertEqual(status, 200)
+        self.assertTrue(saved["enabled"])
+        status, all_schedules = request(web_app.app, "GET", "/api/schedules")
+        self.assertEqual(status, 200)
+        self.assertTrue(all_schedules["sched-1"]["enabled"])
+
     def test_accounts_analytics_shape(self):
         status, data = request(web_app.app, "GET", "/api/accounts/analytics")
         self.assertEqual(status, 200)

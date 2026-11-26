@@ -136,6 +136,14 @@ export const api = {
   schedulerDeleteJob: (id: string) =>
     del<{ deleted: boolean }>(`/api/scheduler/jobs/${encodeURIComponent(id)}`),
   schedulerRuns: () => get<Record<string, unknown>[]>('/api/scheduler/runs'),
+  schedules: () => get<Record<string, {
+    enabled: boolean; times: string[]; weekdays: number[];
+  }>>('/api/schedules'),
+  schedule: (id: string) => get<Record<string, unknown>>(
+    `/api/instances/${encodeURIComponent(id)}/schedule`),
+  scheduleSave: (id: string, payload: Record<string, unknown>) =>
+    post<Record<string, unknown>>(
+      `/api/instances/${encodeURIComponent(id)}/schedule`, payload),
 
   // Брокеры и ключи.
   brokers: () => get<Record<string, unknown>[]>('/api/brokers'),

@@ -20,7 +20,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 
 from algo import (backtest_preview, instruments_catalog as catalog,
-                  live_control, robot_library as lib, scheduler,
+                  live_control, robot_library as lib, robot_schedule, scheduler,
                   strategy_descriptions as sd, trade_journal as tj)
 from algo.broker import position_ops as pos, registry
 from algo.broker.finam import FinamBroker
@@ -245,6 +245,33 @@ def action_view(store: RobotStore, iid: str, action: str,
         return store.set_status(iid, status, (payload or {}).get("reason", ""))
     except StoreError as exc:
         _fail(exc)
+
+
+# ---------- расписание робота (галка в карточке + отдельная вкладка) ----------
+# Роуты объявлены ДО общего /instances/{iid}/{action}, иначе он перехватит
+# action="schedule" и вернёт 404.
+@router.get("/schedules")
+def schedules_all(store: RobotStore = Depends(get_store)):
+    return robot_schedule.all_schedules(store)
+
+
+@router.get("/instances/{iid}/schedule")
+def schedule_get(iid: str, store: RobotStore = Depends(get_store)):
+    inst = store.get_instance(iid)
+    if inst is None:
+        raise HTTPException(404, f"нет робота {iid}")
+    return robot_schedule.read_schedule(store, inst)
+
+
+@router.post("/instances/{iid}/schedule")
+def schedule_save(iid: str, payload: dict, store: RobotStore = Depends(get_store)):
+    inst = store.get_instance(iid)
+    if inst is None:
+        raise HTTPException(404, f"нет робота {iid}")
+    try:
+        return robot_schedule.save_schedule(store, inst, payload)
+    except (ValueError, StoreError) as exc:
+        raise HTTPException(400, str(exc))
 
 
 @router.post("/instances/{iid}/{action}")
