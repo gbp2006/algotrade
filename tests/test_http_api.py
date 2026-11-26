@@ -13,6 +13,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from algo import arm_state  # noqa: E402
 from algo.robot_store import RobotStore  # noqa: E402
 from web import app as web_app
 from web import instances_api as api
@@ -67,6 +68,7 @@ class TestHTTPApi(unittest.TestCase):
             mock.patch.object(api, "STOP", d / "STOP"),
             mock.patch.object(api, "STOP_REAL", d / "STOP_REAL"),
             mock.patch.object(api, "ARM_STATE", d / "arm_state.json"),
+            mock.patch.object(arm_state, "ARM_STATE", d / "arm_state.json"),
             mock.patch.object(web_app, "ALERTS", d / "alerts_seen.json"),
             mock.patch.object(web_app, "HEALTH", d / "health.json"),
         ]

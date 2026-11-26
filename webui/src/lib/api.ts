@@ -48,6 +48,8 @@ export const api = {
   robot: (id: string) => get<Robot>(`/api/instances/${encodeURIComponent(id)}`),
   instanceAction: (id: string, action: string) =>
     post<Record<string, unknown>>(`/api/instances/${encodeURIComponent(id)}/${action}`, {}),
+  tradeControl: (id: string, start: boolean) =>
+    post<Record<string, unknown>>(`/api/instances/${encodeURIComponent(id)}/trade`, { start }),
   updateInstance: (id: string, payload: Record<string, unknown>) =>
     patchRequest<Robot>(`/api/instances/${encodeURIComponent(id)}`, payload),
   instanceHistory: (id: string) =>

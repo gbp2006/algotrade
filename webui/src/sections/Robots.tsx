@@ -61,6 +61,7 @@ const PARAM_LABELS: Record<string, string> = {
   max_units: 'Максимум паёв в портфеле',
   max_qty: 'Лимит паёв на заявку, штук',
   max_exposure: 'Лимит номинала, доля капитала',
+  max_quote_age_sec: 'Максимальный возраст котировки, сек',
   pricing: 'Режим цены',
   ma_window: 'Окно скользящей средней',
   entry: 'Время входа, МСК',
@@ -325,6 +326,16 @@ export function Robots() {
       setTab('mine');
     },
   });
+  const trade = useMutation({
+    mutationFn: ({ id, start }: { id: string; start: boolean }) =>
+      api.tradeControl(id, start),
+    onSuccess: (data) => {
+      setNotice(data.armed_mm ? 'Робот запущен: расписание включено, реальные заявки разрешены'
+        : 'Робот остановлен: расписание выключено');
+      refreshAll();
+    },
+    onError: (error) => setNotice(`Ошибка управления: ${error.message}`),
+  });
   const remove = useMutation({
     mutationFn: (id: string) => api.removeInstance(id),
     onSuccess: () => refreshAll(),
@@ -390,9 +401,19 @@ export function Robots() {
       const act = (name: string) => action.mutate({ id: robot.id, name });
       return (
       <div className="flex max-w-[560px] flex-wrap gap-1">
-        {robot.status !== 'active' && <button className="btn" onClick={() => act('start')}>Старт</button>}
-        {robot.status === 'active' && <button className="btn" onClick={() => act('pause')}>Пауза</button>}
-        <button className="btn" onClick={() => act('stop')}>Стоп</button>
+        {robot.status !== 'active' ? (
+          <button className="btn-primary" onClick={() => {
+            if (window.confirm(robot.mode === 'live'
+              ? 'Запустить робота по его расписанию? Для боевого робота это разрешит реальные заявки.'
+              : 'Запустить робота по его расписанию?'))
+              trade.mutate({ id: robot.id, start: true });
+          }}>Старт · торговать</button>
+        ) : (
+          <button className="btn-danger" onClick={() => {
+            if (window.confirm('Остановить робота? Расписание выключится, реальные заявки будут запрещены.'))
+              trade.mutate({ id: robot.id, start: false });
+          }}>Стоп · остановить</button>
+        )}
         <button className="btn" onClick={() => act('archive')}>В архив</button>
         {robot.mode === 'paper' && <button className="btn"
           onClick={() => { if (window.confirm(`Перевести ${robot.id} в боевой режим?`)) act('promote'); }}>

@@ -61,8 +61,12 @@ def default_schedule(instance: dict[str, Any]) -> dict[str, Any]:
     if spec == "channel_break":
         command = f"./run.sh paper-live --channel --config {iid}"
         interval, hours_from, hours_to = 10, 9, 23
+    elif spec == "money_market":
+        # Специальный робот: ребаланс фонда через API панели (там же ARM/лимиты).
+        command = ".venv/bin/python scripts/36_mm_rebalance.py --instance " + iid
+        interval, hours_from, hours_to = None, None, None
     elif mode == "live":
-        command = f"./run.sh live-run --day {{date}}"
+        command = "./run.sh live-run"
         interval, hours_from, hours_to = None, None, None
     else:
         command = f"./run.sh paper-live --config {iid}"

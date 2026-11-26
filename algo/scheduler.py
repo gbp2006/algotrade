@@ -93,6 +93,15 @@ def shadow() -> bool:
     return os.environ.get("ALGO_SCHEDULER_SHADOW", "1") != "0"
 
 
+def robots_only() -> bool:
+    """Включить только задания роботов (owner `inst:`), системные оставить в shadow."""
+    return os.environ.get("ALGO_SCHEDULER_ONLY_ROBOTS", "0") == "1"
+
+
+def is_real(job: Job) -> bool:
+    return not shadow() and (not robots_only() or str(job.id).startswith("inst:"))
+
+
 def _slots_for(job: Job, now: datetime,
                lookback=CATCHUP_MINUTES) -> list[datetime]:
     """Все слоты задания в окне [now-lookback, now], включая текущий."""
@@ -281,6 +290,7 @@ def run_once(now: datetime | None = None, execute: bool | None = None,
     st = store or _store()
     real = (not shadow()) if execute is None else execute
     state = json.loads(STATE.read_text(encoding="utf-8")) if STATE.exists() else {}
+    real_job = lambda job: real and (not robots_only() or str(job.id).startswith("inst:"))
     jobs = load_jobs(st)
     fired: list[str] = []
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
@@ -292,10 +302,11 @@ def run_once(now: datetime | None = None, execute: bool | None = None,
                     continue  # уже взято или выполнено
                 fired.append(job.id)
                 state[job.id] = stamp
-                if not real:
+                if not real_job(job):
                     _log(f"SHADOW {job.id}: {job.command} (slot {stamp})")
                     st.finish_run(run_id, "shadow", "shadow-режим")
                     continue
+                _log(f"RUN {job.id}: {job.command} (slot {stamp})")
                 catchup = slot.date() != now.date() or stamp != now.strftime("%Y-%m-%d %H:%M")
                 if catchup and not job.catchup_template:
                     _log(f"SKIP {job.id}: пропущенный слот {stamp} без реплея")

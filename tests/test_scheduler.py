@@ -37,6 +37,14 @@ class TestScheduler(unittest.TestCase):
         with mock.patch.dict("os.environ", {"ALGO_SCHEDULER_SHADOW": "0"}):
             self.assertFalse(sch.shadow())
 
+    def test_only_robot_jobs_execute(self):
+        robot_job = sch.Job(id="inst:x:schedule", command="echo", owner="x")
+        system_job = sch.Job(id="daily", command="echo", owner="system")
+        env = {"ALGO_SCHEDULER_SHADOW": "0", "ALGO_SCHEDULER_ONLY_ROBOTS": "1"}
+        with mock.patch.dict("os.environ", env, clear=True):
+            self.assertTrue(sch.is_real(robot_job))
+            self.assertFalse(sch.is_real(system_job))
+
     def test_run_once_shadow_no_subprocess(self):
         with tempfile.TemporaryDirectory() as tmp:
             state, log = Path(tmp) / "state.json", Path(tmp) / "scheduler.log"

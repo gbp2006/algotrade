@@ -19,9 +19,10 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from algo import (backtest_preview, instruments_catalog as catalog,
-                  live_control, robot_library as lib, robot_schedule, scheduler,
-                  strategy_descriptions as sd, trade_journal as tj)
+from algo import (arm_state, backtest_preview, instruments_catalog as catalog,
+                  live_control, robot_library as lib, robot_schedule,
+                  robot_trade, scheduler, strategy_descriptions as sd,
+                  trade_journal as tj)
 from algo.broker import position_ops as pos, registry
 from algo.broker.finam import FinamBroker
 from algo.broker.secrets import resolve_secret
@@ -37,25 +38,16 @@ SHADOW = ROOT / "results" / "shadow.json"
 ROLLOVER = ROOT / "results" / "rollover_run.json"
 STOP = ROOT / "results" / "STOP"
 STOP_REAL = ROOT / "results" / "STOP_REAL"
-ARM_STATE = ROOT / "results" / "arm_state.json"
-
-# Разрешение реальной отправки хранится в панели; env оставлен как fallback.
-ARM_ENV = {"mm": "ALGO_MM_ARMED", "close": "ALGO_CLOSE_ARMED"}
+ARM_STATE = arm_state.ARM_STATE  # совместимость для тестов и старых вызовов
+ARM_ENV = arm_state.ARM_ENV
 
 
 def arm_state_view() -> dict:
-    try:
-        saved = json.loads(ARM_STATE.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        saved = {}
-    return {
-        **{kind: bool(saved.get(kind)) for kind in ARM_ENV},
-        **{f"{kind}_env": os.environ.get(name) == "1" for kind, name in ARM_ENV.items()},
-    }
+    return arm_state.state()
 
 
 def arm_enabled(kind: str) -> bool:
-    return bool(arm_state_view().get(kind)) or arm_state_view().get(f"{kind}_env", False)
+    return arm_state.enabled(kind)
 
 
 router = APIRouter(prefix="/api", tags=["instances"])
@@ -245,6 +237,18 @@ def action_view(store: RobotStore, iid: str, action: str,
         return store.set_status(iid, status, (payload or {}).get("reason", ""))
     except StoreError as exc:
         _fail(exc)
+
+
+# ---------- простой старт/стоп торговли робота ----------
+@router.post("/instances/{iid}/trade")
+def robot_trade_control(iid: str, payload: dict,
+                        store: RobotStore = Depends(get_store)):
+    """Старт включает робота и его расписание; стоп выключает оба."""
+    try:
+        return (robot_trade.start(store, iid) if payload.get("start")
+                else robot_trade.stop(store, iid))
+    except (ValueError, StoreError) as exc:
+        raise HTTPException(400, str(exc))
 
 
 # ---------- расписание робота (галка в карточке + отдельная вкладка) ----------
@@ -715,11 +719,10 @@ def arm_state_set(payload: dict):
     kind = str(payload.get("kind", ""))
     if kind not in ARM_ENV:
         raise HTTPException(400, "kind: mm | close")
-    state = arm_state_view()
-    state[kind] = bool(payload.get("enabled"))
-    ARM_STATE.write_text(json.dumps({k: state[k] for k in ARM_ENV},
-                                    ensure_ascii=False), encoding="utf-8")
-    return arm_state_view()
+    try:
+        return arm_state.set_enabled(kind, bool(payload.get("enabled")))
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
 
 
 # ---------- планировщик ----------

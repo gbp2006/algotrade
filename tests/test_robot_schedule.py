@@ -35,7 +35,7 @@ class TestDefaults(unittest.TestCase):
         default = rs.default_schedule(FUND)
         self.assertEqual(default["times"], ["23:00", "10:05"])
         self.assertEqual(default["weekdays"], [0, 1, 2, 3, 4])
-        self.assertIn("live-run", default["command"])
+        self.assertIn("36_mm_rebalance.py", default["command"])
 
 
 class TestNormalize(unittest.TestCase):

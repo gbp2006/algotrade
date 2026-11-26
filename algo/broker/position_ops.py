@@ -93,11 +93,11 @@ def mm_limits(ctx: dict[str, Any]):
                          max_qty=max_qty).as_limits()
 
 
-def _quote(broker: Any, symbol: str, tick: float):
+def _quote(broker: Any, symbol: str, tick: float, max_age: float = MAX_QUOTE_AGE):
     quote = broker.quote(symbol)
     age = quote_age_sec(quote)
-    if age is None or age > MAX_QUOTE_AGE:
-        raise OpError("котировка устарела")
+    if age is None or age > max_age:
+        raise OpError(f"котировка устарела: возраст {age:.0f} с, лимит {max_age:.0f} с")
     return quote
 
 
@@ -191,7 +191,8 @@ def mm_rebalance(store: Any, iid: str, *, dry_run: bool = True,
         return _send_close(ctx, symbol, int(fund), dry_run=dry_run, note="фонд",
                            limits=mm_limits(ctx), multiplier=1.0)
 
-    quote = _quote(ctx["broker"], symbol, 0.0001)
+    quote = _quote(ctx["broker"], symbol, 0.0001,
+                   max_age=float(p.get("max_quote_age_sec") or MAX_QUOTE_AGE))
     mid = (quote.ask + quote.bid) / 2
     if mid <= 0:
         raise OpError("нет котировки фонда")

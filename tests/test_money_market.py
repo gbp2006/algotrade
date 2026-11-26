@@ -170,5 +170,22 @@ class TestMmLimits(unittest.TestCase):
         self.assertAlmostEqual(limits.max_notional, 50_000.0)
 
 
+class TestFundQuoteAge(unittest.TestCase):
+    """Паи котируются реже фьючерсов — лимит возраста настраивается роботом."""
+
+    def test_custom_age_allows_six_minute_quote(self):
+        from types import SimpleNamespace
+        from algo.broker import position_ops as pos
+        from algo.broker.position_ops import OpError
+
+        stamp = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=6)).isoformat()
+        broker = SimpleNamespace(quote=lambda symbol: SimpleNamespace(
+            timestamp=stamp, bid=14.211, ask=14.212, last=14.212))
+        with self.assertRaises(OpError):
+            pos._quote(broker, "FMMM@MISX", 0.0001)
+        quote = pos._quote(broker, "FMMM@MISX", 0.0001, max_age=3600)
+        self.assertEqual(quote.ask, 14.212)
+
+
 if __name__ == "__main__":
     unittest.main()
