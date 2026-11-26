@@ -38,6 +38,30 @@ class TestDefaults(unittest.TestCase):
         self.assertIn("36_mm_rebalance.py", default["command"])
 
 
+class TestFundSlotRegime(unittest.TestCase):
+    def test_morning_sells_evening_buys(self):
+        self.assertEqual(rs.regime_for_slot(FUND, "10:05"), "OnlyClose")
+        self.assertIsNone(rs.regime_for_slot(FUND, "23:00"))
+
+    def test_empty_position_needs_no_order(self):
+        # OnlyClose с fund == 0 возвращает «нечего закрывать» без заявки —
+        # проверяется в algo.broker.position_ops.mm_rebalance.
+        from algo.broker import position_ops as pos
+
+        class FakeBroker:
+            def account(self, account):
+                return {"cash": [], "positions": []}
+
+        ctx = {"broker": FakeBroker(), "acc_id": "2102993", "params": {},
+               "inst": {"id": "fund-1", "instrument": "CASH"},
+               "store": None, "capital": 50_000}
+        from unittest import mock
+        with mock.patch.object(pos, "_context", return_value=ctx):
+            result = pos.mm_rebalance(None, "fund-1", dry_run=True, regime="OnlyClose")
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["closed"], 0)
+
+
 class TestNormalize(unittest.TestCase):
     def test_comma_times_and_days(self):
         value = rs.normalize({"times": "10:05, 23:00, 10:05",

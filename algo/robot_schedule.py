@@ -63,7 +63,8 @@ def default_schedule(instance: dict[str, Any]) -> dict[str, Any]:
         interval, hours_from, hours_to = 10, 9, 23
     elif spec == "money_market":
         # Специальный робот: ребаланс фонда через API панели (там же ARM/лимиты).
-        command = ".venv/bin/python scripts/36_mm_rebalance.py --instance " + iid
+        command = (".venv/bin/python scripts/36_mm_rebalance.py --instance " + iid
+                   + " --slot-time {time}")
         interval, hours_from, hours_to = None, None, None
     elif mode == "live":
         command = "./run.sh live-run"
@@ -86,6 +87,18 @@ def default_schedule(instance: dict[str, Any]) -> dict[str, Any]:
         "command": command,
         "note": f"расписание робота {iid}",
     }
+
+
+def regime_for_slot(instance: dict[str, Any], slot_time: str) -> str | None:
+    """Утренний слот фонда — продажа паёв, вечерний — покупка.
+
+    В параметрах робота `time_buy` (вечер) и `time_sell` (утро). Слоты задаёт
+    пользователь; режим выбирается по совпадению времени слота с `time_sell`.
+    """
+    params = instance.get("params") or {}
+    if str(slot_time or "")[:5] == str(params.get("time_sell") or "")[:5]:
+        return "OnlyClose"
+    return None
 
 
 def normalize(payload: dict[str, Any]) -> dict[str, Any]:
