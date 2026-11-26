@@ -37,6 +37,13 @@ class TestScheduler(unittest.TestCase):
         with mock.patch.dict("os.environ", {"ALGO_SCHEDULER_SHADOW": "0"}):
             self.assertFalse(sch.shadow())
 
+    def test_command_placeholders(self):
+        slot = datetime(2026, 11, 27, 14, 0)
+        self.assertEqual(
+            sch.format_command("./run.sh live --day {date} # {time}", slot),
+            "./run.sh live --day 2026-11-27 # 14:00")
+        self.assertEqual(sch.format_command("echo {unknown}", slot), "echo {unknown}")
+
     def test_only_robot_jobs_execute(self):
         robot_job = sch.Job(id="inst:x:schedule", command="echo", owner="x")
         system_job = sch.Job(id="daily", command="echo", owner="system")

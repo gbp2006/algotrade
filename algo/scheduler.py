@@ -253,6 +253,15 @@ def _log(line: str) -> None:
         f.write(f"{datetime.now(MSK):%Y-%m-%d %H:%M:%S} {line}\n")
 
 
+def format_command(command: str, slot: datetime) -> str:
+    """Подставить дату/время слота в команду задания (если есть плейсхолдеры)."""
+    try:
+        return command.format(date=slot.date().isoformat(),
+                              time=slot.strftime("%H:%M"))
+    except (KeyError, IndexError, ValueError):
+        return command
+
+
 def _execute(job: Job, slot: datetime, run_id: int, st: RobotStore) -> None:
     if job.stop_aware and (STOP.exists() or STOP_REAL.exists()):
         _log(f"SKIP {job.id}: STOP")
@@ -260,8 +269,10 @@ def _execute(job: Job, slot: datetime, run_id: int, st: RobotStore) -> None:
         return
     command = job.command
     if slot.date() != datetime.now(MSK).date() and job.catchup_template:
-        command = job.catchup_template.format(
-            date=slot.date().isoformat(), time=slot.strftime("%H:%M"))
+        command = job.catchup_template
+    # Плейсхолдеры даты/времени работают и в обычном задании, а не только в
+    # catchup: пользователь задаёт `--day {date}` в расписании робота.
+    command = format_command(command, slot)
     last = ""
     for attempt, delay in enumerate(RETRIES, start=1):
         if delay:
