@@ -9,7 +9,7 @@ import { money, time } from '../lib/format';
 import type { CashFlowPreview, Robot, RuntimeState } from '../lib/types';
 import { useUi } from '../store/ui';
 import {
-  Badge, Card, ConfirmDialog, DataTable, ErrorBox, Loading,
+  Badge, Card, DataTable, ErrorBox, Loading,
   TabPanel, Tabs,
 } from '../components/ui';
 
@@ -42,6 +42,9 @@ interface RobotRow extends Robot {
 
 const tabs = [
   { id: 'mine', label: 'Мои роботы' },
+  { id: 'live', label: 'Боевой контур' },
+  { id: 'instruments', label: 'Инструменты' },
+  { id: 'schedule', label: 'Расписание' },
   { id: 'templates', label: 'Алгоритмы' },
   { id: 'wizard', label: 'Мастер робота' },
   { id: 'history', label: 'Дневник изменений' },
@@ -50,17 +53,19 @@ const tabs = [
 export function Robots() {
   const tab = useUi((s) => s.tab) || 'mine';
   const setTab = useUi((s) => s.setTab);
+  const mode = useUi((s) => s.mode);
   const queryClient = useQueryClient();
-  const [selected, setSelected] = useState<string | null>(null);
-  const [pendingAccount, setPendingAccount] = useState<string | null>(null);
   const [filter, setFilter] = useState('');
+  const [notice, setNotice] = useState('');
   const [calcAmount, setCalcAmount] = useState(100_000);
   const [calcKind, setCalcKind] = useState('DEPOSIT');
   const [historyId, setHistoryId] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingSource, setEditingSource] = useState('');
+  const [instSearch, setInstSearch] = useState('');
+  const [job, setJob] = useState({ id: '', command: '', times: '', note: '' });
 
-  const robots = useQuery({ queryKey: keys.robots, queryFn: api.robots, refetchInterval: 30_000 });
+  const robots = useQuery({ queryKey: keys.robots, queryFn: () => api.robots(), refetchInterval: 30_000 });
   const runtime = useQuery({ queryKey: keys.runtime, queryFn: api.runtime, refetchInterval: 30_000 });
   const specs = useQuery({ queryKey: keys.specs, queryFn: api.specs });
   const accounts = useQuery({ queryKey: keys.accounts, queryFn: api.accounts });
@@ -68,6 +73,94 @@ export function Robots() {
     queryKey: ['robot-history', historyId],
     queryFn: () => api.instanceHistory(historyId),
     enabled: Boolean(historyId),
+  });
+  const liveState = useQuery({
+    queryKey: ['live-state'], queryFn: api.liveState, refetchInterval: 15_000,
+    enabled: tab === 'live',
+  });
+  const liveOrders = useQuery({
+    queryKey: ['live-orders'], queryFn: api.liveOrders, refetchInterval: 15_000,
+    enabled: tab === 'live',
+  });
+  const tradingState = useQuery({
+    queryKey: ['trading-status'], queryFn: api.tradingStatus, refetchInterval: 15_000,
+    enabled: tab === 'live',
+  });
+  const armState = useQuery({
+    queryKey: ['arm-state'], queryFn: api.armState, refetchInterval: 15_000,
+    enabled: tab === 'live',
+  });
+  const armSet = useMutation({
+    mutationFn: ({ kind, enabled }: { kind: 'mm' | 'close'; enabled: boolean }) =>
+      api.armSet(kind, enabled),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['arm-state'] }),
+  });
+  const favs = useQuery({
+    queryKey: ['instrument-favorites'], queryFn: api.instrumentFavorites,
+    enabled: tab === 'instruments',
+  });
+  const instStats = useQuery({
+    queryKey: ['instrument-stats'], queryFn: api.instrumentStats,
+    enabled: tab === 'instruments',
+  });
+  const found = useQuery({
+    queryKey: ['instrument-search', instSearch],
+    queryFn: () => api.instruments(instSearch),
+    enabled: tab === 'instruments' && instSearch.trim().length > 0,
+  });
+  const jobs = useQuery({
+    queryKey: ['scheduler-jobs'], queryFn: api.schedulerJobs, enabled: tab === 'schedule',
+  });
+  const jobRuns = useQuery({
+    queryKey: ['scheduler-runs'], queryFn: api.schedulerRuns, enabled: tab === 'schedule',
+  });
+
+  const refreshAll = () => void queryClient.invalidateQueries();
+  const mm = useMutation({
+    mutationFn: ({ id, action }: { id: string; action: 'rebalance' | 'close' }) =>
+      action === 'rebalance' ? api.mmRebalance(id) : api.mmClose(id),
+    onSuccess: (data) => { setNotice(JSON.stringify(data)); refreshAll(); },
+  });
+  const liveRun = useMutation({
+    mutationFn: ({ arm, day }: { arm: boolean; day?: string }) => api.liveRun(arm, day),
+    onSuccess: (data) => { setNotice(data.stdout || 'прогон завершён'); refreshAll(); },
+  });
+  const flag = useMutation({
+    mutationFn: async ({ kind, value }: { kind: 'real' | 'paper'; value: 'set' | 'clear' }): Promise<Record<string, unknown>> =>
+      kind === 'real'
+        ? await api.stopReal(value === 'set' ? 'set' : 'clear')
+        : await api.stopPaper(),
+    onSuccess: () => refreshAll(),
+  });
+  const liveControl = useMutation({
+    mutationFn: (enabled: boolean) => api.liveControlSet(enabled),
+    onSuccess: () => refreshAll(),
+  });
+  const instrument = useMutation({
+    mutationFn: ({ symbol, action }: { symbol: string; action: 'fav' | 'params' | 'refresh' | 'liquid' }) => {
+      if (action === 'fav') return api.instrumentFavorite(symbol);
+      if (action === 'params') return api.instrumentParams(symbol);
+      if (action === 'liquid') return api.instrumentRefreshLiquid();
+      return api.instrumentRefresh();
+    },
+    onSuccess: (data) => {
+      setNotice(JSON.stringify(data).slice(0, 240));
+      void queryClient.invalidateQueries({ queryKey: ['instrument-favorites'] });
+      void queryClient.invalidateQueries({ queryKey: ['instrument-stats'] });
+    },
+  });
+  const schedulerMut = useMutation({
+    mutationFn: ({ action, id }: { action: 'create' | 'delete'; id?: string }) =>
+      action === 'create'
+        ? api.schedulerCreateJob({ id: job.id, command: job.command,
+            times: job.times.split(',').map((x) => x.trim()).filter(Boolean),
+            enabled: 1, note: job.note })
+        : api.schedulerDeleteJob(id ?? ''),
+    onSuccess: () => {
+      setJob({ id: '', command: '', times: '', note: '' });
+      void queryClient.invalidateQueries({ queryKey: ['scheduler-jobs'] });
+      void queryClient.invalidateQueries({ queryKey: ['scheduler-runs'] });
+    },
   });
 
   const form = useForm<RobotForm>({
@@ -147,14 +240,14 @@ export function Robots() {
       setTab('mine');
     },
   });
+  const remove = useMutation({
+    mutationFn: (id: string) => api.removeInstance(id),
+    onSuccess: () => refreshAll(),
+  });
   const switchAccount = useMutation({
     mutationFn: ({ id, account }: { id: string; account: string }) =>
       api.updateInstance(id, { account }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: keys.robots });
-      setPendingAccount(null);
-      setSelected(null);
-    },
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: keys.robots }),
   });
 
   if (robots.isLoading) return <Loading />;
@@ -163,12 +256,15 @@ export function Robots() {
   const runtimeById = new Map<string, RuntimeState>(
     (runtime.data ?? []).map((item) => [item.instance_id, item]));
   const rows: RobotRow[] = (robots.data ?? [])
+    .filter((robot) => mode === 'ALL' || robot.mode === (mode === 'LIVE' ? 'live' : 'paper'))
     .filter((robot) => robot.note.toLowerCase().includes(filter.toLowerCase()))
     .map((robot) => ({
       ...robot,
       position: runtimeById.get(robot.id)?.position ?? null,
       equity: runtimeById.get(robot.id)?.equity ?? null,
-    }));
+    }))
+    // Боевые роботы — наверху: их видно сразу при открытии раздела.
+    .sort((a, b) => (a.mode === b.mode ? 0 : a.mode === 'live' ? -1 : 1));
 
   const columns: ColumnDef<RobotRow, unknown>[] = [
     { header: 'Робот', cell: ({ row }) => <div><b>{row.original.note || row.original.id}</b>
@@ -177,19 +273,56 @@ export function Robots() {
         {row.original.mode === 'live' && row.original.source_config
           && ` · сигнал: ${row.original.source_config}`}
       </div></div> },
-    { header: 'Счёт', cell: ({ row }) => row.original.account || '—' },
+    { header: 'Счёт', cell: ({ row }) => (
+      <select className="input w-auto max-w-[150px] text-[11px]"
+        value={row.original.account ?? ''} title="Сменить счёт робота"
+        onChange={(e) => {
+          const next = e.target.value;
+          if (window.confirm(`Перевести робота ${row.original.id} на счёт ${next || 'без счёта'}?`)) {
+            switchAccount.mutate({ id: row.original.id, account: next });
+          }
+        }}>
+        <option value="">—</option>
+        {(accounts.data ?? []).map((acc) => (
+          <option key={String(acc.id)} value={String(acc.id)}>{String(acc.label ?? acc.id)}</option>
+        ))}
+      </select>
+    ) },
     { header: 'Режим', cell: ({ row }) => <Badge live={row.original.mode === 'live'} /> },
     { header: 'Статус', cell: ({ row }) => row.original.status },
     { header: 'Позиция', cell: ({ row }) => <span className="num">{row.original.position ?? 0}</span> },
     { header: 'Equity', cell: ({ row }) => <span className="num">{money(row.original.equity)} ₽</span> },
-    { header: 'Управление', cell: ({ row }) => (
-      <div className="flex gap-1">
-        <button className="btn" onClick={() => action.mutate({ id: row.original.id, name: 'start' })}>Старт</button>
-        <button className="btn" onClick={() => action.mutate({ id: row.original.id, name: 'pause' })}>Пауза</button>
-        <button className="btn" onClick={() => void startEdit(row.original.id)}>Настроить</button>
-        <button className="btn" onClick={() => setSelected(row.original.id)}>Счёт</button>
+    { header: 'Управление', cell: ({ row }) => {
+      const robot = row.original;
+      const act = (name: string) => action.mutate({ id: robot.id, name });
+      return (
+      <div className="flex max-w-[560px] flex-wrap gap-1">
+        {robot.status !== 'active' && <button className="btn" onClick={() => act('start')}>Старт</button>}
+        {robot.status === 'active' && <button className="btn" onClick={() => act('pause')}>Пауза</button>}
+        <button className="btn" onClick={() => act('stop')}>Стоп</button>
+        <button className="btn" onClick={() => act('archive')}>В архив</button>
+        {robot.mode === 'paper' && <button className="btn"
+          onClick={() => { if (window.confirm(`Перевести ${robot.id} в боевой режим?`)) act('promote'); }}>
+          В бой
+        </button>}
+        {robot.mode === 'live' && robot.status === 'active' && <button className="btn"
+          onClick={() => { if (window.confirm(`Закрыть позиции робота ${robot.id}? Отправка зависит от флага ALGO_CLOSE_ARMED.`)) act('close'); }}>
+          Закрыть позиции
+        </button>}
+        {robot.spec_id === 'money_market' && robot.status !== 'archived' && <>
+          <button className="btn" onClick={() => mm.mutate({ id: robot.id, action: 'rebalance' })}>Ребаланс фонда</button>
+          <button className="btn" onClick={() => { if (window.confirm(`Закрыть фонд у робота ${robot.id}?`)) mm.mutate({ id: robot.id, action: 'close' }); }}>
+            Закрыть фонд
+          </button>
+        </>}
+        <button className="btn" onClick={() => void startEdit(robot.id)}>Настроить</button>
+        {(robot.status === 'draft' || robot.status === 'archived') && <button className="btn-danger"
+          onClick={() => { if (window.confirm(`Удалить ${robot.id} из базы? Журнал сделок не трогается.`)) remove.mutate(robot.id); }}>
+          Удалить
+        </button>}
       </div>
-    ) },
+      );
+    } },
   ];
 
   const submit = form.handleSubmit((values) => {
@@ -217,6 +350,10 @@ export function Robots() {
 
   return (
     <div>
+      {notice && <div className="mb-3 rounded-lg border border-line bg-elevated p-3 text-xs">
+        <span className="text-muted">Результат: </span>{notice}
+        <button className="btn ml-2" onClick={() => setNotice('')}>Закрыть</button>
+      </div>}
       <Tabs tabs={tabs} value={tab} onChange={setTab}>
         <TabPanel value="mine">
           <Card title="Роботы" action={
@@ -227,6 +364,158 @@ export function Robots() {
             {create.error && <div className="mt-2"><ErrorBox error={create.error} /></div>}
           </Card>
         </TabPanel>
+
+        <TabPanel value="live">
+          <div className="grid gap-3 md:grid-cols-2">
+            <Card title="Ручной запуск боя">
+              <div className="flex flex-wrap gap-2">
+                <button className="btn" disabled={liveRun.isPending}
+                  onClick={() => liveRun.mutate({ arm: false })}>Проверить бой (dry-run)</button>
+                <button className="btn-danger" disabled={liveRun.isPending}
+                  onClick={() => {
+                    if (window.confirm('Отправить реальные заявки одним прогоном по решениям за сегодня?'))
+                      liveRun.mutate({ arm: true });
+                  }}>Пустить в бой (arm)</button>
+              </div>
+              <p className="mt-2 text-[11px] text-muted">
+                Репетиция пишет <code>planned</code>. Реальный прогон ставит флаг только в дочернем процессе.
+                Результат — в <code>results/live_run.json</code> и в журнале сверху.
+              </p>
+            </Card>
+            <Card title="Постоянная торговля">
+              <div className="text-xs">
+                таймер: {liveState.data?.live_trading_enabled ? 'включён' : 'выключен'};
+                счёт: {tradingState.data?.enabled ? 'разрешён' : 'запрещён'};
+                следующий прогон: {String(tradingState.data?.next_run ?? '—')}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button className="btn" onClick={() => liveControl.mutate(true)}>Включить таймер 14:00</button>
+                <button className="btn" onClick={() => liveControl.mutate(false)}>Выключить таймер</button>
+              </div>
+            </Card>
+            <Card title="STOP и флаги">
+              <div className="text-xs">
+                STOP_REAL (бой): {liveState.data?.stop_real ? 'УСТАНОВЛЕН' : 'снят'};
+                STOP (бумага): {liveState.data?.stop_paper ? 'УСТАНОВЛЕН' : 'снят'};
+                FINAM_ALLOW_TRADING: {String(liveState.data?.allow_trading ?? '—')}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button className="btn-danger" onClick={() => flag.mutate({ kind: 'real', value: 'set' })}>STOP боя</button>
+                <button className="btn" onClick={() => flag.mutate({ kind: 'real', value: 'clear' })}>Снять STOP боя</button>
+                <button className="btn" onClick={() => flag.mutate({ kind: 'paper', value: 'set' })}>STOP/старт бумаги</button>
+              </div>
+            </Card>
+            <Card title="Реальная отправка (панель)">
+              <div className="text-xs">
+                Фонд/закрытие: <b>{armState.data?.mm ? 'ARMED' : 'dry-run'}</b>
+                {' · '}Закрытие позиций: <b>{armState.data?.close ? 'ARMED' : 'dry-run'}</b>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button className="btn-danger" onClick={() => {
+                  if (window.confirm('Включить реальную отправку по фонду денежного рынка? Заявки уйдут брокеру.'))
+                    armSet.mutate({ kind: 'mm', enabled: true });
+                }}>ARM: фонд</button>
+                <button className="btn" onClick={() => armSet.mutate({ kind: 'mm', enabled: false })}>Dry-run: фонд</button>
+                <button className="btn-danger" onClick={() => {
+                  if (window.confirm('Включить реальное закрытие позиций? Заявки уйдут брокеру.'))
+                    armSet.mutate({ kind: 'close', enabled: true });
+                }}>ARM: закрытие</button>
+                <button className="btn" onClick={() => armSet.mutate({ kind: 'close', enabled: false })}>Dry-run: закрытие</button>
+              </div>
+              <p className="mt-2 text-[11px] text-muted">По умолчанию всё в dry-run. Флаги живут в `results/arm_state.json`, переменные окружения остались fallback.</p>
+            </Card>
+            <Card title="Последние заявки брокера">
+              <DataTable
+                data={(Array.isArray(liveOrders.data) ? liveOrders.data : []) as Record<string, unknown>[]}
+                columns={[
+                  { header: 'Время', cell: ({ row }) => String(row.original.ts ?? '') },
+                  { header: 'Робот', cell: ({ row }) => String(row.original.client_id ?? '') },
+                  { header: 'Сторона', cell: ({ row }) => String(row.original.side ?? '') },
+                  { header: 'Кол-во', cell: ({ row }) => String(row.original.qty ?? '') },
+                  { header: 'Статус', cell: ({ row }) => String(row.original.status ?? '') },
+                  { header: 'Причина', cell: ({ row }) => String(row.original.reason ?? '') },
+                ]}
+                empty="Заявок пока нет" />
+            </Card>
+          </div>
+        </TabPanel>
+
+        <TabPanel value="instruments">
+          <Card title="Справочник инструментов" action={
+            <div className="flex gap-2">
+              <input className="input w-64" placeholder="Поиск: CNYRUBF, Si, FMMM…"
+                value={instSearch} onChange={(e) => setInstSearch(e.target.value)} />
+              <button className="btn" onClick={() => instrument.mutate({ symbol: '', action: 'refresh' })}>Обновить каталог</button>
+              <button className="btn" onClick={() => instrument.mutate({ symbol: '', action: 'liquid' })}>Топ ликвидных</button>
+            </div>
+          }>
+            <div className="mb-2 text-[11px] text-muted">
+              {JSON.stringify(instStats.data ?? {})}
+            </div>
+            <DataTable
+              data={instSearch.trim() ? found.data ?? [] : []}
+              columns={[
+                { header: 'Символ', cell: ({ row }) => String(row.original.symbol ?? '') },
+                { header: 'Название', cell: ({ row }) => String(row.original.name ?? '') },
+                { header: 'Тип', cell: ({ row }) => String(row.original.type ?? '') },
+                { header: 'Торгуется', cell: ({ row }) => String(row.original.tradeable ?? '') },
+                { header: 'Действия', cell: ({ row }) => {
+                  const symbol = String(row.original.symbol ?? '');
+                  return <div className="flex gap-1">
+                    <button className="btn" onClick={() => instrument.mutate({ symbol, action: 'fav' })}>★ Избранное</button>
+                    <button className="btn" onClick={() => instrument.mutate({ symbol, action: 'params' })}>Параметры</button>
+                    <button className="btn" onClick={() => {
+                      form.setValue('instrument', symbol);
+                      setEditingId(null);
+                      setTab('wizard');
+                    }}>Создать робота</button>
+                  </div>;
+                } },
+              ]}
+              empty="Введите тикер или название — например CNYRUBF" />
+            <div className="mt-3 text-xs">
+              <b>Избранное:</b>{' '}
+              {(favs.data ?? []).map((f) => String(f.symbol ?? '')).join(', ') || 'пусто'}
+            </div>
+          </Card>
+        </TabPanel>
+
+        <TabPanel value="schedule">
+          <div className="grid gap-3">
+            <Card title="Задачи планировщика" action={<button className="btn" onClick={() => schedulerMut.mutate({ action: 'create' })}>Добавить задачу</button>}>
+              <div className="mb-3 grid gap-2 md:grid-cols-4">
+                <label className="text-xs">ID<input className="input mt-1" value={job.id} onChange={(e) => setJob({ ...job, id: e.target.value })} /></label>
+                <label className="text-xs">Команда<input className="input mt-1" value={job.command} onChange={(e) => setJob({ ...job, command: e.target.value })} /></label>
+                <label className="text-xs">Время (через запятую)<input className="input mt-1" value={job.times} onChange={(e) => setJob({ ...job, times: e.target.value })} /></label>
+                <label className="text-xs">Описание<input className="input mt-1" value={job.note} onChange={(e) => setJob({ ...job, note: e.target.value })} /></label>
+              </div>
+              <DataTable
+                data={jobs.data ?? []}
+                columns={[
+                  { header: 'ID', cell: ({ row }) => String(row.original.id ?? '') },
+                  { header: 'Владелец', cell: ({ row }) => String(row.original.owner ?? '') },
+                  { header: 'Команда', cell: ({ row }) => String(row.original.command ?? '') },
+                  { header: 'Время', cell: ({ row }) => String(row.original.times_json ?? '') },
+                  { header: '', cell: ({ row }) => <button className="btn-danger"
+                      onClick={() => { if (window.confirm(`Удалить задачу ${String(row.original.id)}?`)) schedulerMut.mutate({ action: 'delete', id: String(row.original.id) }); }}>
+                      Удалить</button> },
+                ]}
+                empty="Задач нет" />
+            </Card>
+            <Card title="Последние запуски">
+              <DataTable
+                data={jobRuns.data ?? []}
+                columns={[
+                  { header: 'Задача', cell: ({ row }) => String(row.original.job_id ?? '') },
+                  { header: 'Слот', cell: ({ row }) => String(row.original.slot ?? '') },
+                  { header: 'Статус', cell: ({ row }) => String(row.original.status ?? '') },
+                  { header: 'Детали', cell: ({ row }) => String(row.original.detail ?? '').slice(0, 120) },
+                ]}
+                empty="Запусков пока нет" />
+            </Card>
+          </div>
+        </TabPanel>
+
         <TabPanel value="templates">
           <div className="grid gap-3 md:grid-cols-2">
             {(specs.data ?? []).map((spec) => (
@@ -395,28 +684,6 @@ export function Robots() {
           </Card>
         </TabPanel>
       </Tabs>
-
-      <ConfirmDialog
-        open={selected !== null}
-        title="Переключить счёт робота"
-        message="Текущая позиция и совместимость инструмента проверяются сервером. Для боевого счёта требуется дополнительное подтверждение."
-        onCancel={() => setSelected(null)}
-        onConfirm={() => {
-          const robot = rows.find((item) => item.id === selected);
-          if (robot) setPendingAccount(robot.account ?? '');
-        }}
-      />
-      <ConfirmDialog
-        open={pendingAccount !== null}
-        title="Подтверждение смены счёта"
-        message={`Новый счёт: ${pendingAccount || 'не выбран'}. Лотность следующих сделок будет пересчитана.`}
-        onCancel={() => setPendingAccount(null)}
-        onConfirm={() => {
-          if (selected && pendingAccount !== null) {
-            switchAccount.mutate({ id: selected, account: pendingAccount });
-          }
-        }}
-      />
     </div>
   );
 }

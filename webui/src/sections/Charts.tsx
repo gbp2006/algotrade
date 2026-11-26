@@ -79,7 +79,7 @@ export function Charts() {
   const setTab = useUi((s) => s.setTab);
   const [tf, setTf] = useState('M5');
   const [layers, setLayers] = useState({ trades: true, orders: false, flows: false });
-  const robots = useQuery({ queryKey: ['robots-charts'], queryFn: api.robots, refetchInterval: 30_000 });
+  const robots = useQuery({ queryKey: ['robots-charts'], queryFn: () => api.robots(), refetchInterval: 30_000 });
   const first = robots.data?.[0]?.id ?? '';
   const candles = useQuery({
     queryKey: ['candles', tf, first],

@@ -34,8 +34,25 @@ const content: Record<Section, () => JSX.Element> = {
   logs: Logs,
 };
 
+// Прямая ссылка /robots (и /ui/robots) должна открывать раздел «Роботы»,
+// а не последний сохранённый в localStorage. Раньше URL не читался вообще.
+export const sectionFromPath = (pathname: string): Section => {
+  const path = pathname.replace(/^\/ui(?=\/|$)/, '') || '/';
+  return sections.find((item) => item.path === path)?.id ?? 'portfolio';
+};
+
 export function App() {
   const ui = useUi();
+
+  useEffect(() => {
+    const sync = () => {
+      const next = sectionFromPath(window.location.pathname);
+      if (next !== useUi.getState().section) useUi.getState().setSection(next);
+    };
+    sync();
+    window.addEventListener('popstate', sync);
+    return () => window.removeEventListener('popstate', sync);
+  }, []);
   const queryClient = useQueryClient();
   const [confirmStop, setConfirmStop] = useState(false);
   const [confirmTrading, setConfirmTrading] = useState<boolean | null>(null);
@@ -92,7 +109,7 @@ export function App() {
             <button
               key={item.id}
               type="button"
-              onClick={() => { ui.setSection(item.id); window.history.replaceState(null, '', item.path); }}
+              onClick={() => { ui.setSection(item.id); window.history.pushState(null, '', item.path); }}
               className={`flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition ${
                 ui.section === item.id ? 'bg-accent text-white' : 'text-muted hover:bg-elevated hover:text-ink'}`}
             >

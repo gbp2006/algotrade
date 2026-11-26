@@ -52,7 +52,10 @@ export const api = {
     patchRequest<Robot>(`/api/instances/${encodeURIComponent(id)}`, payload),
   instanceHistory: (id: string) =>
     get<InstanceEvent[]>(`/api/instances/${encodeURIComponent(id)}/history`),
-  robots: () => get<Robot[]>('/api/instances'),
+  removeInstance: (id: string) =>
+    del<{ deleted: boolean }>(`/api/instances/${encodeURIComponent(id)}`),
+  robots: (mode = '') => get<Robot[]>(
+    `/api/instances${mode ? `?mode=${encodeURIComponent(mode)}` : ''}`),
   runtime: () => get<RuntimeState[]>('/api/runtime'),
   specs: () => get<Spec[]>('/api/specs'),
   logs: (limit = 100) => get<{ items: LogItem[] }>(`/api/logs?limit=${limit}`),
@@ -89,6 +92,60 @@ export const api = {
     timer_installed: boolean; enabled: boolean; next_run: string | null;
     stop_real: boolean; env_flag: string;
   }>('/api/trading/toggle', { enabled }),
+
+  // Боевой контур: ручной прогон, состояние, заявки, STOP.
+  liveRun: (arm: boolean, day?: string) => post<{
+    ok: boolean; stdout: string; summary: Record<string, unknown>;
+  }>('/api/live-run', { arm, day }),
+  liveState: () => get<Record<string, unknown>>('/api/live-state'),
+  liveOrders: () => get<Record<string, unknown>[] | { items: Record<string, unknown>[] }>('/api/live-orders'),
+  liveControl: () => get<Record<string, unknown>>('/api/live-control'),
+  liveControlSet: (enabled: boolean) =>
+    post<Record<string, unknown>>(`/api/live-control/${enabled ? 'enable' : 'disable'}`, {}),
+  stopReal: (action: 'set' | 'clear') =>
+    post<{ stop_real: boolean }>('/api/stop-real', { action }),
+  stopPaper: () => post<{ stop: boolean }>('/api/stop', {}),
+  armState: () => get<Record<string, boolean>>('/api/arm-state'),
+  armSet: (kind: 'mm' | 'close', enabled: boolean) =>
+    post<Record<string, boolean>>('/api/arm-state', { kind, enabled }),
+
+  // Фонд денежного рынка.
+  mmRebalance: (id: string, regime?: string) => post<Record<string, unknown>>(
+    `/api/money-market/${encodeURIComponent(id)}/rebalance`, regime ? { regime } : {}),
+  mmClose: (id: string) =>
+    post<Record<string, unknown>>(`/api/money-market/${encodeURIComponent(id)}/close`, {}),
+
+  // Справочник инструментов.
+  instruments: (search: string, scope = '') => get<Record<string, unknown>[]>(
+    `/api/instruments?search=${encodeURIComponent(search)}&limit=40${scope ? `&scope=${encodeURIComponent(scope)}` : ''}`),
+  instrumentFavorites: () => get<Record<string, unknown>[]>('/api/instruments/favorites'),
+  instrumentFavorite: (symbol: string, note = '') =>
+    post<Record<string, unknown>>(
+      `/api/instruments/${encodeURIComponent(symbol)}/favorite`, { note }),
+  instrumentStats: () => get<Record<string, unknown>>('/api/instruments/stats'),
+  instrumentRefresh: () => post<Record<string, unknown>>('/api/instruments/refresh', {}),
+  instrumentRefreshLiquid: () =>
+    post<Record<string, unknown>>('/api/instruments/refresh-liquid', {}),
+  instrumentParams: (symbol: string) =>
+    post<Record<string, unknown>>(`/api/instruments/${encodeURIComponent(symbol)}/params`, {}),
+
+  // Планировщик.
+  schedulerJobs: () => get<Record<string, unknown>[]>('/api/scheduler/jobs'),
+  schedulerCreateJob: (payload: Record<string, unknown>) =>
+    post<Record<string, unknown>>('/api/scheduler/jobs', payload),
+  schedulerDeleteJob: (id: string) =>
+    del<{ deleted: boolean }>(`/api/scheduler/jobs/${encodeURIComponent(id)}`),
+  schedulerRuns: () => get<Record<string, unknown>[]>('/api/scheduler/runs'),
+
+  // Брокеры и ключи.
+  brokers: () => get<Record<string, unknown>[]>('/api/brokers'),
+  brokerCheck: (name: string) =>
+    post<{ ok: boolean; detail: string }>(`/api/brokers/${encodeURIComponent(name)}/check`, {}),
+  serviceKey: () => get<Record<string, unknown>>('/api/service-key'),
+  setServiceKey: (secret: string) =>
+    post<Record<string, unknown>>('/api/service-key', { secret }),
+  archive: () => get<Record<string, unknown>[]>('/api/archive'),
+  journalBackup: () => post<Record<string, unknown>>('/api/journal/backup', {}),
 };
 
 export const keys = {

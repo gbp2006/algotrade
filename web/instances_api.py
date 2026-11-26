@@ -37,6 +37,26 @@ SHADOW = ROOT / "results" / "shadow.json"
 ROLLOVER = ROOT / "results" / "rollover_run.json"
 STOP = ROOT / "results" / "STOP"
 STOP_REAL = ROOT / "results" / "STOP_REAL"
+ARM_STATE = ROOT / "results" / "arm_state.json"
+
+# Разрешение реальной отправки хранится в панели; env оставлен как fallback.
+ARM_ENV = {"mm": "ALGO_MM_ARMED", "close": "ALGO_CLOSE_ARMED"}
+
+
+def arm_state_view() -> dict:
+    try:
+        saved = json.loads(ARM_STATE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        saved = {}
+    return {
+        **{kind: bool(saved.get(kind)) for kind in ARM_ENV},
+        **{f"{kind}_env": os.environ.get(name) == "1" for kind, name in ARM_ENV.items()},
+    }
+
+
+def arm_enabled(kind: str) -> bool:
+    return bool(arm_state_view().get(kind)) or arm_state_view().get(f"{kind}_env", False)
+
 
 router = APIRouter(prefix="/api", tags=["instances"])
 _default_store = RobotStore()
@@ -203,8 +223,7 @@ def action_view(store: RobotStore, iid: str, action: str,
                 payload: dict | None = None) -> dict:
     if action == "close":
         try:
-            return pos.close_instance(
-                store, iid, dry_run=os.environ.get("ALGO_CLOSE_ARMED") != "1")
+            return pos.close_instance(store, iid, dry_run=not arm_enabled("close"))
         except pos.OpError as exc:
             raise HTTPException(400, str(exc))
     if action == "promote":
@@ -475,7 +494,7 @@ def mm_rebalance(iid: str, payload: dict | None = None,
     try:
         result = pos.mm_rebalance(
             store, iid,
-            dry_run=os.environ.get("ALGO_MM_ARMED") != "1",
+            dry_run=not arm_enabled("mm"),
             regime=(payload or {}).get("regime"))
         invalidate_analytics()
         return result
@@ -488,7 +507,7 @@ def mm_close(iid: str, store: RobotStore = Depends(get_store)):
     try:
         fund = pos._context(store, iid)["params"].get("symbol")
         result = pos.close_instance(
-            store, iid, dry_run=os.environ.get("ALGO_MM_ARMED") != "1",
+            store, iid, dry_run=not arm_enabled("mm"),
             symbol=str(fund) if fund else None)
         invalidate_analytics()
         return result
@@ -656,6 +675,24 @@ def stop_real_view(action: str) -> dict:
 @router.post("/stop-real")
 def stop_real(payload: dict):
     return stop_real_view(str(payload.get("action", "")).lower())
+
+
+# ---------- разрешения на реальную отправку (панель) ----------
+@router.get("/arm-state")
+def arm_state_get():
+    return arm_state_view()
+
+
+@router.post("/arm-state")
+def arm_state_set(payload: dict):
+    kind = str(payload.get("kind", ""))
+    if kind not in ARM_ENV:
+        raise HTTPException(400, "kind: mm | close")
+    state = arm_state_view()
+    state[kind] = bool(payload.get("enabled"))
+    ARM_STATE.write_text(json.dumps({k: state[k] for k in ARM_ENV},
+                                    ensure_ascii=False), encoding="utf-8")
+    return arm_state_view()
 
 
 # ---------- планировщик ----------
