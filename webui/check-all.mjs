@@ -1,4 +1,4 @@
-/* Проверяет 7 разделов: menu, вкладки, безопасные контролы, deep-link, ошибки JS. */
+/* Проверяет 7 разделов: menu, вкладки, безопасные контролы, правку счёта, deep-link, ошибки JS. */
 import puppeteer from 'puppeteer-core';
 
 const url = process.argv[2] || 'http://192.168.0.230/ui/';
@@ -70,8 +70,56 @@ for (let i = 0; i < 7; i += 1) {
   results.push({ ...info, errors: problems.length });
 }
 
-// Прямая ссылка должна открывать раздел, а не последний сохранённый в localStorage.
 const base = url.replace(/\/ui\/?$/, '').replace(/\/$/, '');
+
+// Регрессия правки счёта: старый ID уходит в URL PATCH, новый — только в new_id.
+// Запрос перехватывается и не меняет реальные данные.
+await page.goto(`${base}/accounts`, { waitUntil: 'networkidle2', timeout: 30000 });
+await new Promise((r) => setTimeout(r, 1200));
+let patched = null;
+const onRequest = (req) => {
+  if (req.method() === 'PATCH' && req.url().includes('/api/accounts/')) {
+    patched = { url: req.url(), body: req.postData() || '' };
+    return req.respond({ status: 200, contentType: 'application/json', body: '{}' });
+  }
+  req.continue();
+};
+await page.setRequestInterception(true);
+page.on('request', onRequest);
+try {
+  await page.evaluate(() => {
+    const btn = [...document.querySelectorAll('button')]
+      .find((item) => item.textContent?.trim() === 'Изменить');
+    btn?.click();
+  });
+  await new Promise((r) => setTimeout(r, 500));
+  await page.evaluate(() => {
+    const input = document.querySelector('input[placeholder="например 2115210 или КлФ-2115210"]');
+    if (!input) throw new Error('нет поля ID счёта');
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+    setter.call(input, 'КлФ-9999999');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await new Promise((r) => setTimeout(r, 250));
+  await page.evaluate(() => {
+    const btn = [...document.querySelectorAll('button')]
+      .find((item) => item.textContent?.trim() === 'Сохранить');
+    btn?.click();
+  });
+  await new Promise((r) => setTimeout(r, 900));
+} finally {
+  page.off('request', onRequest);
+  await page.setRequestInterception(false);
+}
+if (!patched) problems.push('правка счёта: PATCH не отправлен');
+else {
+  const oldId = decodeURIComponent((patched.url.split('/api/accounts/')[1] || '').split('?')[0]);
+  const body = JSON.parse(patched.body || '{}');
+  if (oldId === 'КлФ-9999999') problems.push('правка счёта: новый ID попал в URL');
+  if (body.new_id !== 'КлФ-9999999') problems.push('правка счёта: новый ID не передан в new_id');
+}
+
+// Прямая ссылка должна открывать раздел, а не последний сохранённый в localStorage.
 const deep = await browser.newPage();
 watch(deep);
 await deep.goto(`${base}/robots`, { waitUntil: 'networkidle2', timeout: 30000 });

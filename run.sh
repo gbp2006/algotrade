@@ -83,7 +83,7 @@ usage: ./run.sh <команда>
   migrate-pg  однократный перенос служебных данных SQLite в PostgreSQL
   assign-paper-accounts  развести бумажных роботов по отдельным TEST-счетам
   start-project  полный старт на WSL: PostgreSQL, миграция, панель, проверка
-  check-ui   headless-проверка GUI: 7 разделов, вкладки, 0 ошибок JS
+  check-ui   headless: 7 разделов, вкладки, правка счёта, deep-link, 0 ошибок JS
   live-run боевой контур по заданию активного LIVE-робота (заявки уходят)
   live     то же, что live-run (старое имя)
   live-dry явная репетиция боя: проверяет всё, но заявки НЕ уходят

@@ -85,7 +85,7 @@ VPN и SSH в проект не писать.
 ./run.sh test            # все Python-тесты
 cd webui && npm test     # Vitest
 cd webui && npm run build# сборка в webui/dist
-./run.sh check-ui       # headless: 7 разделов, вкладки, 0 ошибок JS
+./run.sh check-ui       # headless: 7 разделов, вкладки, правка счёта, deep-link, 0 ошибок JS
 ./scripts/deploy_wsl.sh --apply --restart                # выкладка на WSL
 ./run.sh start-project   # НА WSL: PG → миграция → systemd → HTTP-проверка
 ./run.sh migrate-pg      # однократная миграция SQLite → PG (идемпотентна)
@@ -135,7 +135,7 @@ mtime — иначе сервер поднимает старый байткод
 1. `./run.sh test` — зелёный.
 2. `cd webui && npm test && npm run build` — зелёный.
 3. Выложить: `./scripts/deploy_wsl.sh --apply --restart`.
-4. `node webui/check-all.mjs http://192.168.0.230/ui/` — все 7 разделов
+4. `node webui/check-all.mjs http://192.168.0.230/ui/` — все 7 разделов и регрессия правки счёта
    и вкладки без ошибок JS. **Не давать ссылку пользователю без этого шага.**
 5. `curl http://192.168.0.230/api/health` — `status OK`, `problems=[]`.
 
