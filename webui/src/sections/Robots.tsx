@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { api, keys } from '../lib/api';
 import { money, time } from '../lib/format';
+import { robotEquity } from '../lib/robotEquity';
 import type { CashFlowPreview, Robot, RuntimeState } from '../lib/types';
 import { useUi } from '../store/ui';
 import {
@@ -121,6 +122,7 @@ export function Robots() {
 
   const robots = useQuery({ queryKey: keys.robots, queryFn: () => api.robots(), refetchInterval: 30_000 });
   const runtime = useQuery({ queryKey: keys.runtime, queryFn: api.runtime, refetchInterval: 30_000 });
+  const analytics = useQuery({ queryKey: keys.analytics, queryFn: api.analytics, refetchInterval: 30_000 });
   const specs = useQuery({ queryKey: keys.specs, queryFn: api.specs });
   const accounts = useQuery({ queryKey: keys.accounts, queryFn: api.accounts });
   const changes = useQuery({
@@ -302,7 +304,9 @@ export function Robots() {
         ? runtime.data?.find((item) => item.instance_id === editingId) : undefined;
       return api.preview({
         type: calcKind, amount: calcAmount,
-        balance_before: state?.equity ?? 200_000,
+        balance_before: robotEquity(
+          current ?? { id: values.name || 'новый-робот', mode: 'live', account: values.account },
+          state, analytics.data) ?? 200_000,
         live: current?.mode === 'live',
         robots: [{
           robot_id: current?.id || values.name || 'новый-робот',
@@ -361,7 +365,7 @@ export function Robots() {
     .map((robot) => ({
       ...robot,
       position: runtimeById.get(robot.id)?.position ?? null,
-      equity: runtimeById.get(robot.id)?.equity ?? null,
+      equity: robotEquity(robot, runtimeById.get(robot.id), analytics.data),
     }))
     // Боевые роботы — наверху: их видно сразу при открытии раздела.
     .sort((a, b) => (a.mode === b.mode ? 0 : a.mode === 'live' ? -1 : 1));
