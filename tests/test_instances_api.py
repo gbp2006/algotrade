@@ -39,6 +39,14 @@ class TestApiViews(unittest.TestCase):
         self.assertEqual(row["strategy_name"], "Простушка")
         self.assertTrue(row["about"].startswith("Простушка"))
 
+    def test_account_id_keeps_only_digits_for_broker(self):
+        created = api.create_account({
+            "id": "КлФ-2115210", "label": "КлФ-2115210", "mode": "LIVE",
+        }, self.store)
+        self.assertEqual(created["id"], "2115210")
+        acc = self.store.get_account("2115210")
+        self.assertEqual(acc["label"], "КлФ-2115210")
+
     def test_create_account_writes_key_before_account(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "auth.json"
@@ -202,7 +210,7 @@ class TestApiViews(unittest.TestCase):
         self.assertNotIn("paper-2", [a["id"] for a in api.accounts(self.store)])
 
     def test_account_delete_guarded_by_robots(self):
-        api.create_account({"id": "acc-1", "label": "Счёт"}, self.store)
+        api.create_account({"id": "acc-1", "label": "Счёт", "mode": "TEST"}, self.store)
         api.create_view(self.store, {"id": "r-1", "spec_id": "prostushka",
                                      "instrument": "CNY", "mode": "paper",
                                      "account": "acc-1"})

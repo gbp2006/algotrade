@@ -176,19 +176,23 @@ export function Accounts() {
   });
 
   const columns: ColumnDef<AccountRow, unknown>[] = [
-    { header: 'Счёт', cell: ({ row }) => <div><b>{row.original.label}</b>
-      <div className="text-[10px] text-muted">{row.original.id}</div></div> },
-    { header: 'Режим', cell: ({ row }) => <Badge live={row.original.mode === 'live'} /> },
-    { header: 'Работа', cell: ({ row }) => (
+    { accessorKey: 'label', header: 'Счёт', cell: ({ row }) => <b>{row.original.label}</b> },
+    { accessorKey: 'id', header: 'ID счёта', cell: ({ row }) =>
+      <span className="num text-[11px]">{row.original.id}</span> },
+    { accessorKey: 'mode', header: 'Режим', cell: ({ row }) => <Badge live={row.original.mode === 'live'} /> },
+    { accessorKey: 'enabled', header: 'Работа', cell: ({ row }) => (
       <button className={row.original.enabled ? 'btn' : 'btn-danger'} onClick={() =>
         updateAcc.mutate({ id: row.original.id, payload: { enabled: !row.original.enabled } })}>
         {row.original.enabled ? 'Вкл' : 'Выкл'}
       </button>
     ) },
-    { header: 'Equity', cell: ({ row }) => <span className="num">{money(row.original.equity)} ₽</span> },
-    { header: 'Ключ', cell: ({ row }) => <span className="text-[11px] text-muted">{row.original.keyRef || 'не задан'}</span> },
-    { header: 'Статус', cell: ({ row }) => <span className="text-[11px] text-muted">{row.original.status}</span> },
-    { id: 'actions', header: ' ', cell: ({ row }) => (
+    { accessorKey: 'equity', header: 'Equity', cell: ({ row }) =>
+      <span className="num">{money(row.original.equity)} ₽</span> },
+    { accessorKey: 'keyRef', header: 'Ключ', cell: ({ row }) =>
+      <span className="text-[11px] text-muted">{row.original.keyRef || 'не задан'}</span> },
+    { accessorKey: 'status', header: 'Статус', cell: ({ row }) =>
+      <span className="text-[11px] text-muted">{row.original.status}</span> },
+    { id: 'actions', header: 'Действия', enableSorting: false, cell: ({ row }) => (
       <div className="flex gap-1">
         <button className="btn" onClick={() => { setKeyAccount(row.original.id); setKeySecret(''); }}>Ключ</button>
         <button className="btn" onClick={() => {
@@ -263,13 +267,14 @@ export function Accounts() {
             </div>
             <p className="mt-2 text-[11px] text-muted">
               Для LIVE укажите реальный ID брокерского счёта — капитал берётся у брокера.
+              Можно вставить «КлФ-2115210»: сохранится только «2115210», а имя останется подписью.
               Ключ сохраняется в auth.json на сервере; в списке видно только имя ссылки.
             </p>
           </Card>
           <Card title="Все счета" className="mt-4">
             {updateAcc.error && <div className="mb-2"><ErrorBox error={updateAcc.error} /></div>}
             {removeAcc.error && <div className="mb-2"><ErrorBox error={removeAcc.error} /></div>}
-            <DataTable data={rows} columns={columns} />
+            <DataTable data={rows} columns={columns} sortable columnToggle maxHeight="none" />
           </Card>
         </TabPanel>
         <TabPanel value="connections">

@@ -1,9 +1,10 @@
 import * as TabsPrimitive from '@radix-ui/react-tabs';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import {
-  flexRender, getCoreRowModel, useReactTable, type ColumnDef,
+  flexRender, getCoreRowModel, getSortedRowModel, useReactTable,
+  type ColumnDef, type SortingState, type VisibilityState,
 } from '@tanstack/react-table';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 export function Card({ title, children, action, className = '' }: {
   title?: string; children: ReactNode; action?: ReactNode; className?: string;
@@ -62,28 +63,60 @@ export function TabPanel({ value, children }: { value: string; children: ReactNo
   return <TabsPrimitive.Content value={value} className="outline-none">{children}</TabsPrimitive.Content>;
 }
 
-export function DataTable<T>({ data, columns, empty = 'Данных пока нет' }: {
+export function DataTable<T>({ data, columns, empty = 'Данных пока нет',
+  sortable = false, columnToggle = false, maxHeight = '520px' }: {
   data: T[]; columns: ColumnDef<T, unknown>[]; empty?: string;
+  sortable?: boolean; columnToggle?: boolean; maxHeight?: string;
 }) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [visibility, setVisibility] = useState<VisibilityState>({});
   const table = useReactTable({
-    data, columns, getCoreRowModel: getCoreRowModel(),
+    data, columns,
+    state: { sorting, columnVisibility: visibility },
+    onSortingChange: setSorting,
+    onColumnVisibilityChange: setVisibility,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
   });
   if (!data.length) return <div className="empty">{empty}</div>;
   return (
-    <div className="max-h-[520px] overflow-auto rounded-lg border border-line">
-      <table className="w-full min-w-[640px] border-collapse">
-        <thead>{table.getHeaderGroups().map((group) => (
-          <tr key={group.id}>{group.headers.map((header) => (
-            <th key={header.id} className="th">{header.isPlaceholder
-              ? null : flexRender(header.column.columnDef.header, header.getContext())}</th>
-          ))}</tr>
-        ))}</thead>
-        <tbody>{table.getRowModel().rows.map((row) => (
-          <tr key={row.id} className="hover:bg-elevated">{row.getVisibleCells().map((cell) => (
-            <td key={cell.id} className="td">{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-          ))}</tr>
-        ))}</tbody>
-      </table>
+    <div>
+      {columnToggle && (
+        <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="text-[11px] text-muted">Колонки:</span>
+          {table.getAllLeafColumns().filter((c) => c.getCanHide()).map((c) => (
+            <label key={c.id} className="flex items-center gap-1 text-[11px]">
+              <input type="checkbox" checked={c.getIsVisible()}
+                onChange={c.getToggleVisibilityHandler()} />
+              {typeof c.columnDef.header === 'string' ? c.columnDef.header : c.id}
+            </label>
+          ))}
+        </div>
+      )}
+      <div className="overflow-auto rounded-lg border border-line" style={{ maxHeight }}>
+        <table className="w-full min-w-[640px] border-collapse">
+          <thead>{table.getHeaderGroups().map((group) => (
+            <tr key={group.id}>{group.headers.map((header) => (
+              <th key={header.id} className="th sticky top-0 z-10 bg-surface"
+                onClick={sortable && header.column.getCanSort()
+                  ? header.column.getToggleSortingHandler() : undefined}
+                style={sortable && header.column.getCanSort() ? { cursor: 'pointer' } : undefined}>
+                {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                {sortable && header.column.getCanSort() && (
+                  <span className="ml-1 text-[10px] text-muted">
+                    {{ asc: '▲', desc: '▼' }[header.column.getIsSorted() as string] ?? '↕'}
+                  </span>
+                )}
+              </th>
+            ))}</tr>
+          ))}</thead>
+          <tbody>{table.getRowModel().rows.map((row) => (
+            <tr key={row.id} className="hover:bg-elevated">{row.getVisibleCells().map((cell) => (
+              <td key={cell.id} className="td">{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+            ))}</tr>
+          ))}</tbody>
+        </table>
+      </div>
     </div>
   );
 }

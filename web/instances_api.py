@@ -347,13 +347,23 @@ def accounts(store: RobotStore = Depends(get_store)):
     return store.list_accounts()
 
 
+def _account_id(value: object) -> str:
+    """Finam ждёт числовой ID; из «КлФ-2115210» берём «2115210»."""
+    raw = str(value or "").strip()
+    digits = re.sub(r"\D", "", raw)
+    return digits or raw
+
+
 @router.post("/accounts", status_code=201)
 def create_account(payload: dict, store: RobotStore = Depends(get_store)):
     data = dict(payload)
     try:
+        # TEST-счета имеют имена вида paper-<id> — их не трогаем.
+        if str(data.get("mode") or "LIVE").upper() == "LIVE":
+            data["id"] = _account_id(data.get("id", ""))
         key = str(data.get("key_ref") or "").strip()
         if key.startswith("tapi_sk_"):
-            ref = f"acc:{data.get('id', '')}"
+            ref = f"acc:{data['id']}"
             _write_key(ref, key)  # секрет → auth.json, в счёте только имя
             data["key_ref"] = ref
         invalidate_analytics()
