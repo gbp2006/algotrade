@@ -44,6 +44,7 @@ export function Accounts() {
   const [keyAccount, setKeyAccount] = useState<string | null>(null);
   const [keySecret, setKeySecret] = useState('');
   const [editSecret, setEditSecret] = useState('');
+  const [editOriginalId, setEditOriginalId] = useState('');
   const [editAccount, setEditAccount] = useState<Record<string, unknown> | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
@@ -140,7 +141,7 @@ export function Accounts() {
     },
     onSuccess: () => {
       invalidateAccounts();
-      setEditAccount(null); setEditSecret(''); setKeyAccount(null);
+      setEditAccount(null); setEditSecret(''); setEditOriginalId(''); setKeyAccount(null);
     },
   });
   const refreshAcc = useMutation({
@@ -209,6 +210,7 @@ export function Accounts() {
         <button className="btn" onClick={() => { setKeyAccount(row.original.id); setKeySecret(''); }}>Ключ</button>
         <button className="btn" onClick={() => {
           setEditSecret('');
+          setEditOriginalId(String(row.original.id));
           setEditAccount(accQuery.data?.find((a) => String(a.id) === row.original.id) ?? null);
         }}>Изменить</button>
         <button className="btn-danger" onClick={() => setDeleteId(row.original.id)}>Удалить</button>
@@ -403,9 +405,9 @@ export function Accounts() {
       )}
       {editAccount !== null && (
         <FormDialog title="Редактирование счёта"
-          onCancel={() => setEditAccount(null)}
+          onCancel={() => { setEditAccount(null); setEditSecret(''); setEditOriginalId(''); }}
           onConfirm={() => updateAcc.mutate({
-            id: String(editAccount.id),
+            id: editOriginalId,
             secret: editSecret,
             payload: {
               new_id: String(editAccount.id ?? ''),
