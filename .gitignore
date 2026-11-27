@@ -24,6 +24,11 @@ results/rollover.lock
 results/rollover_run.json
 results/scheduler.log
 results/scheduler_state.json
+results/health.json
+results/token_usage.json
+results/context_cleanup_state.json
+results/arm_state.json
+results/trading_toggle.jsonl
 live_settings.json
 auth.json
 results/shadow.json
