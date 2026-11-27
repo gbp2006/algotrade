@@ -130,7 +130,6 @@ class BattleLimits:
 
     capital: float
     max_exposure: float = 2.0
-    max_daily_loss_pct: float = 0.03
     max_qty: int = 100
     allowed_symbols: frozenset[str] | None = None
 
@@ -138,15 +137,10 @@ class BattleLimits:
     def max_notional(self) -> float:
         return self.capital * self.max_exposure
 
-    @property
-    def max_daily_loss(self) -> float:
-        return self.capital * self.max_daily_loss_pct
-
     def as_limits(self) -> Limits:
         return Limits(
             max_qty=self.max_qty,
             max_notional=self.max_notional,
-            max_daily_loss=self.max_daily_loss,
             allowed_symbols=self.allowed_symbols,
         )
 

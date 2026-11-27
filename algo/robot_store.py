@@ -79,6 +79,9 @@ class RobotStore:
                 c.execute("PRAGMA journal_mode=WAL")
             except sqlite3.DatabaseError:
                 pass  # БД занята — оставляем текущий режим, verbose в tests
+            # max_daily_loss_pct — унаследованная колонка: дневной лимит удалён
+            # (ADR 27.11), поле остаётся только для совместимости со старыми БД
+            # и в раннерах/шлюзе не используется.
             c.executescript("""
                 CREATE TABLE IF NOT EXISTS accounts (
                   id TEXT PRIMARY KEY, label TEXT NOT NULL, capital REAL NOT NULL,

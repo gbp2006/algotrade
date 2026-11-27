@@ -110,7 +110,6 @@ def _close_limits(base: Limits, qty: int, price: float, mult: float) -> Limits:
     return Limits(
         max_qty=max(int(base.max_qty), abs(qty)),
         max_notional=max(float(base.max_notional), abs(qty) * price * mult),
-        max_daily_loss=float(base.max_daily_loss),
         allowed_symbols=base.allowed_symbols,
     )
 

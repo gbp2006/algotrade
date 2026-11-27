@@ -33,7 +33,6 @@
     "pricing": "marketable",
     "trade_on_expiry": false,
     "max_exposure": 1.0,
-    "max_daily_loss_pct": 0.03,
     "max_qty": 100
   },
   "accounts": {
@@ -54,8 +53,8 @@
 - `pricing` — один из `signal | marketable | market`;
 - `trade_on_expiry` по умолчанию `false` (новые позиции в день экспирации не открываются;
   закрытие существующих разрешено всегда);
-- лимиты считаются из `capital` счёта: номинал = capital × max_exposure, дневной
-  убыток = capital × max_daily_loss_pct;
+- лимиты считаются из `capital` счёта: номинал = capital × max_exposure;
+  дневного лимита убытка нет (удалён, ADR 27.11);
 - любая ошибка валидации = отказ раннера без отправки заявок.
 
 ## 3. Режимы цены (на робота)

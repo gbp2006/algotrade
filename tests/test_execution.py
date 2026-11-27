@@ -76,7 +76,6 @@ class TestGateway(unittest.TestCase):
         cases = [
             (ex.Limits(max_qty=10), {}),
             (ex.Limits(max_notional=1000), {}),
-            (ex.Limits(max_daily_loss=1000), {"daily_pnl": -2000}),
             (ex.Limits(allowed_symbols=frozenset({"OTHER"})), {}),
             (ex.Limits(), {"qty": 0}),
             (ex.Limits(), {"price": -1}),

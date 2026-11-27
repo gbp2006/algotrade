@@ -78,7 +78,6 @@ const PARAM_LABELS: Record<string, string> = {
   hold: 'Время удержания',
   close_friday: 'Закрывать перед выходными',
   risk_vol: 'Резка лота по ATR: вкл / выкл',
-  risk_daily_loss: 'Дневной лимит убытка: вкл / выкл',
 };
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];

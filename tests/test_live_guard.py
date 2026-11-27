@@ -51,7 +51,6 @@ class TestBattleLimits(unittest.TestCase):
     def test_from_capital(self):
         lim = lg.battle_limits(2_000_000, max_exposure=1.5, max_qty=40)
         self.assertEqual(lim.max_notional, 3_000_000)
-        self.assertEqual(lim.max_daily_loss, 60_000)
         out = lim.as_limits()
         self.assertIsInstance(out, ex.Limits)
         self.assertEqual(out.max_qty, 40)

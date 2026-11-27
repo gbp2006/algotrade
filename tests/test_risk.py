@@ -1,4 +1,4 @@
-"""Тесты риск-модуля: лестница ATR, дневной лимит, новые id. ./run.sh test"""
+"""Тесты риск-модуля: лестница ATR и новые id. ./run.sh test"""
 
 from __future__ import annotations
 
@@ -47,11 +47,6 @@ class TestRisk(unittest.TestCase):
         for ratio, expected in cases:
             self.assertEqual(risk.exposure_for(ratio, limits), expected, ratio)
 
-    def test_daily_loss_guard(self):
-        self.assertTrue(risk.daily_loss_allowed(197_000, 200_000))
-        self.assertFalse(risk.daily_loss_allowed(192_000, 200_000))
-        self.assertFalse(risk.daily_loss_allowed(200_000, 0))
-
     def test_size_with_risk(self):
         full = risk.size_with_risk(200_000, 12.29, 1000.0, 2.0)
         cut = risk.size_with_risk(200_000, 12.29, 1000.0, 2.0, ratio=2.0)
@@ -84,15 +79,6 @@ class TestRisk(unittest.TestCase):
                                             daily(spike=True), [], "2025-01-01", 200_000)
         self.assertLess(n, 32)
         self.assertIn("ATR", note)
-
-    def test_contracts_for_config_daily_loss(self):
-        cfg = Config("t-loss", "prostushka",
-                     dict(ma_window=200, entry="13:50", risk_daily_loss=True))
-        rows = [{"config": "t-loss", "date": "2025-01-01", "target": 0, "price": "100"}]
-        n, note = risk.contracts_for_config(cfg, 192_000, 12.29, 1000.0,
-                                            daily(), rows, "2025-01-02", 200_000)
-        self.assertEqual(n, 0)
-        self.assertIn("дневной лимит", note)
 
     def test_new_configs_not_active_and_signal_compatible(self):
         live_ids = {c.id for c in CONFIGS}

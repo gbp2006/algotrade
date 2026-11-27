@@ -37,7 +37,6 @@ class Order:
     qty: int
     price: float
     multiplier: float = 1.0
-    daily_pnl: float = 0.0  # уже реализованный P&L счёта за день, ₽
     min_step: float = 0.0   # шаг цены инструмента; 0 = проверка кратности выключена
     order_type: str = "limit"  # limit / market
     account: str = ""       # реальный счёт из live_settings.json
@@ -52,7 +51,6 @@ class Order:
 class Limits:
     max_qty: int = 100
     max_notional: float = 5_000_000.0
-    max_daily_loss: float = 50_000.0
     allowed_symbols: frozenset[str] | None = None
 
 
@@ -145,8 +143,6 @@ class OrderGateway:
         notional = check_qty * order.price * order.multiplier
         if notional > lim.max_notional:
             return f"номинал {notional:.0f} выше лимита {lim.max_notional:.0f}"
-        if order.daily_pnl < -lim.max_daily_loss:
-            return f"дневной убыток {order.daily_pnl:.0f} выше лимита {lim.max_daily_loss:.0f}"
         return ""
 
     def submit(self, order: Order, account: str | None = None,

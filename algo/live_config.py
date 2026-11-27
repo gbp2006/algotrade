@@ -37,7 +37,6 @@ class AccountSettings:
     id: str
     comment: str = ""
     max_exposure: float = 1.0
-    max_daily_loss_pct: float = 0.03
     max_qty: int = 100
     key_ref: str = "{env:FINAM_SECRET}"  # ссылка на ключ, не сам секрет
     trading_code: str = ""              # торговый код Финама (не секрет)
@@ -54,7 +53,6 @@ class RobotSettings:
     pricing: PricingMode
     trade_on_expiry: bool
     max_exposure: float
-    max_daily_loss_pct: float
     max_qty: int
     key_ref: str = ""          # свой ключ; пустой → ключ счёта
     source_config: str = ""    # id бумажного конфига, решения которого повторяем
@@ -100,8 +98,6 @@ def parse_settings(data: dict[str, Any]) -> LiveSettings:
     d_pricing = _pricing(defaults.get("pricing", "marketable"), "defaults.pricing")
     d_expiry = _flag(defaults.get("trade_on_expiry", False), "defaults.trade_on_expiry")
     d_exposure = _number(defaults.get("max_exposure", 1.0), "defaults.max_exposure", 0.01, 2.0)
-    d_loss = _number(defaults.get("max_daily_loss_pct", 0.03),
-                     "defaults.max_daily_loss_pct", 0.001, 0.1)
     d_qty = int(_number(defaults.get("max_qty", 100), "defaults.max_qty", 1, 10000))
     age = int(_number(data.get("max_quote_age_sec", 60), "max_quote_age_sec", 1, 3600))
 
@@ -114,8 +110,6 @@ def parse_settings(data: dict[str, Any]) -> LiveSettings:
             comment=str(raw.get("comment", "")),
             max_exposure=_number(raw.get("max_exposure", d_exposure),
                                  f"accounts.{acc_id}.max_exposure", 0.01, 2.0),
-            max_daily_loss_pct=_number(raw.get("max_daily_loss_pct", d_loss),
-                                       f"accounts.{acc_id}.max_daily_loss_pct", 0.001, 0.1),
             max_qty=int(_number(raw.get("max_qty", d_qty),
                                 f"accounts.{acc_id}.max_qty", 1, 10000)),
             key_ref=str(raw.get("key_ref") or "{env:FINAM_SECRET}").strip(),
@@ -141,7 +135,6 @@ def parse_settings(data: dict[str, Any]) -> LiveSettings:
             trade_on_expiry=_flag(raw.get("trade_on_expiry", d_expiry),
                                   f"robots.{cfg_id}.trade_on_expiry"),
             max_exposure=acc.max_exposure,
-            max_daily_loss_pct=acc.max_daily_loss_pct,
             max_qty=acc.max_qty,
             key_ref=str(raw.get("key_ref", "")).strip(),
             source_config=str(raw.get("source_config", "")).strip(),
