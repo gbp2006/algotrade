@@ -143,6 +143,16 @@ export function Accounts() {
       setEditAccount(null); setEditSecret(''); setKeyAccount(null);
     },
   });
+  const refreshAcc = useMutation({
+    mutationFn: (id: string) => api.refreshAccount(id),
+    onSuccess: (data) => {
+      invalidateAccounts();
+      setNotice(data.ok
+        ? `Баланс запрошен: ${data.equity ?? '—'} ₽${data.delta ? `, дельта ${data.delta.toFixed(2)} ₽` : ''}`
+        : `Запрос баланса: ${data.error || 'ошибка брокера'}`);
+    },
+    onError: (error) => setNotice(`Ошибка запроса баланса: ${error.message}`),
+  });
   const removeAcc = useMutation({
     mutationFn: (id: string) => api.deleteAccount(id),
     onSuccess: () => { invalidateAccounts(); setDeleteId(null); },
@@ -194,6 +204,8 @@ export function Accounts() {
       <span className="text-[11px] text-muted">{row.original.status}</span> },
     { id: 'actions', header: 'Действия', enableSorting: false, cell: ({ row }) => (
       <div className="flex gap-1">
+        <button className="btn" disabled={refreshAcc.isPending}
+          onClick={() => refreshAcc.mutate(row.original.id)}>Баланс</button>
         <button className="btn" onClick={() => { setKeyAccount(row.original.id); setKeySecret(''); }}>Ключ</button>
         <button className="btn" onClick={() => {
           setEditSecret('');
@@ -395,6 +407,7 @@ export function Accounts() {
             id: String(editAccount.id),
             secret: editSecret,
             payload: {
+              new_id: String(editAccount.id ?? ''),
               label: String(editAccount.label ?? ''),
               mode: String(editAccount.mode ?? 'LIVE'),
               ...(String(editAccount.mode ?? 'LIVE') === 'TEST'
@@ -402,6 +415,13 @@ export function Accounts() {
               enabled: editAccount.enabled !== 0,
             },
           })}>
+          <label className="text-xs">ID счёта
+            <input className="input mt-1" value={String(editAccount.id ?? '')}
+              onChange={(e) => setEditAccount({ ...editAccount, id: e.target.value })} />
+            <span className="mt-1 block text-[10px] text-muted">
+              Для LIVE сохранятся только цифры. Роботы, ключ и журнал операций переедут на новый ID.
+            </span>
+          </label>
           <label className="text-xs">Название
             <input className="input mt-1" value={String(editAccount.label ?? '')}
               onChange={(e) => setEditAccount({ ...editAccount, label: e.target.value })} />

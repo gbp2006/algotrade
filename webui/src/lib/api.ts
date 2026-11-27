@@ -82,6 +82,9 @@ export const api = {
     patchRequest<Record<string, unknown>>(`/api/accounts/${encodeURIComponent(id)}`, payload),
   deleteAccount: (id: string) =>
     del<{ deleted: boolean }>(`/api/accounts/${encodeURIComponent(id)}`),
+  refreshAccount: (id: string) => post<{
+    ok: boolean; equity: number | null; delta: number; error: string;
+  }>(`/api/accounts/${encodeURIComponent(id)}/refresh`, {}),
   saveKey: (key_ref: string, secret: string) =>
     post<{ key_ref: string; saved: boolean }>('/api/keys', { key_ref, secret }),
   keys: () => get<{ names: string[] }>('/api/keys'),

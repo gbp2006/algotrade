@@ -39,6 +39,40 @@ class TestApiViews(unittest.TestCase):
         self.assertEqual(row["strategy_name"], "Простушка")
         self.assertTrue(row["about"].startswith("Простушка"))
 
+    def test_refresh_account_returns_fresh_equity(self):
+        api.create_account({"id": "2102993", "mode": "LIVE",
+                            "key_ref": "acc:2102993"}, self.store)
+        outcome = api.account_poller.PollOutcome("2102993", True, equity=49_940.82)
+        with mock.patch.object(api.account_poller, "sync_accounts",
+                               return_value=[outcome]):
+            result = api.refresh_account("2102993", self.store)
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["equity"], 49_940.82)
+
+    def test_account_id_can_be_renamed_with_all_references(self):
+        created = api.create_account({
+            "id": "КлФ-2115210", "mode": "LIVE",
+        }, self.store)
+        self.store.create_instance({
+            "id": "r-on-acc", "spec_id": "prostushka", "mode": "paper",
+            "status": "active", "account": created["id"],
+        })
+        self.store.update_account("2115210", {"key_ref": "acc:2115210"})
+        path = Path(self.tmp.name) / "auth.json"
+        with mock.patch.object(api, "_auth_path", return_value=path):
+            api._write_key("acc:2115210", "tapi_sk_тест")
+            api.update_account("2115210", {
+                "new_id": "КлФ-2115211", "label": "Новый счёт",
+            }, self.store)
+            data = __import__("json").loads(path.read_text(encoding="utf-8"))
+        self.assertNotIn("2115210", [a["id"] for a in api.accounts(self.store)])
+        updated = self.store.get_account("2115211")
+        self.assertEqual(updated["label"], "Новый счёт")
+        self.assertEqual(updated["key_ref"], "acc:2115211")
+        self.assertEqual(self.store.get_instance("r-on-acc")["account"], "2115211")
+        self.assertIn("acc:2115211", data["finam"])
+        self.assertNotIn("acc:2115210", data["finam"])
+
     def test_account_id_keeps_only_digits_for_broker(self):
         created = api.create_account({
             "id": "КлФ-2115210", "label": "КлФ-2115210", "mode": "LIVE",

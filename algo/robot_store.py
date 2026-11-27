@@ -300,6 +300,35 @@ class RobotStore:
             )
         return next(a for a in self.list_accounts() if a["id"] == acc_id)
 
+    def rename_account(self, old_id: str, new_id: str) -> dict:
+        """Переименовать счёт, перенося все ссылки на него."""
+        old, new = str(old_id or "").strip(), str(new_id or "").strip()
+        if not old or not new:
+            raise StoreError("нужны старый и новый ID счёта")
+        if old == new:
+            return self.get_account(old)  # type: ignore[return-value]
+        if self.get_account(old) is None:
+            raise StoreError(f"нет счёта {old}")
+        if self.get_account(new) is not None:
+            raise StoreError(f"счёт {new} уже существует")
+        old_ref, new_ref = f"acc:{old}", f"acc:{new}"
+        with self._conn() as c:
+            c.execute("UPDATE accounts SET id=?, updated_at=? WHERE id=?",
+                      (new, _now(), old))
+            c.execute(
+                "UPDATE instances SET account=?, "
+                "key_ref=CASE WHEN key_ref=? THEN ? ELSE key_ref END WHERE account=?",
+                (new, old_ref, new_ref, old))
+            c.execute("UPDATE accounts SET key_ref=? WHERE id=? AND key_ref=?",
+                      (new_ref, new, old_ref))
+            tables = {r[0] for r in c.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'")}
+            for table in ("cash_flows", "equity_snapshots"):
+                if table in tables:
+                    c.execute(f"UPDATE {table} SET account_id=? WHERE account_id=?",
+                              (new, old))
+        return self.get_account(new)  # type: ignore[return-value]
+
     def delete_account(self, acc_id: str) -> bool:
         """Безопасное удаление: счёт не должен быть привязан к роботам."""
         with self._conn() as c:

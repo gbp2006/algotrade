@@ -19,7 +19,8 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from algo import (arm_state, backtest_preview, instruments_catalog as catalog,
+from algo import (account_poller, arm_state, backtest_preview,
+                  cash_flow_store, instruments_catalog as catalog,
                   live_control, robot_library as lib, robot_schedule,
                   robot_trade, scheduler, strategy_descriptions as sd,
                   trade_journal as tj)
@@ -421,13 +422,40 @@ def _robot_key(payload: dict, iid: str) -> str:
     return value
 
 
+def _rename_key(old_ref: str, new_ref: str) -> None:
+    """Переименовать запись ключа, не раскрывая секрет."""
+    data = _read_auth()
+    finam = data.get("finam") or {}
+    if old_ref not in finam:
+        return
+    finam[new_ref] = finam.pop(old_ref)
+    path = _auth_path()
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    os.chmod(tmp, 0o600)
+    os.replace(tmp, path)
+
+
 @router.patch("/accounts/{acc_id}")
 def update_account(acc_id: str, payload: dict,
                    store: RobotStore = Depends(get_store)):
     data = dict(payload)
     if "enabled" in data:
         data["enabled"] = bool(data["enabled"])
-    key = str(data.get("key_ref") or "").strip()
+    new_raw = str(data.pop("new_id", "") or data.pop("id", "") or "").strip()
+    key = str(data.pop("key_ref", "") or "").strip()
+    if store.get_account(acc_id) is None:
+        raise HTTPException(404, f"нет счёта {acc_id}")
+    target = new_raw or acc_id
+    if str(data.get("mode") or "LIVE").upper() == "LIVE" and new_raw:
+        target = _account_id(new_raw)
+    if target != acc_id:
+        try:
+            _rename_key(f"acc:{acc_id}", f"acc:{target}")
+            store.rename_account(acc_id, target)
+        except (StoreError, ValueError) as exc:
+            _fail(exc)
+        acc_id = target
     if key.startswith("tapi_sk_"):
         try:
             data["key_ref"] = _write_key(f"acc:{acc_id}", key)
@@ -439,6 +467,26 @@ def update_account(acc_id: str, payload: dict,
         return result
     except (StoreError, ValueError) as exc:
         _fail(exc)
+
+
+@router.post("/accounts/{acc_id}/refresh")
+def refresh_account(acc_id: str, store: RobotStore = Depends(get_store)):
+    """Запросить свежий баланс одного счёта у брокера."""
+    acc = store.get_account(acc_id)
+    if acc is None:
+        raise HTTPException(404, f"нет счёта {acc_id}")
+    if not acc.get("key_ref"):
+        raise HTTPException(400, "у счёта нет API-ключа")
+    flows = cash_flow_store.CashFlowStore(store)
+    try:
+        results = account_poller.sync_accounts(
+            [acc], flows, reporter=account_poller.finam_report())
+    except Exception as exc:  # noqa: BLE001 — ошибка брокера не роняет панель
+        raise HTTPException(400, f"{type(exc).__name__}: {exc}"[:200])
+    result = results[0] if results else account_poller.PollOutcome(acc_id, False)
+    invalidate_analytics()
+    return {"ok": result.ok, "equity": result.equity, "delta": result.delta,
+            "error": result.error, "flows": list(result.flows)}
 
 
 @router.delete("/accounts/{acc_id}")
