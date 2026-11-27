@@ -111,9 +111,9 @@ def instances_view(store: RobotStore, mode: str | None = None,
                    status: str | None = None) -> list[dict]:
     rows = store.list_instances(mode=mode, status=status)
     for r in rows:
-        # `note` у робота — это его человекочитаемое описание; `about` — описание
-        # самой стратегии. Оба поля нужны в карточке инстанса (GUI v2).
-        r["description"] = r.get("note") or ""
+        # `note` — короткое имя, `description` — описание идеи робота,
+        # `about` — описание самой стратегии (fallback для старых строк).
+        r["description"] = r.get("description") or r.get("note") or ""
         r["strategy_name"] = sd.name(r.get("spec_id") or "")
         r["about"] = sd.describe(r.get("spec_id") or "")
     return rows
@@ -180,7 +180,7 @@ def detail(iid: str, store: RobotStore = Depends(get_store)):
     if inst is None:
         raise HTTPException(404, f"нет инстанса {iid}")
     return {**inst,
-            "description": inst.get("note") or "",
+            "description": inst.get("description") or inst.get("note") or "",
             "strategy_name": sd.name(inst.get("spec_id") or ""),
             "about": sd.describe(inst.get("spec_id") or "")}
 

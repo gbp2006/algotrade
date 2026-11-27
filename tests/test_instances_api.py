@@ -39,6 +39,15 @@ class TestApiViews(unittest.TestCase):
         self.assertEqual(row["strategy_name"], "Простушка")
         self.assertTrue(row["about"].startswith("Простушка"))
 
+    def test_description_is_returned_not_overwritten_by_name(self):
+        api.create_view(self.store, {
+            "id": "desc-1", "spec_id": "prostushka", "mode": "paper",
+            "note": "Коротко", "description": "Подробная идея робота",
+        })
+        row = api.instances_view(self.store)[0]
+        self.assertEqual(row["note"], "Коротко")
+        self.assertEqual(row["description"], "Подробная идея робота")
+
     def test_repeated_start_is_idempotent(self):
         api.create_view(self.store, {"id": "p-repeat", "spec_id": "prostushka",
                                      "mode": "paper"})
