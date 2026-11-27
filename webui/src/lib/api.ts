@@ -113,11 +113,14 @@ export const api = {
   stopReal: (action: 'set' | 'clear') =>
     post<{ stop_real: boolean }>('/api/stop-real', { action }),
   stopPaper: () => post<{ stop: boolean }>('/api/stop', {}),
-  closeAll: () => post<{
+  closeAll: (account: string) => post<{
+    ok: boolean;
+    account: string;
     closed: number;
     items: Record<string, unknown>[];
     skipped: Record<string, unknown>[];
-  }>('/api/positions/close-all', {}),
+    errors: Record<string, unknown>[];
+  }>('/api/positions/close-all', { account }),
 
   // Фонд денежного рынка.
   mmRebalance: (id: string, regime?: string) => post<Record<string, unknown>>(

@@ -156,6 +156,16 @@ export function Accounts() {
     },
     onError: (error) => setNotice(`Ошибка запроса баланса: ${error.message}`),
   });
+  const closePositions = useMutation({
+    mutationFn: (id: string) => api.closeAll(id),
+    onSuccess: (data) => {
+      invalidateAccounts();
+      const bad = data.errors.length;
+      setNotice(`Счёт ${data.account}: закрыто позиций ${data.closed}, `
+        + `пропусков ${data.skipped.length}${bad ? `, ошибок ${bad}` : ''}`);
+    },
+    onError: (error) => setNotice(`Ошибка закрытия позиций: ${error.message}`),
+  });
   const removeAcc = useMutation({
     mutationFn: (id: string) => api.deleteAccount(id),
     onSuccess: () => { invalidateAccounts(); setDeleteId(null); },
@@ -216,6 +226,12 @@ export function Accounts() {
           onClick={() => refreshAcc.mutate(row.original.id)}>
           {refreshAcc.isPending ? 'Запрос…' : 'Баланс'}
         </button>
+        {row.original.mode === 'live' && <button className="btn-danger"
+          disabled={closePositions.isPending}
+          onClick={() => {
+            if (window.confirm(`ЗАКРЫТЬ ВСЕ позиции счёта ${row.original.id}? Заявки уйдут брокеру.`))
+              closePositions.mutate(row.original.id);
+          }}>Закрыть всё</button>}
         <button className="btn" onClick={() => { setKeyAccount(row.original.id); setKeySecret(''); }}>Ключ</button>
         <button className="btn" onClick={() => {
           setEditSecret('');

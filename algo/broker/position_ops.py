@@ -1,10 +1,18 @@
 """Ручные операции по роботу: закрытие позиций и ребалансировка денежного рынка.
 
-Обе операции идут через ``OrderGateway``: STOP_REAL перед заявкой, лимиты из
-капитала счёта, уникальный ``client_id``,journal в SQLite и зеркало в CSV.
-Закрытие и ребаланс фонда отправляют заявки сразу (ADR 27.11): активный
-робот на счёте LIVE + STOP/лимиты/идемпотентность. ``dry_run=True`` остался
-явным режимом репетиции.
+Обе операции идут через ``OrderGateway``: лимиты из капитала счёта, уникальный
+``client_id``, журнал в SQLite и зеркало в CSV. Закрытие и ребаланс фонда
+отправляют заявки сразу (ADR 27.11): счёт LIVE + лимиты/идемпотентность.
+``dry_run=True`` остался явным режимом репетиции.
+
+STOP_REAL задерживает только заявки на ОТКРЫТИЕ: закрытие позиции уменьшает
+риск, поэтому при выставленном STOP разрешено (иначе аварийный тормоз мешает
+аварийному же закрытию). Лимиты входа тоже не применяются к закрытию.
+
+``close_all(store, account_id)`` смотрит на позиции брокера одного счёта — того,
+на котором нажата кнопка, — а не на список активных роботов: после «Стоп всех»
+робот уже не активен, а позиция осталась и её всё равно надо закрыть. Чужие
+счета не трогаются, паи фонда денежного рынка не трогаются.
 
 Логика денежного рынка повторяет OsEngine ``TmonRebalancer``: режимы
 Off / TwiceADay / OnceADay / OnlyClose, минимальный баланс, фильтр спреда,
@@ -20,7 +28,7 @@ from typing import Any
 
 from .. import trade_journal as tj
 from ..instruments import DEFAULT, INSTRUMENTS
-from .execution import Order, OrderGateway, positions_from_response
+from .execution import Limits, Order, OrderGateway, positions_from_response
 from .finam import FinamBroker
 from .live_guard import (STOP_REAL, account_equity, battle_limits,
                          decision_client_id, parse_pricing, price_for,
@@ -68,13 +76,42 @@ def _context(store: Any, iid: str) -> dict[str, Any]:
 
 
 def _gateway(ctx: dict[str, Any], limits=None) -> OrderGateway:
+    return OrderGateway(ctx["broker"], limits=limits or _default_limits(ctx),
+                        journal=LIVE)
+
+
+def _instrument_for(symbol: str):
+    """Найти спецификацию по символу Финама. Неизвестный символ — CNY-фолбэк.
+
+    Для фьючерсов с плавающим контрактом (Si/RTS/GOLD) префикс SECID совпадает
+    с кодом инструмента; обращение к ISS здесь не нужно.
+    """
+    for inst in INSTRUMENTS.values():
+        if inst.symbol == symbol:
+            return inst
+        if inst.asset and symbol.split("@")[0].startswith(inst.asset):
+            return inst
+    return DEFAULT
+
+
+def _default_limits(ctx: dict[str, Any]) -> Limits:
     acc = ctx["acc"]
-    return OrderGateway(
-        ctx["broker"],
-        limits=limits or battle_limits(ctx["capital"],
-                                       max_exposure=float(acc.get("max_exposure") or 1.0),
-                                       max_qty=int(acc.get("max_qty") or 100)).as_limits(),
-        journal=LIVE,
+    return battle_limits(ctx["capital"],
+                         max_exposure=float(acc.get("max_exposure") or 1.0),
+                         max_qty=int(acc.get("max_qty") or 100)).as_limits()
+
+
+def _close_limits(base: Limits, qty: int, price: float, mult: float) -> Limits:
+    """Расширить лимиты под закрывающий объём.
+
+    Лимиты счёта калиброваны под вход. Закрытие не создаёт нового риска, поэтому
+    `max_qty`/`max_notional` должны пропустить любой реальный объём позиции.
+    """
+    return Limits(
+        max_qty=max(int(base.max_qty), abs(qty)),
+        max_notional=max(float(base.max_notional), abs(qty) * price * mult),
+        max_daily_loss=float(base.max_daily_loss),
+        allowed_symbols=base.allowed_symbols,
     )
 
 
@@ -122,29 +159,31 @@ def available_cash(broker: Any, account: str) -> float:
 def _send_close(ctx: dict[str, Any], symbol: str, qty: int,
                 *, dry_run: bool, note: str, limits=None,
                 multiplier: float | None = None) -> dict[str, Any]:
-    if STOP_REAL.exists():
-        raise OpError("STOP_REAL установлен")
+    """Отправить закрывающую заявку. STOP и лимиты входа не мешают."""
     broker, acc_id = ctx["broker"], ctx["acc_id"]
-    inst = INSTRUMENTS.get(ctx["inst"].get("instrument"), DEFAULT)
-    tick = inst.tick if symbol == (inst.symbol or symbol) else 0.001
+    inst = _instrument_for(symbol)
+    tick = inst.tick
     quote = _quote(broker, symbol, tick)
     side = "sell" if qty > 0 else "buy"
     price, order_type, price_note = price_for(
         parse_pricing("marketable"), quote.last, side, quote, tick)
+    mult = inst.mult if multiplier is None else multiplier
     now = dt.datetime.now().strftime("%H%M%S")
+    owner = str(ctx["inst"]["id"])
+    config = f"close:{owner}:{symbol}"
     order = Order(
-        client_id=decision_client_id("close:" + ctx["inst"]["id"],
+        client_id=decision_client_id(config,
                                      dt.date.today().isoformat(), side, now, abs(qty)),
-        config="close:" + ctx["inst"]["id"], symbol=symbol, side=side,
-        qty=abs(qty), price=price,
-        multiplier=inst.mult if multiplier is None else multiplier,
-        min_step=tick,
+        config=config, symbol=symbol, side=side,
+        qty=abs(qty), price=price, multiplier=mult, min_step=tick,
+        result_qty=0,  # итоговая позиция нулевая — лимит номинала проверяем по ней
         order_type=order_type, account=acc_id, pricing="marketable",
     )
-    result = _gateway(ctx, limits).submit(order, account=acc_id, stop=STOP_REAL,
-                                          dry_run=dry_run)
-    if result.sent:
-        ctx["store"].set_runtime(ctx["inst"]["id"],
+    base = limits or _default_limits(ctx)
+    result = _gateway(ctx, _close_limits(base, qty, price, mult)).submit(
+        order, account=acc_id, stop=None, dry_run=dry_run)
+    if result.sent and ctx.get("store") is not None:
+        ctx["store"].set_runtime(owner,
                                  {"symbol": symbol, "position": 0,
                                   "note": f"закрытие {note}",
                                   "updated_at": dt.datetime.now().isoformat(timespec="seconds")})
@@ -155,8 +194,7 @@ def _send_close(ctx: dict[str, Any], symbol: str, qty: int,
 
 
 def close_instance(store: Any, iid: str, *, dry_run: bool = True,
-                   symbol: str | None = None,
-               bypass_stop: bool = False) -> dict[str, Any]:
+                   symbol: str | None = None) -> dict[str, Any]:
     """Закрыть позицию инструмента, открытую этим инстансом."""
     ctx = _context(store, iid)
     ctx["store"] = store
@@ -169,33 +207,82 @@ def close_instance(store: Any, iid: str, *, dry_run: bool = True,
     if qty == 0:
         return {"ok": True, "closed": 0, "reason": "открытой позиции нет",
                 "symbol": target}
-    return _send_close(ctx, target, qty, dry_run=dry_run, note="все позиции",
-                       bypass_stop=bypass_stop)
+    return _send_close(ctx, target, qty, dry_run=dry_run, note="все позиции")
 
 
-def close_all(store: Any) -> dict[str, Any]:
-    """Закрыть позиции всех активных роботов на реальных счетах.
-
-    Фонд пропускается: его паи — парковка кэша, а не рисковая позиция.
-    STOP_REAL не мешает закрытию — это уменьшение риска, а не новый вход.
-    """
-    live_ids = {str(a["id"]) for a in store.list_accounts()
-                if str(a.get("mode") or "LIVE").upper() == "LIVE"
-                and a.get("enabled", 1)}
-    result: dict[str, Any] = {"closed": 0, "items": [], "skipped": []}
-    for inst in store.list_instances(mode="live", status="active"):
-        if inst.get("spec_id") == "money_market":
-            continue
-        if inst.get("account") not in live_ids:
-            result["skipped"].append({"id": inst["id"], "reason": "не реальный счёт"})
+def _fund_symbols(store: Any) -> set[str]:
+    """Символы паёв фонда — «Закрыть всё» их не трогает."""
+    out = {"FMMM@MISX"}
+    for inst in store.list_instances(mode="live"):
+        if inst.get("spec_id") != "money_market":
             continue
         try:
-            row = close_instance(store, inst["id"], dry_run=False, bypass_stop=True)
-        except Exception as exc:  # noqa: BLE001 — закрываем остальных, даже если один сбой
+            params = json.loads(inst.get("params_json") or "{}")
+        except (TypeError, ValueError):
+            params = {}
+        value = params.get("symbol")
+        if value:
+            out.add(str(value))
+    return out
+
+
+def _account_ctx(acc: dict, broker: Any, equity: float) -> dict[str, Any]:
+    """Контекст для закрытия по позициям счёта, без привязки к роботу."""
+    return {"inst": {"id": f"account:{acc['id']}", "instrument": ""},
+            "acc": acc, "acc_id": str(acc["id"]), "broker": broker,
+            "runtime": {}, "symbol": "", "params": {}, "capital": equity,
+            "store": None}
+
+
+def close_all(store: Any, account_id: str) -> dict[str, Any]:
+    """Закрыть позиции ОДНОГО счёта по данным брокера.
+
+    Граница — счёт, на котором нажата кнопка: чужие счета не трогаются.
+    Не зависит от статусов роботов: после «Стоп всех» или архивации позиция
+    остаётся на счёте и должна закрываться. Паи фонда денежного рынка не
+    трогаются. STOP_REAL не мешает закрытию — это уменьшение риска.
+    """
+    result: dict[str, Any] = {"ok": True, "account": str(account_id),
+                              "closed": 0, "items": [], "skipped": [], "errors": []}
+    acc = store.get_account(str(account_id))
+    if acc is None:
+        raise OpError(f"нет счёта {account_id}")
+    if str(acc.get("mode") or "LIVE").upper() != "LIVE":
+        raise OpError("закрытие позиций доступно только на реальном счёте LIVE")
+    acc_id = str(acc["id"])
+    fund_symbols = _fund_symbols(store)
+    try:
+        key_ref = acc.get("key_ref") or "{env:FINAM_SECRET}"
+        broker = FinamBroker(secret=resolve_secret(key_ref), account=acc_id)
+        equity = account_equity(broker, acc_id)
+        if not equity or equity <= 0:
+            raise OpError("нет equity счёта — позиции не закрыты")
+        positions = positions_from_response(
+            broker.account(acc_id).get("positions", []))
+    except Exception as exc:  # noqa: BLE001 — причина уйдёт в ответ и в UI
+        reason = f"{type(exc).__name__}: {exc}"[:200]
+        result["ok"] = False
+        result["errors"].append({"id": acc_id, "reason": reason})
+        return result
+    for symbol, qty in sorted(positions.items()):
+        if not qty:
+            continue
+        if symbol in fund_symbols:
+            result["skipped"].append({"id": acc_id, "symbol": symbol,
+                                      "reason": "паи фонда денежного рынка"})
+            continue
+        try:
+            row = _send_close(_account_ctx(acc, broker, equity), symbol, qty,
+                              dry_run=False, note="все позиции")
+        except Exception as exc:  # noqa: BLE001 — закрываем остальные позиции счёта
             row = {"ok": False, "reason": f"{type(exc).__name__}: {exc}"[:200]}
-        result["items"].append({"id": inst["id"], **row})
-        if row.get("qty"):
+        item = {"id": acc_id, "symbol": symbol, **row}
+        result["items"].append(item)
+        if row.get("ok") and row.get("qty"):
             result["closed"] += 1
+        if not row.get("ok"):
+            result["errors"].append(item)
+    result["ok"] = not result["errors"]
     return result
 
 

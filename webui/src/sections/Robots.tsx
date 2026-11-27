@@ -106,6 +106,7 @@ export function Robots() {
   const tab = useUi((s) => s.tab) || 'mine';
   const setTab = useUi((s) => s.setTab);
   const mode = useUi((s) => s.mode);
+  const accountId = useUi((s) => s.accountId);
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState('');
   const [notice, setNotice] = useState('');
@@ -184,9 +185,11 @@ export function Robots() {
     onError: (error) => setNotice(`Ошибка прогона: ${error.message}`),
   });
   const closeAll = useMutation({
-    mutationFn: () => api.closeAll(),
+    mutationFn: (account: string) => api.closeAll(account),
     onSuccess: (data) => {
-      setNotice(`Закрыто позиций: ${data.closed}; пропусков: ${data.skipped.length}`);
+      const errors = data.errors.length ? `; ошибок: ${data.errors.length}` : '';
+      setNotice(`Счёт ${data.account}: закрыто позиций ${data.closed}; `
+        + `пропусков ${data.skipped.length}${errors}`);
       refreshAll();
     },
     onError: (error) => setNotice(`Ошибка закрытия: ${error.message}`),
@@ -535,20 +538,21 @@ export function Robots() {
                 <button className="btn" onClick={() => flag.mutate({ kind: 'paper', value: 'set' })}>STOP/старт бумаги</button>
               </div>
             </Card>
-            <Card title="Закрыть всё">
+            <Card title="Закрыть позиции счёта">
               <div className="text-xs">
-                Все позиции активных роботов на реальных счетах. Виртуальные счета не торгуют.
+                Закрываются только позиции выбранного счёта — счета остальных роботов не трогаются.
                 Фонд денежного рынка не трогается — его паи это парковка кэша.
               </div>
               <div className="mt-2">
-                <button className="btn-danger" disabled={closeAll.isPending}
+                <button className="btn-danger" disabled={closeAll.isPending || !accountId}
                   onClick={() => {
-                    if (window.confirm('ЗАКРЫТЬ ВСЕ позиции на реальных счетах? Заявки уйдут брокеру.'))
-                      closeAll.mutate();
-                  }}>Закрыть всё</button>
+                    if (window.confirm(`ЗАКРЫТЬ ВСЕ позиции счёта ${accountId}? Заявки уйдут брокеру.`))
+                      closeAll.mutate(accountId);
+                  }}>Закрыть всё на счёте {accountId || '(выберите счёт)'}</button>
               </div>
               <p className="mt-2 text-[11px] text-muted">
-                СТАРТ/СТОП управляют роботом; «Закрыть всё» закрывает позиции, даже если STOP установлен.
+                Счёт выбирается в верхней строке панели. СТАРТ/СТОП управляют роботом;
+                «Закрыть всё» закрывает позиции, даже если STOP установлен.
               </p>
             </Card>
             <Card title="Последние заявки брокера">
