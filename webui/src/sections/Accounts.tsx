@@ -416,8 +416,9 @@ export function Accounts() {
               enabled: editAccount.enabled !== 0,
             },
           })}>
-          <label className="text-xs">ID счёта
-            <input className="input mt-1" value={String(editAccount.id ?? '')}
+          <label className="text-xs font-semibold">ID счёта — сюда вставляй номер счёта брокера
+            <input className="input mt-1" autoFocus value={String(editAccount.id ?? '')}
+              placeholder="например 2115210 или КлФ-2115210"
               onChange={(e) => setEditAccount({ ...editAccount, id: e.target.value })} />
             <span className="mt-1 block text-[10px] text-muted">
               Для LIVE сохранятся только цифры. Роботы, ключ и журнал операций переедут на новый ID.
