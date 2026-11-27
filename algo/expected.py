@@ -83,8 +83,12 @@ def expected(cfg, m5: pd.DataFrame, start: str, end: str,
             continue
         decisions += 1
         if dec.target != 0:
-            risk_bars = m5[(m5.index.date <= day)
-                           & (m5.index <= dec.ts + pd.Timedelta(minutes=5))]
+            # Бумажный раннер считает ATR-сайзинг по всем барам, доступным к
+            # моменту запуска daily-прогона (13:55), а не только до времени
+            # решения. Для H1-решений в 12:00 это разные выборки: первая даёт
+            # ATR×0.98 и 31 контракт, вторая — ATR×0.13 и 4 контракта.
+            risk_cut = pd.Timestamp(f"{day} 13:55:00")
+            risk_bars = m5[(m5.index.date <= day) & (m5.index <= risk_cut)]
             contracts, _ = risk.contracts_for_config(
                 cur, capital + pnl, dec.price, mult, risk_bars, [], day, capital)
         else:
