@@ -2,8 +2,8 @@
 
 Модуль только оркестрирует уже существующие части и не дублирует их логику:
 `RobotStore` (статус и задания), `algo.arm_state` (реальные заявки),
-`algo.live_control` (таймер боя). Расписание остаётся пользовательским:
-включение задания не меняет времена и дни, заданные в панели.
+`algo.live_control` (разрешение живых заданий). Расписание остаётся
+пользовательским: включение задания не меняет времена и дни из панели.
 """
 
 from __future__ import annotations
@@ -26,18 +26,18 @@ def start(store: RobotStore, iid: str) -> dict[str, Any]:
         jobs.append(store.upsert_job({**job, "enabled": True}))
 
     armed = False
-    timer = None
+    permission = None
     if inst["mode"] == "live":
         if inst["spec_id"] == "money_market":
             arm_state.set_enabled("mm", True)
             armed = True
         try:
-            timer = live_control.enable(store)
+            permission = live_control.enable(store)
         except live_control.LiveControlError as exc:
-            timer = {"error": str(exc)}
+            permission = {"error": str(exc)}
     return {
         "id": iid, "status": inst["status"], "scheduled": len(jobs),
-        "armed_mm": armed, "timer": timer,
+        "armed_mm": armed, "timer": permission,
     }
 
 
@@ -55,15 +55,15 @@ def stop(store: RobotStore, iid: str) -> dict[str, Any]:
     if inst["spec_id"] == "money_market":
         arm_state.set_enabled("mm", False)
 
-    # Если живых роботов не осталось — гасим общий таймер, чтобы не было
-    # холостых прогонов по пустому белому списку.
-    timer = None
+    # Если живых роботов не осталось — снимаем разрешение со всех живых заданий,
+    # чтобы не было холостых прогонов по пустому белому списку.
+    permission = None
     if not store.list_instances(mode="live", status="active"):
         try:
-            timer = live_control.disable()
+            permission = live_control.disable(store)
         except live_control.LiveControlError as exc:
-            timer = {"error": str(exc)}
+            permission = {"error": str(exc)}
     return {
         "id": iid, "status": "paused", "scheduled": len(jobs),
-        "armed_mm": False, "timer": timer,
+        "armed_mm": False, "timer": permission,
     }

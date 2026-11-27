@@ -9,7 +9,7 @@
 ```bash
 ./run.sh test          # юнит-тесты движка
 ./run.sh all           # Простушка на Si + Универсалка
-./run.sh start-project # полный старт на WSL: PostgreSQL + миграция + GUI :8080
+./run.sh start-project # полный старт на WSL: PostgreSQL + миграция + GUI :80
 ```
 
 Если `.venv` нет: `python3 -m venv .venv && ./.venv/bin/pip install -r requirements.txt`.

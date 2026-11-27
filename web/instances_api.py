@@ -598,9 +598,9 @@ def live_control_enable(store: RobotStore = Depends(get_store)):
 
 
 @router.post("/live-control/disable")
-def live_control_disable():
+def live_control_disable(store: RobotStore = Depends(get_store)):
     try:
-        return live_control.disable()
+        return live_control.disable(store)
     except live_control.LiveControlError as exc:
         raise HTTPException(400, str(exc))
 

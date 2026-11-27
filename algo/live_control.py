@@ -1,93 +1,31 @@
-"""Включение/выключение постоянной реальной торговли из панели.
+"""Разрешение реальной торговли из панели без systemd-таймера.
 
-Тумблер не меняет `.env`: флаг `FINAM_ALLOW_TRADING=1` живёт только в юните
-systemd, поэтому фоновые скрипты и бумага остаются на флаге 0. Включается
-таймер на 14:00 МСК — после бумажного решения 13:55 и тени 13:57.
-
-Безопасность: включение отказывает, если нет активных живых инстансов, счёта
-или установлен STOP_REAL. Выключение снимает только этот таймер.
+Единственный пуск — пользовательское расписание активного живого робота
+(`inst:<id>:schedule`), которое исполняет внутренний планировщик. Включение
+разрешает эти задания, выключение снимает. `.env` не меняется: флаг из команды
+задания остаётся локальным для этого робота.
 """
 
 from __future__ import annotations
 
 import json
-import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from .robot_store import RobotStore
+
 ROOT = Path(__file__).resolve().parent.parent
-UNIT_DIR = ROOT / "infra" / "systemd"
-SYSTEM_DIR = Path("/etc/systemd/system")
-SERVICE = "algotrading-live.service"
-TIMER = "algotrading-live.timer"
 AUDIT_LOG = ROOT / "results" / "trading_toggle.jsonl"
+STOP_REAL = ROOT / "results" / "STOP_REAL"
 MSK = timezone(timedelta(hours=3))
-
-SERVICE_TEXT = """[Unit]
-Description=Боевой контур: реальные заявки по решениям бумаги
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=oneshot
-User=zt
-WorkingDirectory={root}
-Environment=FINAM_ALLOW_TRADING=1
-Environment=ALGO_VOL_ROLLOVER=1
-ExecStart={root}/.venv/bin/python {root}/scripts/34_live_execute.py --arm
-StandardOutput=append:{root}/results/live.log
-StandardError=append:{root}/results/live.log
-
-[Install]
-WantedBy=multi-user.target
-"""
-
-TIMER_TEXT = """[Unit]
-Description=Боевой прогон после решения 13:55 (14:00 МСК)
-
-[Timer]
-OnCalendar=Mon..Fri 14:00:00
-Persistent=false
-Unit=algotrading-live.service
-
-[Install]
-WantedBy=timers.target
-"""
 
 
 class LiveControlError(RuntimeError):
-    """Нет условий для включения или не удалось управлять systemd."""
-
-
-def render_units() -> tuple[str, str]:
-    return SERVICE_TEXT.format(root=ROOT), TIMER_TEXT
-
-
-def _systemctl(*args: str) -> str:
-    proc = subprocess.run(["sudo", "-n", "systemctl", *args],
-                          capture_output=True, text=True, timeout=60)
-    if proc.returncode != 0:
-        raise LiveControlError(
-            f"systemctl {args}: {(proc.stderr or proc.stdout).strip()[:200]}")
-    return proc.stdout.strip()
-
-
-def _install_units() -> None:
-    svc, tmr = render_units()
-    UNIT_DIR.mkdir(parents=True, exist_ok=True)
-    (UNIT_DIR / SERVICE).write_text(svc, encoding="utf-8")
-    (UNIT_DIR / TIMER).write_text(tmr, encoding="utf-8")
-    for name in (SERVICE, TIMER):
-        proc = subprocess.run(
-            ["sudo", "-n", "cp", str(UNIT_DIR / name), str(SYSTEM_DIR / name)],
-            capture_output=True, text=True, timeout=60)
-        if proc.returncode != 0:
-            raise LiveControlError(f"не удалось установить {name}: "
-                                   f"{proc.stderr.strip()[:200]}")
+    """Нет условий для включения реальной торговли."""
 
 
 def _audit(action: str, detail: str) -> None:
-    """Небольшой append-only журнал вкл/выкл: кто/когда/результат."""
+    """Append-only журнал вкл/выкл: кто/когда/результат."""
     AUDIT_LOG.parent.mkdir(parents=True, exist_ok=True)
     row = {"ts": datetime.now(MSK).isoformat(timespec="seconds"),
            "action": action, "detail": detail}
@@ -107,23 +45,6 @@ def audit(limit: int = 50) -> list[dict]:
     return rows[-max(1, min(limit, 200)):][::-1]
 
 
-def status() -> dict:
-    installed = (SYSTEM_DIR / TIMER).exists()
-    active = False
-    next_run = None
-    if installed:
-        out = _systemctl("list-timers", "--all", "--no-pager")
-        for line in out.splitlines():
-            if TIMER in line:
-                active = True
-                next_run = " ".join(line.split()[:3])
-                break
-    stop = (ROOT / "results" / "STOP_REAL").exists()
-    return {"timer_installed": installed, "enabled": active,
-            "next_run": next_run, "stop_real": stop,
-            "env_flag": "1" if _env_flag() else "0"}
-
-
 def _env_flag() -> bool:
     env = ROOT / ".env"
     if not env.exists():
@@ -134,25 +55,59 @@ def _env_flag() -> bool:
     return False
 
 
-def enable(store) -> dict:
-    live = store.list_instances(mode="live", status="active")
+def _live_ids(store: RobotStore) -> list[str]:
+    return [str(i["id"]) for i in store.list_instances(mode="live", status="active")]
+
+
+def _jobs(store: RobotStore) -> list[dict]:
+    ids = set(_live_ids(store))
+    return [j for j in store.list_jobs()
+            if j.get("owner") in ids and str(j.get("id", "")).startswith("inst:")]
+
+
+def status(store: RobotStore | None = None) -> dict:
+    st = store or RobotStore()
+    jobs = _jobs(st)
+    enabled = [j for j in jobs if j.get("enabled")]
+    times = sorted({str(t) for j in enabled for t in (j.get("times") or [])})
+    return {
+        # старые поля сохранены: панель и API читают их без миграции
+        "timer_installed": bool(jobs),
+        "enabled": bool(enabled),
+        "next_run": times[0] if times else None,
+        "stop_real": STOP_REAL.exists(),
+        "env_flag": "1" if _env_flag() else "0",
+        "mode": "robots",
+        "scheduled": len(jobs),
+        "live_robots": len(_live_ids(st)),
+    }
+
+
+def enable(store: RobotStore) -> dict:
+    live = _live_ids(store)
     if not live:
         raise LiveControlError("нет активных живых роботов — включать нечего")
     if not store.list_accounts():
         raise LiveControlError("нет счетов — включать нечего")
-    if (ROOT / "results" / "STOP_REAL").exists():
+    if STOP_REAL.exists():
         raise LiveControlError("установлен STOP_REAL — снимите перед включением")
-    _install_units()
-    _systemctl("daemon-reload")
-    _systemctl("enable", "--now", TIMER)
-    result = status()
-    _audit("enable", f"живых роботов: {len(live)}; next_run={result.get('next_run')}")
+    jobs = _jobs(store)
+    if not jobs:
+        raise LiveControlError("у активных живых роботов нет заданий inst:schedule")
+    for job in jobs:
+        if not job.get("enabled"):
+            store.upsert_job({**job, "enabled": True})
+    result = status(store)
+    _audit("enable", f"живых роботов: {len(live)}; заданий: {len(jobs)}; "
+                     f"next_run={result.get('next_run')}")
     return result
 
 
-def disable() -> dict:
-    if (SYSTEM_DIR / TIMER).exists():
-        _systemctl("disable", "--now", TIMER)
-    result = status()
-    _audit("disable", "таймер остановлен")
+def disable(store: RobotStore | None = None) -> dict:
+    st = store or RobotStore()
+    jobs = [j for j in _jobs(st) if j.get("enabled")]
+    for job in jobs:
+        st.upsert_job({**job, "enabled": False})
+    result = status(st)
+    _audit("disable", f"снято заданий: {len(jobs)}")
     return result

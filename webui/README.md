@@ -9,13 +9,13 @@ FastAPI-эндпоинтами, что и старая панель Jinja/JS. С
 ```bash
 cd webui
 npm install
-npm run dev        # http://127.0.0.1:5180, /api проксируется на :8080
+npm run dev        # http://127.0.0.1:5180, /api проксируется на :80
 npm run build      # dist/ — отдаётся тем же FastAPI по /ui
 npm test           # Vitest
 ```
 
 Переменная `VITE_API_TARGET` задаёт адрес бэкенда для прокси (по умолчанию
-`http://127.0.0.1:8080`).
+`http://127.0.0.1`).
 
 ## Состав
 

@@ -18,7 +18,7 @@ from algo.robot_store import RobotStore  # noqa: E402
 
 class TestScheduler(unittest.TestCase):
     def test_due_times(self):
-        task = next(t for t in sch.TASKS if t.name == "daily")
+        task = sch.Job(id="daily", command="echo", times=("13:55",))
         wed = datetime(2026, 11, 25, 13, 55)
         self.assertTrue(sch.due(task, wed, {}))
         self.assertFalse(sch.due(task, datetime(2026, 11, 25, 13, 54), {}))
@@ -27,15 +27,26 @@ class TestScheduler(unittest.TestCase):
             task, wed, {"daily": wed.strftime("%Y-%m-%d %H:%M")}))
 
     def test_every_ten_minutes(self):
-        task = next(t for t in sch.TASKS if t.name == "update_live")
+        task = sch.Job(id="update_live", command="echo", interval_min=10)
         self.assertTrue(sch.due(task, datetime(2026, 11, 25, 10, 10), {}))
         self.assertFalse(sch.due(task, datetime(2026, 11, 25, 10, 11), {}))
 
-    def test_shadow_default(self):
+    def test_mode_default_and_legacy_flags(self):
         with mock.patch.dict("os.environ", {}, clear=True):
+            self.assertEqual(sch.mode(), "off")
             self.assertTrue(sch.shadow())
-        with mock.patch.dict("os.environ", {"ALGO_SCHEDULER_SHADOW": "0"}):
+        with mock.patch.dict("os.environ", {"ALGO_SCHEDULER_MODE": "robots"}, clear=True):
+            self.assertEqual(sch.mode(), "robots")
             self.assertFalse(sch.shadow())
+        with mock.patch.dict("os.environ", {"ALGO_SCHEDULER_MODE": "all"}, clear=True):
+            self.assertEqual(sch.mode(), "all")
+        # старый drop-in WSL продолжает работать до обновления юнита
+        with mock.patch.dict("os.environ", {
+            "ALGO_SCHEDULER_SHADOW": "0", "ALGO_SCHEDULER_ONLY_ROBOTS": "1",
+        }, clear=True):
+            self.assertEqual(sch.mode(), "robots")
+        with mock.patch.dict("os.environ", {"ALGO_SCHEDULER_SHADOW": "0"}, clear=True):
+            self.assertEqual(sch.mode(), "all")
 
     def test_command_placeholders(self):
         slot = datetime(2026, 11, 27, 14, 0)
@@ -47,39 +58,57 @@ class TestScheduler(unittest.TestCase):
     def test_only_robot_jobs_execute(self):
         robot_job = sch.Job(id="inst:x:schedule", command="echo", owner="x")
         system_job = sch.Job(id="daily", command="echo", owner="system")
-        env = {"ALGO_SCHEDULER_SHADOW": "0", "ALGO_SCHEDULER_ONLY_ROBOTS": "1"}
-        with mock.patch.dict("os.environ", env, clear=True):
+        with mock.patch.dict("os.environ", {"ALGO_SCHEDULER_MODE": "robots"}, clear=True):
             self.assertTrue(sch.is_real(robot_job))
             self.assertFalse(sch.is_real(system_job))
+        with mock.patch.dict("os.environ", {"ALGO_SCHEDULER_MODE": "off"}, clear=True):
+            self.assertFalse(sch.is_real(robot_job))
+        with mock.patch.dict("os.environ", {"ALGO_SCHEDULER_MODE": "all"}, clear=True):
+            self.assertTrue(sch.is_real(system_job))
 
-    def test_run_once_shadow_no_subprocess(self):
+    def test_system_slots_are_only_logged(self):
         with tempfile.TemporaryDirectory() as tmp:
             state, log = Path(tmp) / "state.json", Path(tmp) / "scheduler.log"
             store = RobotStore(Path(tmp) / "robots.db")
             store.init_db()
+            store.upsert_job({"id": "daily", "owner": "system", "command": "echo",
+                              "times": ["13:55"]})
             with mock.patch.multiple(sch, STATE=state, LOG=log):
                 fired = sch.run_once(datetime(2026, 11, 25, 13, 55),
                                      execute=False, store=store)
             self.assertIn("daily", fired)
             text = log.read_text(encoding="utf-8")
-            self.assertIn("SHADOW daily", text)
+            self.assertIn("SKIP-SYSTEM daily", text)
             self.assertNotIn("RUN ", text)
             self.assertEqual(json.loads(state.read_text())["daily"],
                              "2026-11-25 13:55")
             runs = store.list_runs()
-            self.assertTrue(any(r["status"] == "shadow" for r in runs))
+            self.assertTrue(any(r["status"] == "log_only" for r in runs))
 
     def test_multiple_jobs_and_dedupe(self):
         with tempfile.TemporaryDirectory() as tmp:
             store = RobotStore(Path(tmp) / "robots.db")
             store.init_db()
-            sch.seed_default_jobs(store)
-            self.assertGreaterEqual(len(store.list_jobs()), 6)
+            store.upsert_job({"id": "inst:x:schedule", "owner": "x",
+                              "command": "echo", "times": ["13:55"]})
+            store.upsert_job({"id": "custom-system", "owner": "system",
+                              "command": "echo", "times": ["13:55"]})
+            self.assertEqual(len(store.list_jobs()), 2)
             now = datetime(2026, 11, 25, 13, 55)
             first = sch.run_once(now, execute=False, store=store)
             second = sch.run_once(now, execute=False, store=store)
-            self.assertIn("daily", first)
+            self.assertIn("custom-system", first)
             self.assertEqual(second, [])  # слоты уже заняты
+
+    def test_drop_legacy_system_jobs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = RobotStore(Path(tmp) / "robots.db")
+            store.init_db()
+            for jid in ("daily", "channel", "custom-system"):
+                store.upsert_job({"id": jid, "owner": "system", "command": "echo",
+                                  "times": ["13:55"]})
+            self.assertEqual(sch.drop_system_jobs(store), 2)
+            self.assertEqual([j["id"] for j in store.list_jobs()], ["custom-system"])
 
     def test_instance_jobs(self):
         with tempfile.TemporaryDirectory() as tmp:

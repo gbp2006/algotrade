@@ -1,7 +1,7 @@
 /* Headless-проверка GUI: открывает /ui, ловит ошибки JS и проверяет рендер. */
 import puppeteer from 'puppeteer-core';
 
-const url = process.argv[2] || 'http://192.168.0.230:8080/ui/';
+const url = process.argv[2] || 'http://192.168.0.230/ui/';
 const browser = await puppeteer.launch({
   executablePath: '/usr/bin/google-chrome',
   headless: true,

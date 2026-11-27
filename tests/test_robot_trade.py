@@ -52,9 +52,12 @@ class TestRobotTrade(unittest.TestCase):
             store.create_instance({"id": "fund-1", "spec_id": "money_market",
                                    "mode": "live", "account": "2102993"})
             with mock.patch.object(live_control, "enable", return_value={"ok": True}) as enable, \
+                 mock.patch.object(live_control, "disable", return_value={"ok": True}) as disable, \
                  mock.patch.object(arm_state, "ARM_STATE", Path(tmp) / "arm.json"):
                 result = robot_trade.start(store, "fund-1")
+                robot_trade.stop(store, "fund-1")
             enable.assert_called_once_with(store)
+            disable.assert_called_once_with(store)
             self.assertTrue(result["armed_mm"])
 
 

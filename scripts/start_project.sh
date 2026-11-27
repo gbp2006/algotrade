@@ -25,7 +25,7 @@ sudo -n systemctl enable --now algotrading-web.service >/dev/null
 
 echo "5/6 проверка HTTP"
 for path in / /ui /api/health /api/cash-flows /api/portfolio/analytics; do
-  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "http://127.0.0.1:8080$path" || true)"
+  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "http://127.0.0.1$path" || true)"
   echo "  $code $path"
   [ "$code" = "200" ] || { echo "ОШИБКА: $path вернул $code" >&2; exit 1; }
 done
@@ -33,5 +33,5 @@ done
 echo "6/6 статус сервисов"
 printf '  postgresql: '; sudo -n systemctl is-active postgresql
 printf '  web:        '; sudo -n systemctl is-active algotrading-web.service
-printf '  live timer: '; sudo -n systemctl is-active algotrading-live.timer 2>/dev/null || echo "отключён панелью"
-echo "готово: GUI http://127.0.0.1:8080/"
+printf '  scheduler:  '; sudo -n systemctl is-active algotrading-scheduler.service
+echo "готово: GUI http://127.0.0.1/"

@@ -22,7 +22,7 @@ sys.path.insert(0, str(ROOT))
 
 from algo.robot_schedule import regime_for_slot  # noqa: E402
 
-PANEL = os.environ.get("ALGO_PANEL_URL", "http://127.0.0.1:8080")
+PANEL = os.environ.get("ALGO_PANEL_URL", "http://127.0.0.1")
 
 
 def request(path: str) -> dict:

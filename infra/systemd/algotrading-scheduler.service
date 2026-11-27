@@ -1,5 +1,5 @@
 [Unit]
-Description=Algo internal scheduler (shadow until gates pass)
+Description=Algo internal scheduler: задания роботов, системные дублируют systemd-таймеры
 After=network-online.target
 Wants=network-online.target
 
@@ -7,7 +7,7 @@ Wants=network-online.target
 Type=simple
 User=zt
 WorkingDirectory=/home/zt/algotrading
-Environment=ALGO_SCHEDULER_SHADOW=1
+Environment=ALGO_SCHEDULER_MODE=robots
 ExecStart=/home/zt/algotrading/.venv/bin/python -m algo.scheduler
 Restart=always
 RestartSec=10

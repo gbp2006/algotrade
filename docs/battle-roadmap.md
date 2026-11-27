@@ -22,7 +22,7 @@ ADR 18.11 (не эталон сверки) и ADR 23.11 (строгие гейт
 | Сервис роботов: `BrokerAdapter`/`FinamAdapter`, store, spec-библиотека, API/UI `/robots`, 17 конфигов seed-ом, миграция состояния | ✅ готово | `PROGRESS.md`, `docs/service-design.md` |
 | Предохранители: лимиты из капитала, STOP перед заявкой, `client_id`, сверка позиций | ✅ подготовлены и покрыты тестами | `algo/broker/live_guard.py` |
 | Бумажный контур | ⏳ 3/30 дат в `results/paper.csv` (19, 20, 23.11) | `results/paper.csv`, `docs/live-gates.md` |
-| Тень | ⏳ 2/10 дат в `results/live.csv` (20, 23.11), 10 `planned` + 6 `duplicate` при повторном прогоне; расхождения с брокером информационные | `results/shadow.json` |
+| Тень | ⏳ 2/10 дат в `results/shadow.csv` (20, 23.11), 10 `planned` + 6 `duplicate` при повторном прогоне; расхождения с брокером информационные | `results/shadow.json` |
 | Транспорт к роботу | ❌ нет, только `dry_run=True` | `scripts/33_shadow_live.py:84` |
 | Реальная торговля | ❌ `FINAM_ALLOW_TRADING=0` | `results/health.json`, `docs/live-runbook.md` |
 | Боевой раннер, 3 режима цены, мультиаккаунт | ✅ код есть (`scripts/34_live_execute.py`), в бой не включён | `PROGRESS.md` |

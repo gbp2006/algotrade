@@ -35,8 +35,10 @@
 
 `./run.sh shadow` (`scripts/33_shadow_live.py`) каждый будний день в 13:57 берёт
 решения из `paper.csv`, считает дельту позиции, проверяет цену/лимиты через
-`OrderGateway(dry_run=True)` и пишет плановые заявки в `results/live.csv`
-(статус `planned`). Сводка — `results/shadow.json`, лог — `results/shadow.log`.
+`OrderGateway(dry_run=True)` и пишет плановые заявки в `results/shadow.csv`
+(статус `planned`). У тени свой журнал и `shadow.lock`; боевой контур пишет в
+`live.csv` и держит `live.lock`. Сводка — `results/shadow.json`, лог —
+`results/shadow.log`.
 Заявки **не отправляются** даже при `FINAM_ALLOW_TRADING=1`. На WSL работает
 таймер `algotrading-shadow.timer`. Расхождения позиций с реальным счётом в
 бумажном режиме ожидаемы и в дубли не превращаются.

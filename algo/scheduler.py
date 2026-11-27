@@ -5,9 +5,12 @@
 загружаются из store на каждом цикле, поэтому новые роботы и их расписания
 появляются без перезапуска сервиса.
 
-Важно: пока включён shadow-режим (`ALGO_SCHEDULER_SHADOW=1`), задания только
-пишутся в лог и не выполняются. Systemd-таймеры остаются главными — счёт
-дней G2/G3 не прерывается.
+Важно: режим задаётся одной переменной `ALGO_SCHEDULER_MODE`:
+`off` (по умолчанию) — только лог, `robots` — реально исполняются задания
+`inst:*`, системные слоты пишутся как `SKIP-SYSTEM`, `all` — исполняются все
+(дублирует systemd-таймеры, включать только отдельным решением).
+Слово «shadow» относится только к репетиции G3 (`scripts/33_shadow_live.py`).
+Системных заданий в планировщике нет: их исполняют systemd-таймеры.
 
 Устойчивость:
 - каждый запуск занимает свой слот в БД (UNIQUE job_id+slot) — нет дублей;
@@ -74,32 +77,46 @@ def _job(id: str, command: str, **kwargs) -> Job:
     return Job(id=id, command=command, **kwargs)
 
 
-DEFAULT_JOBS = (
-    _job("morning", "./run.sh paper-live", times=("10:25",)),
-    _job("daily", "./run.sh paper-live; ./run.sh update; ./run.sh report",
-         times=("13:55",)),
-    _job("shadow", ".venv/bin/python scripts/33_shadow_live.py", times=("13:57",)),
-    _job("friday", "./run.sh paper-live; ./run.sh update; ./run.sh report",
-         times=("18:45",), weekdays=(4,)),
-    _job("update_live", ".venv/bin/python scripts/10b_append_finam.py",
-         interval_min=10, weekdays=(0, 1, 2, 3, 4, 5, 6)),
-    _job("channel", ".venv/bin/python scripts/31_paper_live.py --channel",
-         interval_min=10, hours=(9, 23)),
-)
+# Системные расписания целиком живут в systemd-таймерах. Планировщик создаёт
+# только задания роботов (`inst:*`) через sync_instance_jobs().
+DEFAULT_JOBS: tuple[Job, ...] = ()
+LEGACY_SYSTEM_JOBS = ("morning", "daily", "shadow", "friday", "update_live", "channel")
 TASKS = DEFAULT_JOBS
+
+MODES = ("off", "robots", "all")
+
+
+def mode() -> str:
+    """Единственный переключатель планировщика.
+
+    Старые флаги `ALGO_SCHEDULER_SHADOW`/`ALGO_SCHEDULER_ONLY_ROBOTS` читаются
+    только если `ALGO_SCHEDULER_MODE` не задан — для совместимости с drop-in
+    на WSL, который пока не лежит в репозитории.
+    """
+    value = os.environ.get("ALGO_SCHEDULER_MODE", "").strip().lower()
+    if value in MODES:
+        return value
+    if os.environ.get("ALGO_SCHEDULER_SHADOW", "1") == "0":
+        return "robots" if os.environ.get("ALGO_SCHEDULER_ONLY_ROBOTS", "0") == "1" else "all"
+    return "off"
 
 
 def shadow() -> bool:
-    return os.environ.get("ALGO_SCHEDULER_SHADOW", "1") != "0"
+    """Устаревший алиас для обратной совместимости API."""
+    return mode() == "off"
 
 
 def robots_only() -> bool:
-    """Включить только задания роботов (owner `inst:`), системные оставить в shadow."""
-    return os.environ.get("ALGO_SCHEDULER_ONLY_ROBOTS", "0") == "1"
+    """Устаревший алиас для обратной совместимости API."""
+    return mode() == "robots"
 
 
-def is_real(job: Job) -> bool:
-    return not shadow() and (not robots_only() or str(job.id).startswith("inst:"))
+def is_real(job: Job, execute: bool | None = None) -> bool:
+    """Исполнять ли задание. `execute` перекрывает env (используется тестами)."""
+    if execute is not None:
+        return execute and (mode() != "robots" or str(job.id).startswith("inst:"))
+    m = mode()
+    return m != "off" and (m == "all" or str(job.id).startswith("inst:"))
 
 
 def _slots_for(job: Job, now: datetime,
@@ -165,7 +182,8 @@ def load_jobs(store: RobotStore | None = None) -> list[Job]:
             stop_aware=r["stop_aware"], catchup_template=r["catchup_template"],
             note=r.get("note", ""),
         ) for r in rows]
-    return list(DEFAULT_JOBS)
+    # Пустая БД — это нормальное состояние: системные задачи запускают systemd-таймеры.
+    return []
 
 
 def seed_default_jobs(store: RobotStore | None = None) -> int:
@@ -187,6 +205,20 @@ def seed_default_jobs(store: RobotStore | None = None) -> int:
         })
         added += 1
     return added
+
+
+def drop_system_jobs(store: RobotStore | None = None) -> int:
+    """Убрать старые системные задания из БД (их исполняют systemd-таймеры).
+
+    История запусков остаётся в `scheduler_runs`; пользовательские задания
+    с другими id не трогаются. Вызывается при каждом старте сервиса.
+    """
+    st = store or _store()
+    removed = 0
+    for jid in LEGACY_SYSTEM_JOBS:
+        if st.delete_job(jid):
+            removed += 1
+    return removed
 
 
 def instance_jobs(store: RobotStore | None = None) -> list[Job]:
@@ -299,9 +331,7 @@ def run_once(now: datetime | None = None, execute: bool | None = None,
     """Разобрать слоты, занять их в БД и выполнить/залогировать."""
     now = now or datetime.now(MSK)
     st = store or _store()
-    real = (not shadow()) if execute is None else execute
     state = json.loads(STATE.read_text(encoding="utf-8")) if STATE.exists() else {}
-    real_job = lambda job: real and (not robots_only() or str(job.id).startswith("inst:"))
     jobs = load_jobs(st)
     fired: list[str] = []
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
@@ -313,9 +343,9 @@ def run_once(now: datetime | None = None, execute: bool | None = None,
                     continue  # уже взято или выполнено
                 fired.append(job.id)
                 state[job.id] = stamp
-                if not real_job(job):
-                    _log(f"SHADOW {job.id}: {job.command} (slot {stamp})")
-                    st.finish_run(run_id, "shadow", "shadow-режим")
+                if not is_real(job, execute):
+                    _log(f"SKIP-SYSTEM {job.id}: {job.command} (slot {stamp})")
+                    st.finish_run(run_id, "log_only", "системное задание: дублирует systemd-таймер")
                     continue
                 _log(f"RUN {job.id}: {job.command} (slot {stamp})")
                 catchup = slot.date() != now.date() or stamp != now.strftime("%Y-%m-%d %H:%M")
@@ -353,8 +383,10 @@ def loop(interval: int = 10) -> None:
     os.write(fd, str(os.getpid()).encode())
     st = _store()
     seed_default_jobs(st)
+    removed = drop_system_jobs(st)
     sync_instance_jobs(st)
-    _log(f"старт, shadow={shadow()}, jobs={len(load_jobs(st))}")
+    _log(f"старт, mode={mode()}, jobs={len(load_jobs(st))}, "
+         f"удалено системных={removed}")
     try:
         while True:
             try:

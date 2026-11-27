@@ -1,7 +1,7 @@
 """Управление реальной торговлей из панели.
 
-Включает/выключает таймер боевого раннера (`live_control`), а не меняет `.env`.
-При включении проверяются активные live-роботы, счета и STOP_REAL.
+Включает/выключает задания `inst:*` активных живых роботов (`live_control`),
+а не меняет `.env`. При включении проверяются live-роботы, счета и STOP_REAL.
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ def toggle(payload: dict):
     try:
         if wanted:
             return live_control.enable(_store())
-        return live_control.disable()
+        return live_control.disable(_store())
     except live_control.LiveControlError as exc:
         raise HTTPException(400, str(exc))
 
