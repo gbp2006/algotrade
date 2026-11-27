@@ -4,7 +4,7 @@ import {
   flexRender, getCoreRowModel, getSortedRowModel, useReactTable,
   type ColumnDef, type SortingState, type VisibilityState,
 } from '@tanstack/react-table';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 export function Card({ title, children, action, className = '' }: {
   title?: string; children: ReactNode; action?: ReactNode; className?: string;
@@ -64,14 +64,34 @@ export function TabPanel({ value, children }: { value: string; children: ReactNo
 }
 
 export function DataTable<T>({ data, columns, empty = 'Данных пока нет',
-  sortable = false, columnToggle = false, maxHeight = '520px' }: {
+  sortable = false, columnToggle = false, searchable = false,
+  storageKey = '', maxHeight = '520px' }: {
   data: T[]; columns: ColumnDef<T, unknown>[]; empty?: string;
-  sortable?: boolean; columnToggle?: boolean; maxHeight?: string;
+  sortable?: boolean; columnToggle?: boolean; searchable?: boolean;
+  storageKey?: string; maxHeight?: string;
 }) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [visibility, setVisibility] = useState<VisibilityState>({});
+  const load = <K,>(suffix: string, fallback: K): K => {
+    if (!storageKey) return fallback;
+    try {
+      const raw = localStorage.getItem(`dt:${storageKey}:${suffix}`);
+      return raw ? JSON.parse(raw) as K : fallback;
+    } catch { return fallback; }
+  };
+  const [sorting, setSorting] = useState<SortingState>(() => load('sort', []));
+  const [visibility, setVisibility] = useState<VisibilityState>(() => load('cols', {}));
+  const [query, setQuery] = useState('');
+  useEffect(() => {
+    if (!storageKey) return;
+    localStorage.setItem(`dt:${storageKey}:sort`, JSON.stringify(sorting));
+    localStorage.setItem(`dt:${storageKey}:cols`, JSON.stringify(visibility));
+  }, [sorting, visibility, storageKey]);
+
+  const rows = searchable && query.trim()
+    ? data.filter((row) => Object.values(row as Record<string, unknown>)
+      .join(' ').toLowerCase().includes(query.trim().toLowerCase()))
+    : data;
   const table = useReactTable({
-    data, columns,
+    data: rows, columns,
     state: { sorting, columnVisibility: visibility },
     onSortingChange: setSorting,
     onColumnVisibilityChange: setVisibility,
@@ -81,18 +101,25 @@ export function DataTable<T>({ data, columns, empty = 'Данных пока н�
   if (!data.length) return <div className="empty">{empty}</div>;
   return (
     <div>
-      {columnToggle && (
-        <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="text-[11px] text-muted">Колонки:</span>
-          {table.getAllLeafColumns().filter((c) => c.getCanHide()).map((c) => (
-            <label key={c.id} className="flex items-center gap-1 text-[11px]">
-              <input type="checkbox" checked={c.getIsVisible()}
-                onChange={c.getToggleVisibilityHandler()} />
-              {typeof c.columnDef.header === 'string' ? c.columnDef.header : c.id}
-            </label>
-          ))}
-        </div>
-      )}
+      <div className="mb-2 flex flex-wrap items-center gap-3">
+        {searchable && (
+          <input className="input w-64" placeholder="Поиск по строкам таблицы"
+            value={query} onChange={(e) => setQuery(e.target.value)} />
+        )}
+        {columnToggle && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="text-[11px] text-muted">Колонки:</span>
+            {table.getAllLeafColumns().filter((c) => c.getCanHide()).map((c) => (
+              <label key={c.id} className="flex items-center gap-1 text-[11px]">
+                <input type="checkbox" checked={c.getIsVisible()}
+                  onChange={c.getToggleVisibilityHandler()} />
+                {typeof c.columnDef.header === 'string' ? c.columnDef.header : c.id}
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+      {searchable && !rows.length && <div className="empty">Ничего не найдено</div>}
       <div className="overflow-auto rounded-lg border border-line" style={{ maxHeight }}>
         <table className="w-full min-w-[640px] border-collapse">
           <thead>{table.getHeaderGroups().map((group) => (

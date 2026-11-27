@@ -6,7 +6,6 @@
 - `live.csv` + `infra/db/trades.db` — аудит заявок/сделок; `shadow.csv` — отдельная репетиция.
 - `live_run.json` — сводка последнего прогона боя; `live_manual.log` — ручные прогоны.
 - `trading_toggle.jsonl` — аудит включения/выключения торговли из панели.
-- `arm_state.json` — устаревшие тумблеры ARM (endpoint остался, в путь заявок не входит).
 - `market.db` (в `infra/db`) — бары M5/D1 для графика; персональные решения роботов лежат в `robots.db` → `robot_decisions`.
 - `web-local.log` — лог локальной панели (не коммитить).
 

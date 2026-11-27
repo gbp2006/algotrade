@@ -286,7 +286,8 @@ export function Accounts() {
           <Card title="Все счета" className="mt-4">
             {updateAcc.error && <div className="mb-2"><ErrorBox error={updateAcc.error} /></div>}
             {removeAcc.error && <div className="mb-2"><ErrorBox error={removeAcc.error} /></div>}
-            <DataTable data={rows} columns={columns} sortable columnToggle maxHeight="none" />
+            <DataTable data={rows} columns={columns} sortable columnToggle searchable
+              storageKey="accounts" maxHeight="none" />
           </Card>
         </TabPanel>
         <TabPanel value="connections">

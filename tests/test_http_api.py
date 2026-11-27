@@ -13,7 +13,6 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from algo import arm_state  # noqa: E402
 from algo.robot_store import RobotStore  # noqa: E402
 from web import app as web_app
 from web import instances_api as api
@@ -67,8 +66,6 @@ class TestHTTPApi(unittest.TestCase):
             mock.patch.object(api, "HEALTH", d / "health.json"),
             mock.patch.object(api, "STOP", d / "STOP"),
             mock.patch.object(api, "STOP_REAL", d / "STOP_REAL"),
-            mock.patch.object(api, "ARM_STATE", d / "arm_state.json"),
-            mock.patch.object(arm_state, "ARM_STATE", d / "arm_state.json"),
             mock.patch.object(web_app, "ALERTS", d / "alerts_seen.json"),
             mock.patch.object(web_app, "HEALTH", d / "health.json"),
         ]
@@ -82,19 +79,6 @@ class TestHTTPApi(unittest.TestCase):
         status, data = request(web_app.app, "GET", "/api/archive")
         self.assertEqual(status, 200)
         self.assertEqual(data["items"], [])
-
-    def test_arm_state_toggle(self):
-        status, data = request(web_app.app, "GET", "/api/arm-state")
-        self.assertEqual(status, 200)
-        self.assertFalse(data["mm"])
-        status, data = request(web_app.app, "POST", "/api/arm-state",
-                               {"kind": "mm", "enabled": True})
-        self.assertEqual(status, 200)
-        self.assertTrue(data["mm"])
-        self.assertTrue(api.arm_enabled("mm"))
-        status, bad = request(web_app.app, "POST", "/api/arm-state",
-                              {"kind": "unknown", "enabled": True})
-        self.assertEqual(status, 400)
 
     def test_robot_schedule_endpoints(self):
         self.store.create_instance({"id": "sched-1", "spec_id": "prostushka",

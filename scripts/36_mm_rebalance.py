@@ -1,8 +1,8 @@
 """Задание расписания фонда денежного рынка: вечер купить, утром продать.
 
 Тонкая оболочка над уже существующим API панели `/api/money-market/{id}/rebalance`.
-Логику покупки/продажи, лимиты и ARM не дублирует — всё это в `position_ops`,
-`arm_state` и `robot_schedule`. Если паёв нет, утренний `OnlyClose` просто
+Логику покупки/продажи и лимиты не дублирует — всё это в `position_ops`
+и `robot_schedule`; отдельного ARM больше нет (ADR 27.11). Если паёв нет, утренний `OnlyClose` просто
 вернёт «нечего закрывать» и заявки не отправит.
 
     .venv/bin/python scripts/36_mm_rebalance.py --instance money-market-fmmm --slot-time 10:05

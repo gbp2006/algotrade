@@ -19,7 +19,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from algo import (account_poller, arm_state, backtest_preview,
+from algo import (account_poller, backtest_preview,
                   cash_flow_store, instruments_catalog as catalog,
                   live_control, robot_library as lib, robot_schedule,
                   robot_trade, scheduler, strategy_descriptions as sd,
@@ -39,18 +39,6 @@ SHADOW = ROOT / "results" / "shadow.json"
 ROLLOVER = ROOT / "results" / "rollover_run.json"
 STOP = ROOT / "results" / "STOP"
 STOP_REAL = ROOT / "results" / "STOP_REAL"
-ARM_STATE = arm_state.ARM_STATE  # совместимость для тестов и старых вызовов
-ARM_ENV = arm_state.ARM_ENV
-
-
-def arm_state_view() -> dict:
-    return arm_state.state()
-
-
-def arm_enabled(kind: str) -> bool:
-    return arm_state.enabled(kind)
-
-
 router = APIRouter(prefix="/api", tags=["instances"])
 _default_store = RobotStore()
 _default_store.init_db()   # идемпотентно; без этого /api/instances падал на пустой БД
@@ -777,23 +765,6 @@ def stop_real_view(action: str) -> dict:
 @router.post("/stop-real")
 def stop_real(payload: dict):
     return stop_real_view(str(payload.get("action", "")).lower())
-
-
-# ---------- разрешения на реальную отправку (панель) ----------
-@router.get("/arm-state")
-def arm_state_get():
-    return arm_state_view()
-
-
-@router.post("/arm-state")
-def arm_state_set(payload: dict):
-    kind = str(payload.get("kind", ""))
-    if kind not in ARM_ENV:
-        raise HTTPException(400, "kind: mm | close")
-    try:
-        return arm_state.set_enabled(kind, bool(payload.get("enabled")))
-    except ValueError as exc:
-        raise HTTPException(400, str(exc))
 
 
 # ---------- планировщик ----------
