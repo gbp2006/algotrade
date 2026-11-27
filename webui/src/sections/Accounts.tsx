@@ -43,6 +43,7 @@ export function Accounts() {
   const [newSecret, setNewSecret] = useState('');
   const [keyAccount, setKeyAccount] = useState<string | null>(null);
   const [keySecret, setKeySecret] = useState('');
+  const [editSecret, setEditSecret] = useState('');
   const [editAccount, setEditAccount] = useState<Record<string, unknown> | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
@@ -59,6 +60,9 @@ export function Accounts() {
   });
   const brokers = useQuery({
     queryKey: ['brokers'], queryFn: api.brokers, enabled: tab === 'connections',
+  });
+  const keyNames = useQuery({
+    queryKey: ['key-names'], queryFn: api.keys, enabled: tab === 'connections',
   });
   const serviceKey = useQuery({
     queryKey: ['service-key'], queryFn: api.serviceKey, enabled: tab === 'connections',
@@ -123,9 +127,21 @@ export function Accounts() {
     },
   });
   const updateAcc = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: Record<string, unknown> }) =>
-      api.updateAccount(id, payload),
-    onSuccess: () => { invalidateAccounts(); setEditAccount(null); setKeyAccount(null); },
+    mutationFn: async ({ id, payload, secret }: {
+      id: string; payload: Record<string, unknown>; secret?: string;
+    }) => {
+      let body = payload;
+      if (secret?.trim()) {
+        const ref = `acc:${id}`;
+        await api.saveKey(ref, secret.trim());
+        body = { ...payload, key_ref: ref };
+      }
+      return api.updateAccount(id, body);
+    },
+    onSuccess: () => {
+      invalidateAccounts();
+      setEditAccount(null); setEditSecret(''); setKeyAccount(null);
+    },
   });
   const removeAcc = useMutation({
     mutationFn: (id: string) => api.deleteAccount(id),
@@ -175,7 +191,10 @@ export function Accounts() {
     { id: 'actions', header: ' ', cell: ({ row }) => (
       <div className="flex gap-1">
         <button className="btn" onClick={() => { setKeyAccount(row.original.id); setKeySecret(''); }}>Ключ</button>
-        <button className="btn" onClick={() => setEditAccount(accQuery.data?.find((a) => String(a.id) === row.original.id) ?? null)}>Изменить</button>
+        <button className="btn" onClick={() => {
+          setEditSecret('');
+          setEditAccount(accQuery.data?.find((a) => String(a.id) === row.original.id) ?? null);
+        }}>Изменить</button>
         <button className="btn-danger" onClick={() => setDeleteId(row.original.id)}>Удалить</button>
         <button className="btn" onClick={() => setAccount(row.original.id)}>Выбрать</button>
       </div>
@@ -272,6 +291,15 @@ export function Accounts() {
               {!brokers.data?.length && <div className="empty">Брокеры не зарегистрированы</div>}
             </div>
           </Card>
+          <Card title="Имена ключей" className="mt-4">
+            <p className="text-[11px] text-muted">Только имена ссылок из auth.json — значения никогда не показываются.</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {(keyNames.data?.names ?? []).map((name) => (
+                <span key={name} className="rounded-lg bg-elevated px-2 py-1 text-[11px]">{name}</span>
+              ))}
+              {!keyNames.data?.names?.length && <span className="empty">Ключей нет</span>}
+            </div>
+          </Card>
           <Card title="Сервисный ключ" className="mt-4">
             <p className="text-[11px] text-muted">
               Используется каталогом инструментов, добором данных и shadow-проверкой.
@@ -360,10 +388,12 @@ export function Accounts() {
           onCancel={() => setEditAccount(null)}
           onConfirm={() => updateAcc.mutate({
             id: String(editAccount.id),
+            secret: editSecret,
             payload: {
               label: String(editAccount.label ?? ''),
               mode: String(editAccount.mode ?? 'LIVE'),
-              capital: Number(editAccount.capital ?? 0),
+              ...(String(editAccount.mode ?? 'LIVE') === 'TEST'
+                ? { capital: Number(editAccount.capital ?? 0) } : {}),
               enabled: editAccount.enabled !== 0,
             },
           })}>
@@ -377,9 +407,18 @@ export function Accounts() {
               <option value="TEST">TEST</option><option value="LIVE">LIVE</option>
             </select>
           </label>
-          <label className="text-xs">Капитал (TEST)
-            <input className="input mt-1" type="number" value={Number(editAccount.capital ?? 0)}
-              onChange={(e) => setEditAccount({ ...editAccount, capital: Number(e.target.value) })} />
+          {String(editAccount.mode ?? 'LIVE') === 'TEST' && (
+            <label className="text-xs">Капитал (TEST)
+              <input className="input mt-1" type="number" value={Number(editAccount.capital ?? 0)}
+                onChange={(e) => setEditAccount({ ...editAccount, capital: Number(e.target.value) })} />
+            </label>
+          )}
+          <label className="text-xs">API-ключ (новый, опц.)
+            <input className="input mt-1" type="password" value={editSecret}
+              onChange={(e) => setEditSecret(e.target.value)} placeholder="tapi_sk_..." />
+            <span className="mt-1 block text-[10px] text-muted">
+              Оставь пустым, чтобы сохранить текущий ключ. Новый пишется в auth.json (600).
+            </span>
           </label>
         </FormDialog>
       )}
