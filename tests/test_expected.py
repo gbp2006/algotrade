@@ -45,6 +45,19 @@ class TestExpected(unittest.TestCase):
         self.assertEqual(len(captured), 2)
         self.assertTrue(all(ts.hour == 13 and ts.minute == 55 for ts in captured))
 
+    def test_friday_close_waits_for_1845_bar(self):
+        cfg = next(c for c in CONFIGS if c.id == "p-friday")
+        day = datetime(2026, 11, 27, 13, 50)
+        bars = pd.DataFrame([{"dt": day, "open": 12.3, "high": 12.4,
+                              "low": 12.2, "close": 12.3, "vol": 1.0}]
+                            ).set_index("dt")
+        dec = lambda cfg, m5, day: SimpleNamespace(
+            target=1, price=12.3, ts=pd.Timestamp("2026-11-27 13:50"))
+        with mock.patch.object(ex, "decision", side_effect=dec):
+            trades, pnl = ex.expected(cfg, bars, "2026-11-27", "2026-11-27",
+                                      1000, 200000)
+        self.assertEqual((trades, pnl), (0, 0))
+
 
 if __name__ == "__main__":
     unittest.main()

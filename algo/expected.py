@@ -103,8 +103,10 @@ def expected(cfg, m5: pd.DataFrame, start: str, end: str,
             pos = target
         if cur.params.get("close_friday") and day.weekday() == 4 and pos != 0:
             today = m5[m5.index.date == day]
-            closed = today[(today.index.hour * 60 + today.index.minute) <= 18 * 60 + 45]
-            if not closed.empty:
+            closed = today[today.index <= pd.Timestamp(f"{day} 18:45:00")]
+            # Пятничное закрытие ещё не наступило, если бара 18:45 нет: не надо
+            # закрывать позицию по последнему доступному бару (смотрим в будущее).
+            if not closed.empty and closed.index.max() >= pd.Timestamp(f"{day} 18:45:00"):
                 exit_price = float(closed["close"].iloc[-1]) - tick * (1 if pos > 0 else -1)
                 pnl += (exit_price - entry) * mult * pos
                 trades += 1
