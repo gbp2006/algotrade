@@ -58,6 +58,28 @@ class TestExpected(unittest.TestCase):
                                       1000, 200000)
         self.assertEqual((trades, pnl), (0, 0))
 
+    def test_historical_expected_keeps_atr_until_cutoff(self):
+        cfg = next(c for c in CONFIGS if c.id == "p-base")
+        cfg = cfg.__class__(**{**cfg.__dict__,
+                               "params": {**cfg.params, "risk_vol": False}})
+        day = datetime(2026, 11, 26, 13, 50)
+        bars = pd.DataFrame([{"dt": day, "open": 12.0, "high": 12.1,
+                              "low": 11.9, "close": 12.0, "vol": 1.0}]
+                            ).set_index("dt")
+        dec = lambda cfg, m5, day: SimpleNamespace(
+            target=1, price=12.0, ts=pd.Timestamp("2026-11-26 13:50"))
+        seen = []
+
+        def fake_contracts(cur, equity, price, mult, risk_bars, rows, day, capital):
+            seen.append(cur.params.get("risk_vol"))
+            return 1, "тест"
+
+        with mock.patch.object(ex, "decision", side_effect=dec), \
+             mock.patch.object(ex.risk, "contracts_for_config",
+                               side_effect=fake_contracts):
+            ex.expected(cfg, bars, "2026-11-26", "2026-11-26", 1000, 200000)
+        self.assertEqual(seen, [True])
+
 
 if __name__ == "__main__":
     unittest.main()

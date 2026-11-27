@@ -8,6 +8,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pandas as pd
 
 from . import risk, store
@@ -15,6 +17,10 @@ from .data import load_cached, to_timeframe
 from .instruments import DEFAULT, INSTRUMENTS
 from .instruments import symbol as contract_symbol
 from .live import decision, morning_exit_price
+
+# До этой даты paper.csv писался с включённой ATR-резкой. 27.11 флаг снят, но
+# исторические строки переписывать нельзя — ожидание должно их повторять.
+ATR_HISTORICAL_CUTOFF = "2026-11-27"
 
 
 def instrument_of(cfg):
@@ -72,6 +78,11 @@ def expected(cfg, m5: pd.DataFrame, start: str, end: str,
     pos, entry, pnl, trades, decisions = 0, 0.0, 0.0, 0, 0
     for day in days:
         cur = cfg_for(day) if cfg_for else cfg
+        if str(day) <= ATR_HISTORICAL_CUTOFF and "risk_vol" in cur.params \
+                and not cur.params.get("risk_vol"):
+            # Факт за те даты уже записан с ATR-сайзингом; подменяем только
+            # ожидание, само решение и издержки не трогаем.
+            cur = replace(cur, params={**cur.params, "risk_vol": True})
         if cur.params.get("hold") == "morning" and pos != 0:
             exit_price = morning_exit_price(m5, day)
             if exit_price is not None:
