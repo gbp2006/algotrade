@@ -49,6 +49,30 @@ class TestApiViews(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertEqual(result["equity"], 49_940.82)
 
+    def test_patch_attaches_already_saved_key_ref(self):
+        """Ключ из /api/keys должен привязываться к счёту, а не отбрасываться."""
+        api.create_account({"id": "2115213", "mode": "LIVE"}, self.store)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "auth.json"
+            with mock.patch.object(api, "_auth_path", return_value=path):
+                api._write_key("acc:2115213", "tapi_sk_тест")
+                api.update_account("2115213", {"key_ref": "acc:2115213"}, self.store)
+        acc = self.store.get_account("2115213")
+        self.assertEqual(acc["key_ref"], "acc:2115213")
+
+    def test_refresh_adopts_saved_key_when_account_has_no_ref(self):
+        api.create_account({"id": "2115213", "mode": "LIVE"}, self.store)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "auth.json"
+            with mock.patch.object(api, "_auth_path", return_value=path):
+                api._write_key("acc:2115213", "tapi_sk_тест")
+                outcome = api.account_poller.PollOutcome("2115213", True, equity=20_000)
+                with mock.patch.object(api.account_poller, "sync_accounts",
+                                       return_value=[outcome]):
+                    result = api.refresh_account("2115213", self.store)
+        self.assertTrue(result["ok"])
+        self.assertEqual(self.store.get_account("2115213")["key_ref"], "acc:2115213")
+
     def test_account_id_can_be_renamed_with_all_references(self):
         created = api.create_account({
             "id": "КлФ-2115210", "mode": "LIVE",

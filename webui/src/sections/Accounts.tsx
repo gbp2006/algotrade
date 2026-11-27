@@ -142,7 +142,9 @@ export function Accounts() {
     onSuccess: () => {
       invalidateAccounts();
       setEditAccount(null); setEditSecret(''); setEditOriginalId(''); setKeyAccount(null);
+      setNotice('счёт сохранён');
     },
+    onError: (error) => setNotice(`Ошибка сохранения счёта: ${error.message}`),
   });
   const refreshAcc = useMutation({
     mutationFn: (id: string) => api.refreshAccount(id),
@@ -164,7 +166,12 @@ export function Accounts() {
       await api.saveKey(ref, secret);
       return api.updateAccount(id, { key_ref: ref });
     },
-    onSuccess: () => { invalidateAccounts(); setKeyAccount(null); setKeySecret(''); },
+    onSuccess: () => {
+      invalidateAccounts();
+      setKeyAccount(null); setKeySecret('');
+      setNotice('ключ сохранён и привязан к счёту');
+    },
+    onError: (error) => setNotice(`Ошибка сохранения ключа: ${error.message}`),
   });
 
   if (analytics.isLoading) return <Loading />;
@@ -206,7 +213,9 @@ export function Accounts() {
     { id: 'actions', header: 'Действия', enableSorting: false, cell: ({ row }) => (
       <div className="flex gap-1">
         <button className="btn" disabled={refreshAcc.isPending}
-          onClick={() => refreshAcc.mutate(row.original.id)}>Баланс</button>
+          onClick={() => refreshAcc.mutate(row.original.id)}>
+          {refreshAcc.isPending ? 'Запрос…' : 'Баланс'}
+        </button>
         <button className="btn" onClick={() => { setKeyAccount(row.original.id); setKeySecret(''); }}>Ключ</button>
         <button className="btn" onClick={() => {
           setEditSecret('');
@@ -246,9 +255,7 @@ export function Accounts() {
         ) : null}
       </div>
       {sync.error && <div className="mt-2"><ErrorBox error={sync.error} /></div>}
-      {notice && <div className="mt-2 rounded-lg border border-line bg-elevated p-2 text-xs">
-        {notice} <button className="btn ml-2" onClick={() => setNotice('')}>Закрыть</button>
-      </div>}
+      {notice && tab !== 'list' && <NoticeBar text={notice} onClose={() => setNotice('')} />}
       <Tabs tabs={tabs} value={tab} onChange={setTab}>
         <TabPanel value="list">
           <Card title="Добавить счёт">
@@ -286,6 +293,7 @@ export function Accounts() {
             </p>
           </Card>
           <Card title="Все счета" className="mt-4">
+            {notice && <NoticeBar text={notice} onClose={() => setNotice('')} />}
             {updateAcc.error && <div className="mb-2"><ErrorBox error={updateAcc.error} /></div>}
             {removeAcc.error && <div className="mb-2"><ErrorBox error={removeAcc.error} /></div>}
             <DataTable data={rows} columns={columns} sortable columnToggle searchable
@@ -457,6 +465,12 @@ export function Accounts() {
         onConfirm={() => { if (deleteId) removeAcc.mutate(deleteId); }} />
     </div>
   );
+}
+
+function NoticeBar({ text, onClose }: { text: string; onClose: () => void }) {
+  return <div className="mb-2 rounded-lg border border-line bg-elevated p-2 text-xs">
+    {text} <button className="btn ml-2" onClick={onClose}>Закрыть</button>
+  </div>;
 }
 
 function Preview({ data, columns }: {

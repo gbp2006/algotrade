@@ -434,6 +434,7 @@ def update_account(acc_id: str, payload: dict,
     key = str(data.pop("key_ref", "") or "").strip()
     if store.get_account(acc_id) is None:
         raise HTTPException(404, f"нет счёта {acc_id}")
+    old_id = acc_id
     target = new_raw or acc_id
     if str(data.get("mode") or "LIVE").upper() == "LIVE" and new_raw:
         target = _account_id(new_raw)
@@ -444,11 +445,19 @@ def update_account(acc_id: str, payload: dict,
         except (StoreError, ValueError) as exc:
             _fail(exc)
         acc_id = target
+        # Фронтенд пишет секрет под старым ID до PATCH; после переименования
+        # ссылка должна указывать на новое имя ключа.
+        if key == f"acc:{old_id}":
+            key = f"acc:{acc_id}"
     if key.startswith("tapi_sk_"):
         try:
             data["key_ref"] = _write_key(f"acc:{acc_id}", key)
         except ValueError as exc:
             _fail(exc)
+    elif key:
+        # Готовая ссылка (acc:<id> после /api/keys или legacy-имя): привязываем
+        # к счёту. Раньше значение молча отбрасывалось, и новый ключ не работал.
+        data["key_ref"] = key
     try:
         result = store.update_account(acc_id, data)
         invalidate_analytics()
@@ -464,7 +473,16 @@ def refresh_account(acc_id: str, store: RobotStore = Depends(get_store)):
     if acc is None:
         raise HTTPException(404, f"нет счёта {acc_id}")
     if not acc.get("key_ref"):
+        # Самовосстановление: ключ уже мог быть записан панелью под acc:<id>,
+        # но не привязан к счёту из-за старой ошибки PATCH.
+        ref = f"acc:{acc_id}"
+        if ref in (_read_auth().get("finam") or {}):
+            store.update_account(acc_id, {"key_ref": ref})
+            acc = store.get_account(acc_id) or acc
+    if not acc.get("key_ref"):
         raise HTTPException(400, "у счёта нет API-ключа")
+    if not acc.get("enabled", True):
+        raise HTTPException(400, "счёт выключен — включите его для запроса баланса")
     flows = cash_flow_store.CashFlowStore(store)
     try:
         results = account_poller.sync_accounts(
@@ -599,9 +617,15 @@ def mm_close(iid: str, store: RobotStore = Depends(get_store)):
 
 
 @router.post("/positions/close-all")
-def close_all_positions(store: RobotStore = Depends(get_store)):
-    """Закрыть все позиции активных живых роботов на реальных счетах."""
-    result = pos.close_all(store)
+def close_all_positions(payload: dict, store: RobotStore = Depends(get_store)):
+    """Закрыть позиции только того счёта, на котором нажата кнопка."""
+    account_id = str(payload.get("account") or "").strip()
+    if not account_id:
+        raise HTTPException(400, "укажите счёт для закрытия позиций")
+    try:
+        result = pos.close_all(store, account_id)
+    except pos.OpError as exc:
+        raise HTTPException(400, str(exc))
     invalidate_analytics()
     return result
 

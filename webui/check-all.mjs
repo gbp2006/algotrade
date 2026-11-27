@@ -119,6 +119,57 @@ else {
   if (body.new_id !== 'КлФ-9999999') problems.push('правка счёта: новый ID не передан в new_id');
 }
 
+// Регрессия сохранения ключа: секрет идёт в /api/keys, ссылка — в PATCH счёта.
+// Оба запроса перехватываются — реальные данные не меняются.
+let keyPost = null;
+let keyPatch = null;
+const onKeyRequest = (req) => {
+  if (req.method() === 'POST' && req.url().includes('/api/keys')) {
+    keyPost = req.postData() || '';
+    return req.respond({ status: 200, contentType: 'application/json',
+      body: '{"key_ref":"acc:2115213","saved":true}' });
+  }
+  if (req.method() === 'PATCH' && req.url().includes('/api/accounts/')) {
+    keyPatch = { url: req.url(), body: req.postData() || '' };
+    return req.respond({ status: 200, contentType: 'application/json', body: '{}' });
+  }
+  req.continue();
+};
+await page.setRequestInterception(true);
+page.on('request', onKeyRequest);
+try {
+  await page.evaluate(() => {
+    const btn = [...document.querySelectorAll('button')]
+      .find((item) => item.textContent?.trim() === 'Ключ');
+    btn?.click();
+  });
+  await new Promise((r) => setTimeout(r, 400));
+  await page.evaluate(() => {
+    const input = document.querySelector('[role="dialog"] input[type="password"]');
+    if (!input) throw new Error('нет поля API-ключа');
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+    setter.call(input, 'tapi_sk_тестовый');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await new Promise((r) => setTimeout(r, 250));
+  await page.evaluate(() => {
+    const btn = [...document.querySelectorAll('[role="dialog"] button')]
+      .find((item) => item.textContent?.trim() === 'Сохранить');
+    btn?.click();
+  });
+  await new Promise((r) => setTimeout(r, 900));
+} finally {
+  page.off('request', onKeyRequest);
+  await page.setRequestInterception(false);
+}
+if (!keyPost || !JSON.parse(keyPost || '{}').secret) problems.push('ключ: секрет не отправлен в /api/keys');
+if (!keyPatch) problems.push('ключ: PATCH счёта с key_ref не отправлен');
+else {
+  const accId = decodeURIComponent((keyPatch.url.split('/api/accounts/')[1] || '').split('?')[0]);
+  const body = JSON.parse(keyPatch.body || '{}');
+  if (body.key_ref !== `acc:${accId}`) problems.push('ключ: PATCH не привязал acc:<id> к счёту');
+}
+
 // Прямая ссылка должна открывать раздел, а не последний сохранённый в localStorage.
 const deep = await browser.newPage();
 watch(deep);
