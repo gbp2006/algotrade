@@ -25,10 +25,31 @@ class TestTradeJournal(unittest.TestCase):
     def test_append_and_duplicate(self):
         with tempfile.TemporaryDirectory() as tmp:
             db = Path(tmp) / "trades.db"
-            self.assertTrue(tj.append(row("a"), db))
-            self.assertFalse(tj.append(row("a"), db))
+            self.assertTrue(tj.append(row("a", "sent"), db))
+            self.assertFalse(tj.append(row("a", "sent"), db))
             self.assertTrue(tj.exists("a", db))
+            self.assertTrue(tj.exists_active("a", db))
             self.assertEqual(len(tj.records(limit=10, path=db)), 1)
+
+    def test_exists_active_only_for_real_orders(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Path(tmp) / "trades.db"
+            for status in ("planned", "rejected", "blocked", "error"):
+                cid = "dry-" + status
+                tj.append(row(cid, status), db)
+                self.assertFalse(tj.exists_active(cid, db), status)
+            tj.append(row("uncertain", "uncertain"), db)
+            self.assertTrue(tj.exists_active("uncertain", db))
+
+    def test_planned_upgrades_to_sent_and_keeps_one_row(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Path(tmp) / "trades.db"
+            tj.append(row("retry"), db)
+            self.assertFalse(tj.exists_active("retry", db))
+            self.assertTrue(tj.append(row("retry", "sent"), db))
+            self.assertTrue(tj.exists_active("retry", db))
+            self.assertEqual(len(tj.records(limit=10, path=db)), 1)
+            self.assertEqual(tj.records(limit=10, path=db)[0]["status"], "sent")
 
     def test_records_filtered_by_account(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -43,11 +64,12 @@ class TestTradeJournal(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             db = Path(tmp) / "trades.db"
             tj.append(row("a", "planned"), db)
+            tj.append(row("a", "sent"), db)  # репетиция → боевая отправка
             tj.append(row("a", "sent"), db)  # дубль — событие не добавится
             with tj.connect(db) as c:
                 events = [dict(x) for x in c.execute(
                     "SELECT status FROM order_events WHERE client_order_id='a'")]
-            self.assertEqual([e["status"] for e in events], ["planned"])
+            self.assertEqual([e["status"] for e in events], ["planned", "sent"])
 
     def test_migrate_csv(self):
         with tempfile.TemporaryDirectory() as tmp:

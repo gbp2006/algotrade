@@ -83,36 +83,73 @@ def connect(path: Path | None = None) -> Iterator[sqlite3.Connection]:
         conn.close()
 
 
+# Статусы, при которых заявка могла уйти брокеру: повторная отправка с тем же
+# client_id запрещена. `planned` (dry-run), `rejected`, `blocked` и `error`
+# означают, что заявки на бирже нет — повтор разрешён.
+ACTIVE_STATUSES = ("sent", "filled", "partial", "uncertain")
+
+
 def exists(client_order_id: str, path: Path | None = None) -> bool:
+    """Была ли когда-либо запись с таким ключом (включая репетиции)."""
     with connect(path) as c:
         return c.execute("SELECT 1 FROM orders WHERE client_order_id=?",
                          (client_order_id,)).fetchone() is not None
 
 
+def exists_active(client_order_id: str, path: Path | None = None) -> bool:
+    """Могла ли заявка с таким ключом уйти брокеру — только реальные статусы."""
+    marks = ",".join("?" * len(ACTIVE_STATUSES))
+    with connect(path) as c:
+        return c.execute(
+            f"SELECT 1 FROM orders WHERE client_order_id=? AND status IN ({marks})",
+            (client_order_id, *ACTIVE_STATUSES),
+        ).fetchone() is not None
+
+
 def append(row: dict[str, Any], path: Path | None = None) -> bool:
-    """Добавить строку журнала. False = уже есть (дубль), запись не изменена."""
+    """Записать статус заявки. False = реальная заявка уже была (дубль).
+
+    UNIQUE по `client_order_id` сохраняет одну строку на решение. Если решение
+    уже записано как `planned`/`rejected`/`blocked`/`error`, повторный проход
+    ОБНОВЛЯЕТ строку до нового статуса (dry-run → боевая отправка), а не
+    отбрасывается. Переход из активного статуса запрещён.
+    """
     cid = str(row.get("client_order_id") or "")
     if not cid:
         raise ValueError("нет client_order_id")
     now = datetime.now().isoformat(timespec="seconds")
+    ts = str(row.get("ts") or now)
+    values = (
+        ts, str(row.get("client_id") or ""), cid,
+        str(row.get("order_id") or ""), str(row.get("config") or ""),
+        str(row.get("symbol") or ""), str(row.get("side") or ""),
+        int(float(row.get("qty") or 0)), float(row.get("price") or 0),
+        float(row.get("multiplier") or 1), str(row.get("status") or ""),
+        str(row.get("reason") or "")[:200],
+        str(row.get("response") or "")[:300], str(row.get("account") or ""),
+        str(row.get("pricing") or ""), str(row.get("order_type") or ""),
+    )
     with connect(path) as c:
-        try:
+        old = c.execute("SELECT status FROM orders WHERE client_order_id=?",
+                        (cid,)).fetchone()
+        if old is not None:
+            if str(old["status"]) in ACTIVE_STATUSES:
+                return False
+            c.execute(
+                "UPDATE orders SET ts=?, client_id=?, order_id=?, config=?, "
+                "symbol=?, side=?, qty=?, price=?, multiplier=?, status=?, "
+                "reason=?, response=?, account=?, pricing=?, order_type=? "
+                "WHERE client_order_id=?",
+                (*values[:2], *values[3:], cid),  # client_order_id — в WHERE
+            )
+        else:
             c.execute(
                 "INSERT INTO orders (ts, client_id, client_order_id, order_id, "
                 "config, symbol, side, qty, price, multiplier, status, reason, "
                 "response, account, pricing, order_type, created_at) "
                 "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                (str(row.get("ts") or now), str(row.get("client_id") or ""), cid,
-                 str(row.get("order_id") or ""), str(row.get("config") or ""),
-                 str(row.get("symbol") or ""), str(row.get("side") or ""),
-                 int(float(row.get("qty") or 0)), float(row.get("price") or 0),
-                 float(row.get("multiplier") or 1), str(row.get("status") or ""),
-                 str(row.get("reason") or "")[:200],
-                 str(row.get("response") or "")[:300], str(row.get("account") or ""),
-                 str(row.get("pricing") or ""), str(row.get("order_type") or ""), now),
+                (*values, now),
             )
-        except sqlite3.IntegrityError:
-            return False
         c.execute(
             "INSERT INTO order_events (client_order_id, ts, status, detail) "
             "VALUES (?,?,?,?)",
@@ -141,7 +178,8 @@ def migrate_csv(csv_path: Path, path: Path | None = None) -> int:
     count = 0
     with csv_path.open(encoding="utf-8") as f:
         for row in csv.DictReader(f):
-            if row.get("client_order_id") and append(row, path):
+            cid = str(row.get("client_order_id") or "")
+            if cid and not exists(cid, path) and append(row, path):
                 count += 1
     return count
 

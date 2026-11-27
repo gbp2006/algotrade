@@ -20,7 +20,7 @@
 | `robot_store.py` | SQLite `robots.db`: счета, инстансы, версии, события, рантайм, `robot_decisions` (персональный журнал сигналов), планировщик; WAL + индексы | CRUD → строки БД; владелец схемы; миграция `user_version=2` снимает `risk_vol` у старых роботов | sqlite3 | `test_robot_store_storage.py`, `test_store.py` |
 | `algo/atr.py` | Переиспользуемый ATR-модуль резки экспозиции, по умолчанию выключен | бары + `risk_vol` → `atr`/`vol_ratio`/`exposure_for`/`size`; работает в любом роботе | `algo.portfolio` | `test_atr.py` |
 | `algo/live_signal.py` | Сигнал боя по свежим барам без `paper.csv`: параметры робота → решение; бары пишутся в `market.db`, решения — в `robot_decisions` | `RobotStore` + `LiveSettings` + брокер → планы `(счёт, символ)`; `M5`/`D1` для графика | `algo.live`, `algo.channel_live`, `algo.store`, `robot_library` | `test_live_signal.py` |
-| `trade_journal.py` | SQLite `trades.db`, journal заявок и исполнений | заявки → статусы/журнал/CSV; `executed_qty()` = MAX | sqlite3 | `test_trade_journal.py`, `test_execution.py` |
+| `trade_journal.py` | SQLite `trades.db`, journal заявок и исполнений | заявки → статусы/журнал/CSV; `executed_qty()` = MAX; `exists_active()` = дубль только для `sent/filled/partial/uncertain`; повтор по неактивному статусу обновляет строку и пишет событие | sqlite3 | `test_trade_journal.py`, `test_execution.py` |
 | `metrics_store.py`, `results.py` | История метрик и журнал прогонов | метрики → `paper_metrics.db`, `results/runs.csv` | sqlite3 | `test_metrics_store.py` |
 | `scheduler.py` | Планировщик заданий роботов; режимы `off`/`robots`/`all` через `ALGO_SCHEDULER_MODE`; системные задания не создаются, старые удаляются при старте | `jobs` → запуски в `robots.db`; исполняются только `inst:*`, чужие системные задания — `SKIP-SYSTEM`/`log_only` | `robot_store` | `test_scheduler.py` |
 | `scripts/33_shadow_live.py` | Теневой прогон G3: только `planned`-журнал | `paper.csv` → `shadow.json` (counts/issues); ошибка API сверки пишется в `reconcile_error`, не в `issues` | `broker`, `portfolio` | `test_shadow.py` |
@@ -43,7 +43,7 @@
 | `broker/tinvest_adapter.py` | Адаптер Т‑Инвестиций | без токена/gRPC инертен: `NotConfiguredError`; sandbox=LIVE метка TEST | `secrets` | `test_broker_adapters.py` |
 | `broker/secrets.py` | Секреты по имени | `auth.json` или `{env:...}` → строка; значения не логируются | — | `test_secrets.py` |
 | `broker/instrument_map.py` | Маппинг тикеров | ticker → FIGI/UID/Board/Finam symbol | — | `test_broker_adapters.py` |
-| `broker/execution.py`, `live_guard.py`, `position_ops.py` | Шлюз заявок | `OrderRequest` → `OrderResult`, LOCAL lock, STOP, battle limits (номинал по итоговой позиции `Order.result_qty`, ADR 25.11), reconcile; `close_all(store, account_id)` закрывает позиции одного счёта по данным брокера (не по активным роботам), минуя STOP и лимиты входа; паи фонда пропускаются | `trade_journal` | `test_execution.py`, `test_live_guard.py`, `test_position_ops.py` |
+| `broker/execution.py`, `live_guard.py`, `position_ops.py` | Шлюз заявок | `OrderRequest` → `OrderResult`, LOCAL lock, STOP, battle limits (номинал по итоговой позиции `Order.result_qty`, ADR 25.11), reconcile; `duplicate` только если заявка могла уйти брокеру (dry-run/rejected/blocked/error разрешают повтор); `close_all(store, account_id)` закрывает позиции одного счёта по данным брокера (не по активным роботам), минуя STOP и лимиты входа; паи фонда пропускаются | `trade_journal` | `test_execution.py`, `test_live_guard.py`, `test_position_ops.py` |
 
 ## 3. Web и интерфейс
 

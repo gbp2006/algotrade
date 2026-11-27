@@ -229,5 +229,60 @@ class TestReconcile(unittest.TestCase):
         self.assertTrue(any("C" in p for p in problems))
 
 
+class TestRetryPolicy(unittest.TestCase):
+    """Dry-run и неудачная валидация не должны блокировать реальную заявку."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.journal = Path(self.tmp.name) / "live.csv"
+        self.lock = Path(self.tmp.name) / "live.lock"
+        self.stop = Path(self.tmp.name) / "STOP_REAL"
+        self.broker = FakeBroker()
+        self.gw = ex.OrderGateway(self.broker, journal=self.journal, lock=self.lock)
+
+    def test_dry_run_then_live_sends(self):
+        dry = self.gw.submit(order(client_id="dry-live"), dry_run=True)
+        live = self.gw.submit(order(client_id="dry-live"))
+        self.assertEqual(dry.status, "planned")
+        self.assertTrue(live.sent, live.reason)
+        self.assertEqual(len(self.broker.calls), 1)
+        rows = tj.records(limit=10, path=self.journal.with_suffix(".db"))
+        self.assertEqual([r["status"] for r in rows], ["sent"])
+
+    def test_rejected_then_retry_sends(self):
+        bad = self.gw.submit(order(client_id="retry-bad", price=12.2905,
+                                  min_step=0.001))
+        good = self.gw.submit(order(client_id="retry-bad", price=12.29,
+                                   min_step=0.001))
+        self.assertEqual(bad.status, "rejected")
+        self.assertTrue(good.sent, good.reason)
+        self.assertEqual(len(self.broker.calls), 1)
+
+    def test_blocked_then_retry_after_stop_cleared(self):
+        self.stop.write_text("1", encoding="utf-8")
+        blocked = self.gw.submit(order(client_id="retry-stop"), stop=self.stop)
+        self.stop.unlink()
+        retried = self.gw.submit(order(client_id="retry-stop"), stop=self.stop)
+        self.assertEqual(blocked.status, "blocked")
+        self.assertTrue(retried.sent, retried.reason)
+        self.assertEqual(len(self.broker.calls), 1)
+
+    def test_uncertain_still_blocks_retry(self):
+        class LostBroker(FakeBroker):
+            def place_limit(self, *a, **k):
+                raise RuntimeError("connection lost")
+
+            def find_order(self, client_order_id, account=None):
+                return {"order_id": "77"}
+
+        gw = ex.OrderGateway(LostBroker(), journal=self.journal, lock=self.lock)
+        first = gw.submit(order(client_id="uncertain-retry"))
+        second = self.gw.submit(order(client_id="uncertain-retry"))
+        self.assertEqual(first.status, "uncertain")
+        self.assertEqual(second.status, "duplicate")
+        self.assertEqual(self.broker.calls, [])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

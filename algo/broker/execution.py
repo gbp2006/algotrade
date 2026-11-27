@@ -76,7 +76,8 @@ class OrderGateway:
                  journal: Path | None = None, lock: Path | None = None,
                  journal_db: Path | None = None):
         # `lock` принимается для совместимости старых вызовов и игнорируется:
-        # локи убраны (ADR 27.11), дубли ловит UNIQUE client_order_id в БД.
+        # локи убраны (ADR 27.11); повторную отправку ловит статус заявки
+        # в журнале, а UNIQUE client_order_id хранит одну строку на решение.
         self.broker = broker
         self.limits = limits or Limits()
         self.journal = journal or JOURNAL
@@ -165,9 +166,11 @@ class OrderGateway:
                                              client_order_id=cid))
 
         try:
-            duplicate = tj.exists(cid, self.journal_db)
+            duplicate = tj.exists_active(cid, self.journal_db)
         except Exception:  # noqa: BLE001 — при недоступной БД не теряем страховку CSV
-            duplicate = any(r["client_id"] == order.client_id for r in self._rows())
+            duplicate = any(r["client_id"] == order.client_id
+                            and r.get("status") in tj.ACTIVE_STATUSES
+                            for r in self._rows())
         if duplicate:
             return self._write(order, Result("duplicate", "client_id уже в журнале",
                                              client_order_id=cid))
