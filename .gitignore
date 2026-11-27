@@ -42,3 +42,6 @@ opencode.jsonc.bak-*
 webui/node_modules/
 webui/dist/
 webui/*.tsbuildinfo
+
+# временные headless-проверки (не часть тестового набора)
+webui/check-labels.mjs
