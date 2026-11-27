@@ -110,6 +110,12 @@ class RobotStore:
                   instance_id TEXT PRIMARY KEY, symbol TEXT, position INTEGER,
                   equity REAL, last_price REAL, last_decision TEXT,
                   updated_at TEXT, note TEXT);
+                CREATE TABLE IF NOT EXISTS robot_decisions (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT, instance_id TEXT NOT NULL,
+                  day TEXT NOT NULL, ts TEXT NOT NULL, symbol TEXT NOT NULL,
+                  signal INTEGER NOT NULL, price REAL NOT NULL,
+                  detail TEXT DEFAULT '', created_at TEXT NOT NULL,
+                  UNIQUE(instance_id, day, ts, signal));
                 CREATE TABLE IF NOT EXISTS scheduler_jobs (
                   id TEXT PRIMARY KEY, owner TEXT NOT NULL DEFAULT 'system',
                   command TEXT NOT NULL, times_json TEXT NOT NULL DEFAULT '[]',
@@ -128,6 +134,8 @@ class RobotStore:
                   ON param_versions(instance_id, version);
                 CREATE INDEX IF NOT EXISTS idx_instance_events_inst
                   ON instance_events(instance_id, created_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_robot_decisions_inst
+                  ON robot_decisions(instance_id, day, ts);
                 CREATE INDEX IF NOT EXISTS idx_scheduler_runs_status
                   ON scheduler_runs(status, slot DESC);
                 CREATE INDEX IF NOT EXISTS idx_runtime_updated
@@ -147,6 +155,20 @@ class RobotStore:
                 c.execute("ALTER TABLE instances ADD COLUMN key_ref TEXT DEFAULT ''")
             if "source_config" not in icols:
                 c.execute("ALTER TABLE instances ADD COLUMN source_config TEXT DEFAULT ''")
+            # ATR — опция с явным согласием; у старых роботов снимаем включённый
+            # risk_vol один раз (ADR 27.11). user_version защищает от повтора.
+            if c.execute("PRAGMA user_version").fetchone()[0] < 2:
+                for row in c.execute("SELECT id, params_json FROM instances").fetchall():
+                    try:
+                        params = json.loads(row["params_json"] or "{}")
+                    except (TypeError, json.JSONDecodeError):
+                        continue
+                    if params.get("risk_vol"):
+                        params["risk_vol"] = False
+                        c.execute(
+                            "UPDATE instances SET params_json=?, version=version+1 "
+                            "WHERE id=?", (_dumps(params), row["id"]))
+                c.execute("PRAGMA user_version=2")
 
     # ---------- чтение ----------
     def list_instances(self, mode: str | None = None,
@@ -255,6 +277,17 @@ class RobotStore:
         }
         if fields["max_exposure"] <= 0:
             raise StoreError("экспозиция счёта должна быть положительной")
+        # Виртуальный/выключенный счёт не может обслуживать активного бойца:
+        # иначе робот останется live, но выпадет из whitelist и из ARM-операций.
+        if mode != "LIVE" or not fields["enabled"]:
+            with self._conn() as c:
+                used = c.execute(
+                    "SELECT COUNT(*) FROM instances WHERE account=? AND mode='live' "
+                    "AND status IN ('active','stopping')", (acc_id,)).fetchone()[0]
+            if used:
+                raise StoreError(
+                    f"счёт {acc_id} используют {used} активных боевых роботов: "
+                    "сначала остановите их")
         with self._conn() as c:
             c.execute(
                 "UPDATE accounts SET label=?, mode=?, enabled=?, capital=?, "
@@ -537,6 +570,26 @@ class RobotStore:
         with self._conn() as c:
             return [dict(r) for r in c.execute("SELECT * FROM runtime_state")]
 
+    def add_decision(self, iid: str, day, ts: str, symbol: str,
+                     signal: int, price: float, detail: str = "") -> bool:
+        """Персональный журнал сигналов робота; повтор не создаёт строку."""
+        with self._conn() as c:
+            before = c.total_changes
+            c.execute(
+                "INSERT OR IGNORE INTO robot_decisions "
+                "(instance_id, day, ts, symbol, signal, price, detail, created_at) "
+                "VALUES (?,?,?,?,?,?,?,?)",
+                (iid, str(day), str(ts)[:19], symbol, int(signal), float(price),
+                 detail[:300], _now()))
+            return c.total_changes > before
+
+    def list_decisions(self, iid: str, limit: int = 100) -> list[dict]:
+        with self._conn() as c:
+            rows = c.execute(
+                "SELECT * FROM robot_decisions WHERE instance_id=? "
+                "ORDER BY day DESC, ts DESC LIMIT ?", (iid, int(limit))).fetchall()
+        return [dict(r) for r in rows]
+
     # ---------- внутреннее ----------
     def _check_live(self, mode: str, status: str, data: dict) -> None:
         if mode != "live" or status not in ("active", "stopping"):
@@ -545,6 +598,13 @@ class RobotStore:
             raise StoreError("боевой инстанс требует счёт (account)")
         if not data.get("pricing") or data["pricing"] not in PRICING:
             raise StoreError(f"боевой инстанс требует режим цены из {PRICING}")
+        acc = self.get_account(str(data["account"]))
+        if acc is None:
+            raise StoreError(f"счёт {data['account']} не описан в store")
+        if str(acc.get("mode") or "LIVE").upper() != "LIVE" or not acc.get("enabled", 1):
+            raise StoreError(
+                f"счёт {data['account']} виртуальный или выключен: "
+                "боевой робот требует включённый реальный счёт LIVE")
 
     @staticmethod
     def _event(c, iid, action, before, after, reason, actor, now) -> None:

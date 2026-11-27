@@ -39,13 +39,12 @@ class TestBrokerGuard(unittest.TestCase):
                 with self.assertRaises(fb.FinamError):
                     fb.FinamBroker()
 
-    def test_place_market_blocked_by_default(self):
+    def test_place_market_has_no_env_gate(self):
         b = broker()
         with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "0"}), \
-             mock.patch.object(b, "_call") as call:
-            with self.assertRaisesRegex(fb.FinamError, "выключена"):
-                b.place_market("X@RTSX", "buy", 1)
-            call.assert_not_called()
+             mock.patch.object(b, "_call", return_value={}) as call:
+            b.place_market("X@RTSX", "buy", 1)
+        call.assert_called_once()
 
     def test_place_market_payload(self):
         b = broker()

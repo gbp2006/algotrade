@@ -215,7 +215,7 @@ def action_view(store: RobotStore, iid: str, action: str,
                 payload: dict | None = None) -> dict:
     if action == "close":
         try:
-            return pos.close_instance(store, iid, dry_run=not arm_enabled("close"))
+            return pos.close_instance(store, iid, dry_run=False)
         except pos.OpError as exc:
             raise HTTPException(400, str(exc))
     if action == "promote":
@@ -316,6 +316,12 @@ def backtest_preview_view(payload: dict) -> dict:
 @router.post("/backtest-preview")
 def backtest_preview_endpoint(payload: dict):
     return backtest_preview_view(payload)
+
+
+@router.get("/instances/{iid}/decisions")
+def instance_decisions(iid: str, store: RobotStore = Depends(get_store)):
+    """Персональный журнал сигналов робота (не paper.csv)."""
+    return {"items": store.list_decisions(iid)}
 
 
 @router.get("/instances/{iid}/history")
@@ -524,8 +530,7 @@ def mm_rebalance(iid: str, payload: dict | None = None,
     """Ребалансировка фонда денежного рынка (по образцу TmonRebalancer)."""
     try:
         result = pos.mm_rebalance(
-            store, iid,
-            dry_run=not arm_enabled("mm"),
+            store, iid, dry_run=False,
             regime=(payload or {}).get("regime"))
         invalidate_analytics()
         return result
@@ -538,7 +543,7 @@ def mm_close(iid: str, store: RobotStore = Depends(get_store)):
     try:
         fund = pos._context(store, iid)["params"].get("symbol")
         result = pos.close_instance(
-            store, iid, dry_run=not arm_enabled("mm"),
+            store, iid, dry_run=False,
             symbol=str(fund) if fund else None)
         invalidate_analytics()
         return result
@@ -546,20 +551,26 @@ def mm_close(iid: str, store: RobotStore = Depends(get_store)):
         raise HTTPException(400, str(exc))
 
 
+@router.post("/positions/close-all")
+def close_all_positions(store: RobotStore = Depends(get_store)):
+    """Закрыть все позиции активных живых роботов на реальных счетах."""
+    result = pos.close_all(store)
+    invalidate_analytics()
+    return result
+
+
 def _live_run_view(payload: dict) -> dict:
-    """Ручной прогон боевого контура. Флаг выставляется только в дочернем процессе."""
+    """Ручной прогон боевого контура; `dry_run` — явная репетиция."""
     if STOP_REAL.exists():
         raise HTTPException(400, "установлен STOP_REAL — снимите перед запуском")
-    arm = bool(payload.get("arm"))
+    dry_run = bool(payload.get("dry_run"))
     day = str(payload.get("day") or date.today().isoformat())
     cmd = [sys.executable, str(ROOT / "scripts" / "34_live_execute.py")]
-    if arm:
-        cmd.append("--arm")
+    if dry_run:
+        cmd.append("--dry-run")
     cmd += ["--day", day]
-    env = dict(os.environ)
-    env["FINAM_ALLOW_TRADING"] = "1" if arm else "0"
     try:
-        proc = subprocess.run(cmd, cwd=ROOT, env=env, capture_output=True,
+        proc = subprocess.run(cmd, cwd=ROOT, env=dict(os.environ), capture_output=True,
                               text=True, timeout=180)
     except subprocess.TimeoutExpired:
         raise HTTPException(504, "боевой раннер не ответил за 180 с")
@@ -572,10 +583,11 @@ def _live_run_view(payload: dict) -> dict:
             pass
     log = ROOT / "results" / "live_manual.log"
     with log.open("a", encoding="utf-8") as f:
-        f.write(f"{datetime.now().isoformat(timespec='seconds')} arm={arm} "
+        f.write(f"{datetime.now().isoformat(timespec='seconds')} "
+                f"{'dry-run' if dry_run else 'live'} "
                 f"day={day} rc={proc.returncode} {proc.stdout.strip()[:160]}\n")
     invalidate_analytics()  # прогон мог изменить позиции/equity
-    return {"ok": proc.returncode == 0, "arm": arm, "summary": summary,
+    return {"ok": proc.returncode == 0, "dry_run": dry_run, "summary": summary,
             "stdout": proc.stdout.strip()[-800:], "stderr": proc.stderr.strip()[-400:]}
 
 
@@ -670,7 +682,7 @@ def live_state_view() -> dict:
                             for r in csv.DictReader(f)
                             if r.get("status") == "planned" and r.get("ts")}
     return {
-        "allow_trading": os.environ.get("FINAM_ALLOW_TRADING") == "1",
+        "routing": "только счета LIVE; виртуальные не торгуют",
         "live_trading_enabled": bool((live_control.status() or {}).get("enabled")),
         "stop_paper": STOP.exists(),
         "stop_real": STOP_REAL.exists(),

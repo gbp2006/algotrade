@@ -198,6 +198,10 @@ def live_settings_from_store(store: RobotStore | None = None) -> LiveSettings:
     for row in st.list_accounts():
         if not row.get("enabled", True):
             continue
+        # Виртуальный счёт TEST не должен попасть в боевой whitelist даже если
+        # робот когда-то был переведён в live с paper-<id> (ADR 27.11).
+        if str(row.get("mode") or "LIVE").upper() != "LIVE":
+            continue
         accounts[row["id"]] = AccountSettings(
             id=row["id"],
             comment=row.get("label") or row.get("comment") or "",

@@ -76,6 +76,8 @@ const PARAM_LABELS: Record<string, string> = {
   short_off: 'Порог входа в шорт, %',
   hold: 'Время удержания',
   close_friday: 'Закрывать перед выходными',
+  risk_vol: 'Резка лота по ATR: вкл / выкл',
+  risk_daily_loss: 'Дневной лимит убытка: вкл / выкл',
 };
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
@@ -130,6 +132,12 @@ export function Robots() {
     queryFn: () => api.instanceHistory(historyId),
     enabled: Boolean(historyId),
   });
+  const decisions = useQuery({
+    queryKey: ['robot-decisions', historyId],
+    queryFn: () => api.instanceDecisions(historyId),
+    enabled: Boolean(historyId),
+    refetchInterval: 30_000,
+  });
   const liveState = useQuery({
     queryKey: ['live-state'], queryFn: api.liveState, refetchInterval: 15_000,
     enabled: tab === 'live',
@@ -141,15 +149,6 @@ export function Robots() {
   const tradingState = useQuery({
     queryKey: ['trading-status'], queryFn: api.tradingStatus, refetchInterval: 15_000,
     enabled: tab === 'live',
-  });
-  const armState = useQuery({
-    queryKey: ['arm-state'], queryFn: api.armState, refetchInterval: 15_000,
-    enabled: tab === 'live',
-  });
-  const armSet = useMutation({
-    mutationFn: ({ kind, enabled }: { kind: 'mm' | 'close'; enabled: boolean }) =>
-      api.armSet(kind, enabled),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['arm-state'] }),
   });
   const favs = useQuery({
     queryKey: ['instrument-favorites'], queryFn: api.instrumentFavorites,
@@ -179,9 +178,17 @@ export function Robots() {
     onError: (error) => setNotice(`Ошибка фонда: ${error.message}`),
   });
   const liveRun = useMutation({
-    mutationFn: ({ arm, day }: { arm: boolean; day?: string }) => api.liveRun(arm, day),
+    mutationFn: ({ dryRun, day }: { dryRun: boolean; day?: string }) => api.liveRun(dryRun, day),
     onSuccess: (data) => { setNotice(data.stdout || 'прогон завершён'); refreshAll(); },
     onError: (error) => setNotice(`Ошибка прогона: ${error.message}`),
+  });
+  const closeAll = useMutation({
+    mutationFn: () => api.closeAll(),
+    onSuccess: (data) => {
+      setNotice(`Закрыто позиций: ${data.closed}; пропусков: ${data.skipped.length}`);
+      refreshAll();
+    },
+    onError: (error) => setNotice(`Ошибка закрытия: ${error.message}`),
   });
   const flag = useMutation({
     mutationFn: async ({ kind, value }: { kind: 'real' | 'paper'; value: 'set' | 'clear' }): Promise<Record<string, unknown>> =>
@@ -335,7 +342,10 @@ export function Robots() {
     mutationFn: ({ id, start }: { id: string; start: boolean }) =>
       api.tradeControl(id, start),
     onSuccess: (data) => {
-      setNotice(data.armed_mm ? 'Робот запущен: расписание включено, реальные заявки разрешены'
+      setNotice(data.status === 'active'
+        ? (data.timer?.error
+          ? `Робот запущен, но торговля не разрешена: ${data.timer.error}`
+          : 'Робот запущен: расписание включено')
         : 'Робот остановлен: расписание выключено');
       refreshAll();
     },
@@ -420,7 +430,7 @@ export function Robots() {
           В бой
         </button>}
         {robot.mode === 'live' && robot.status === 'active' && <button className="btn"
-          onClick={() => { if (window.confirm(`Закрыть позиции робота ${robot.id}? Отправка зависит от флага ALGO_CLOSE_ARMED.`)) act('close'); }}>
+          onClick={() => { if (window.confirm(`Закрыть позиции робота ${robot.id}? Заявка уйдёт брокеру.`)) act('close'); }}>
           Закрыть позиции
         </button>}
         {robot.spec_id === 'money_market' && robot.status !== 'archived' && <>
@@ -484,16 +494,16 @@ export function Robots() {
             <Card title="Ручной запуск боя">
               <div className="flex flex-wrap gap-2">
                 <button className="btn" disabled={liveRun.isPending}
-                  onClick={() => liveRun.mutate({ arm: false })}>Проверить бой (dry-run)</button>
+                  onClick={() => liveRun.mutate({ dryRun: true })}>Проверить бой (dry-run)</button>
                 <button className="btn-danger" disabled={liveRun.isPending}
                   onClick={() => {
                     if (window.confirm('Отправить реальные заявки одним прогоном по решениям за сегодня?'))
-                      liveRun.mutate({ arm: true });
-                  }}>Пустить в бой (arm)</button>
+                      liveRun.mutate({ dryRun: false });
+                  }}>Пустить в бой</button>
               </div>
               <p className="mt-2 text-[11px] text-muted">
-                Репетиция пишет <code>planned</code>. Реальный прогон ставит флаг только в дочернем процессе.
-                Результат — в <code>results/live_run.json</code> и в журнале сверху.
+                Заявки уходят только по активному роботу на реальном счёте и включённому заданию.
+                Репетиция пишет <code>planned</code>. Результат — в <code>results/live_run.json</code>.
               </p>
             </Card>
             <Card title="Постоянная торговля">
@@ -511,7 +521,7 @@ export function Robots() {
               <div className="text-xs">
                 STOP_REAL (бой): {liveState.data?.stop_real ? 'УСТАНОВЛЕН' : 'снят'};
                 STOP (бумага): {liveState.data?.stop_paper ? 'УСТАНОВЛЕН' : 'снят'};
-                FINAM_ALLOW_TRADING: {String(liveState.data?.allow_trading ?? '—')}
+                маршрут: виртуальные счета не торгуют
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
                 <button className="btn-danger" onClick={() => flag.mutate({ kind: 'real', value: 'set' })}>STOP боя</button>
@@ -519,24 +529,21 @@ export function Robots() {
                 <button className="btn" onClick={() => flag.mutate({ kind: 'paper', value: 'set' })}>STOP/старт бумаги</button>
               </div>
             </Card>
-            <Card title="Реальная отправка (панель)">
+            <Card title="Закрыть всё">
               <div className="text-xs">
-                Фонд/закрытие: <b>{armState.data?.mm ? 'ARMED' : 'dry-run'}</b>
-                {' · '}Закрытие позиций: <b>{armState.data?.close ? 'ARMED' : 'dry-run'}</b>
+                Все позиции активных роботов на реальных счетах. Виртуальные счета не торгуют.
+                Фонд денежного рынка не трогается — его паи это парковка кэша.
               </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <button className="btn-danger" onClick={() => {
-                  if (window.confirm('Включить реальную отправку по фонду денежного рынка? Заявки уйдут брокеру.'))
-                    armSet.mutate({ kind: 'mm', enabled: true });
-                }}>ARM: фонд</button>
-                <button className="btn" onClick={() => armSet.mutate({ kind: 'mm', enabled: false })}>Dry-run: фонд</button>
-                <button className="btn-danger" onClick={() => {
-                  if (window.confirm('Включить реальное закрытие позиций? Заявки уйдут брокеру.'))
-                    armSet.mutate({ kind: 'close', enabled: true });
-                }}>ARM: закрытие</button>
-                <button className="btn" onClick={() => armSet.mutate({ kind: 'close', enabled: false })}>Dry-run: закрытие</button>
+              <div className="mt-2">
+                <button className="btn-danger" disabled={closeAll.isPending}
+                  onClick={() => {
+                    if (window.confirm('ЗАКРЫТЬ ВСЕ позиции на реальных счетах? Заявки уйдут брокеру.'))
+                      closeAll.mutate();
+                  }}>Закрыть всё</button>
               </div>
-              <p className="mt-2 text-[11px] text-muted">По умолчанию всё в dry-run. Флаги живут в `results/arm_state.json`, переменные окружения остались fallback.</p>
+              <p className="mt-2 text-[11px] text-muted">
+                СТАРТ/СТОП управляют роботом; «Закрыть всё» закрывает позиции, даже если STOP установлен.
+              </p>
             </Card>
             <Card title="Последние заявки брокера">
               <DataTable
@@ -675,8 +682,11 @@ export function Robots() {
                             ))}
                           </select>
                         ) : kind === 'bool' ? (
-                          <input type="checkbox" className="mt-1 block"
-                            {...form.register(`params.${key}` as const)} />
+                          <label className="mt-1 flex items-center gap-2">
+                            <input type="checkbox"
+                              {...form.register(`params.${key}` as const)} />
+                            <span>{form.watch(`params.${key}` as const) ? 'Вкл' : 'Выкл'}</span>
+                          </label>
                         ) : (
                           <input className="input mt-1"
                             type={kind === 'int' || kind === 'float' ? 'number' : 'text'}
@@ -882,6 +892,23 @@ export function Robots() {
                   ))}
                 </div>
               ) : <div className="empty">Событий пока нет</div>}
+          </Card>
+          <Card title="Журнал решений робота">
+            {!historyId ? <div className="empty">Выберите робота, чтобы увидеть его сигналы</div>
+              : (decisions.data?.items ?? []).length ? (
+                <div className="grid gap-2">
+                  {(decisions.data?.items ?? []).map((row, index) => (
+                    <div key={`${String(row.ts)}-${index}`}
+                      className="rounded-lg border-l-2 border-accent bg-elevated p-3">
+                      <div className="flex justify-between text-[11px] text-muted">
+                        <span>{String(row.day)} · {String(row.ts)} · {String(row.symbol)}</span>
+                        <span>сигнал {String(row.signal)} · {String(row.price)}</span>
+                      </div>
+                      {row.detail ? <div className="mt-1 text-xs">{String(row.detail)}</div> : null}
+                    </div>
+                  ))}
+                </div>
+              ) : <div className="empty">Решений пока нет — робот ещё не считал сигнал</div>}
           </Card>
         </TabPanel>
       </Tabs>

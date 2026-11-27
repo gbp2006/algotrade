@@ -1,11 +1,8 @@
-"""Риск-модуль: волатильностная резка экспозиции и дневной лимит убытка.
+"""Риск-надстройки поверх сайзинга: ATR (переиспользуемый `algo.atr`) и дневной лимит.
 
-Подготовлен 20.11.2026, **не включён в живой контур**: ADR от 19.11 требует
-сначала чистый месяц без резки сайза. Реестр новых конфигураций —
-`algo/risk_configs.py`; в `CONFIGS` они не попадают, пока не будет решения.
-
-Логика повторяет правило автора: 200% → 100% → 50% → 20–30% по мере роста
-волатильности. База — ATR(14) к медиане ATR(14) за последние 252 бара.
+ATR по умолчанию ВЫКЛЮЧЕН: включается только явным `risk_vol: true` в настройках
+робота (ADR 27.11). `algo.atr` — отдельный модуль, его можно использовать в
+любом роботе, не завися от конфигураций и стратегий.
 """
 
 from __future__ import annotations
@@ -14,52 +11,37 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from .portfolio import exposure_of, ledger, size_contracts
+from . import atr as atr_mod
+from .portfolio import exposure_of, ledger
 
 
 @dataclass(frozen=True)
-class RiskLimits:
-    atr_fast: int = 14
-    atr_baseline: int = 252
-    # (отношение ATR к медиане, экспозиция) — пороги по возрастанию
-    ladder: tuple = ((1.10, 2.0), (1.25, 1.0), (1.50, 0.5), (float("inf"), 0.3))
+class RiskLimits(atr_mod.AtrLimits):
     max_daily_loss_pct: float = 0.03
-    max_qty: int = 200
+
+    @property
+    def atr_fast(self) -> int:
+        return self.fast
+
+    @property
+    def atr_baseline(self) -> int:
+        return self.baseline
 
 
 DEFAULT_LIMITS = RiskLimits()
 
 
 def atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
-    """Средний истинный диапазон по OHLC."""
-    prev = df["close"].shift(1)
-    tr = pd.concat([
-        df["high"] - df["low"],
-        (df["high"] - prev).abs(),
-        (df["low"] - prev).abs(),
-    ], axis=1).max(axis=1)
-    return tr.rolling(period, min_periods=period).mean()
+    """Обратная совместимость: реализация живёт в `algo.atr`."""
+    return atr_mod.atr(df, period)
 
 
 def vol_ratio(df: pd.DataFrame, limits: RiskLimits = DEFAULT_LIMITS) -> float | None:
-    """ATR(14) последнего бара / медиана ATR(14) за базовое окно."""
-    a = atr(df, limits.atr_fast)
-    if len(a) < limits.atr_baseline:
-        return None
-    base = float(a.iloc[-limits.atr_baseline:].median())
-    if base <= 0:
-        return None
-    return float(a.iloc[-1]) / base
+    return atr_mod.vol_ratio(df, limits)
 
 
 def exposure_for(ratio: float | None, limits: RiskLimits = DEFAULT_LIMITS) -> float:
-    """Экспозиция по лестнице волатильности. Нет данных — полная база."""
-    if ratio is None:
-        return 2.0
-    for threshold, exposure in limits.ladder:
-        if ratio <= threshold:
-            return float(exposure)
-    return 0.3
+    return atr_mod.exposure_for(ratio, limits)
 
 
 def daily_loss_allowed(equity: float, day_start_equity: float,
@@ -74,8 +56,7 @@ def size_with_risk(equity: float, price: float, mult: float,
                    base_exposure: float, ratio: float | None = None,
                    limits: RiskLimits = DEFAULT_LIMITS) -> int:
     """Лот с учётом резки по волатильности и потолка контрактов."""
-    exp = min(float(base_exposure), exposure_for(ratio, limits))
-    return min(size_contracts(equity, price, mult, exp), limits.max_qty)
+    return atr_mod.size(equity, price, mult, base_exposure, ratio, limits)
 
 
 def day_start_equity(rows: list[dict], config_id: str, day,
@@ -90,15 +71,11 @@ def day_start_equity(rows: list[dict], config_id: str, day,
 
 def contracts_for_config(cfg, equity: float, price: float, mult: float,
                          m5, rows: list[dict], day, capital: float) -> tuple[int, str]:
-    """Лот для конфигурации с её риск-надстройками.
-
-    Без флагов `risk_vol`/`risk_daily_loss` повторяет прежний расчёт
-    (`exposure_of` × `size_contracts`), поэтому 기존 конфигурации не меняются.
-    Возвращает (контракты, пояснение для журнала).
-    """
+    """Лот конфигурации. Без явного `risk_vol` — обычный `size_contracts`."""
     notes = []
     ratio = None
-    if cfg.params.get("risk_vol") and m5 is not None and len(m5) >= DEFAULT_LIMITS.atr_baseline:
+    if (atr_mod.enabled(cfg.params) and m5 is not None
+            and len(m5) >= DEFAULT_LIMITS.baseline):
         ratio = vol_ratio(m5)
         notes.append(f"ATR×{ratio:.2f}" if ratio is not None else "ATR: мало данных")
     if cfg.params.get("risk_daily_loss"):

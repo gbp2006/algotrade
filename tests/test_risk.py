@@ -108,7 +108,7 @@ class TestRisk(unittest.TestCase):
         m5 = pd.DataFrame({"open": 100.0, "high": 101.0, "low": 99.0,
                            "close": 100.0, "vol": 1.0}, index=idx)
         for cfg in ROBOT_CONFIGS:
-            self.assertTrue(cfg.params.get("risk_vol"), cfg.id)
+            self.assertFalse(cfg.params.get("risk_vol", False), cfg.id)
             if cfg.strategy == "channel_break":
                 from algo.channel_live import channel_decision
                 self.assertIsNotNone(channel_decision(cfg.params, m5), cfg.id)

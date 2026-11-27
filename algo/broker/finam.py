@@ -2,7 +2,8 @@
 
 Авторизация: POST /v1/sessions {secret} -> token, дальше Authorization: <token>.
 Секрет и счёт берутся из окружения (FINAM_SECRET, FINAM_ACCOUNT) или передаются явно.
-Торговые методы заблокированы, пока не выставлен FINAM_ALLOW_TRADING=1.
+Торговые методы не имеют отдельного env-замка: заявку разрешает маршрутизация
+счёта (только LIVE), активный робот и включённое задание (ADR 27.11).
 """
 
 from __future__ import annotations
@@ -139,8 +140,6 @@ class FinamBroker:
     def place_market(self, symbol: str, side: str, qty: int,
                      account: str | None = None,
                      client_order_id: str | None = None) -> dict:
-        if os.environ.get("FINAM_ALLOW_TRADING") != "1":
-            raise FinamError("торговля выключена: не выставлен FINAM_ALLOW_TRADING=1")
         if client_order_id and len(client_order_id) > 20:
             raise FinamError("client_order_id длиннее 20 символов")
         acc = account or self.account_id
@@ -167,8 +166,6 @@ class FinamBroker:
         обязана быть кратна шагу инструмента — это проверяет шлюз, когда
         ему передан `min_step`.
         """
-        if os.environ.get("FINAM_ALLOW_TRADING") != "1":
-            raise FinamError("торговля выключена: не выставлен FINAM_ALLOW_TRADING=1")
         if client_order_id and len(client_order_id) > 20:
             raise FinamError("client_order_id длиннее 20 символов")
         acc = account or self.account_id
@@ -188,8 +185,6 @@ class FinamBroker:
         return self._call("GET", f"/v1/accounts/{account or self.account_id}/orders/{order_id}")
 
     def cancel_order(self, order_id: str, account: str | None = None) -> dict:
-        if os.environ.get("FINAM_ALLOW_TRADING") != "1":
-            raise FinamError("торговля выключена: не выставлен FINAM_ALLOW_TRADING=1")
         return self._call("DELETE", f"/v1/accounts/{account or self.account_id}/orders/{order_id}")
 
     def find_order(self, client_order_id: str, account: str | None = None) -> dict | None:

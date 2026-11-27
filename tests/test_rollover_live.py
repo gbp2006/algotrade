@@ -33,7 +33,7 @@ class FakeBroker:
 
 
 class TestRolloverRunnerSafety(unittest.TestCase):
-    def test_no_equity_skips_roll_and_uses_own_order_lock(self):
+    def test_no_equity_skips_roll(self):
         import json
         import tempfile
         from algo import live_config as lc
@@ -48,8 +48,6 @@ class TestRolloverRunnerSafety(unittest.TestCase):
                     return {"positions": []}
 
             patches = [
-                mock.patch.object(rl, "LOCK", d / "rollover.lock"),
-                mock.patch.object(rl, "ORDER_LOCK", d / "rollover_orders.lock"),
                 mock.patch.object(rl, "LIVE", d / "live.csv"),
                 mock.patch.object(rl, "SUMMARY", d / "rollover_run.json"),
                 mock.patch.object(rl, "STOP", d / "STOP"),
@@ -68,8 +66,7 @@ class TestRolloverRunnerSafety(unittest.TestCase):
             data = json.loads((d / "rollover_run.json").read_text(encoding="utf-8"))
             self.assertTrue(any("нет equity" in n for n in data["notes"]))
             self.assertEqual(data["results"], {})
-            self.assertFalse((d / "rollover.lock").exists())
-            self.assertNotEqual(str(rl.ORDER_LOCK).split("/")[-1], "live.lock")
+            self.assertFalse((d / "live.lock").exists())
 
 
 class TestActiveContracts(unittest.TestCase):

@@ -2,9 +2,9 @@
 
 Обе операции идут через ``OrderGateway``: STOP_REAL перед заявкой, лимиты из
 капитала счёта, уникальный ``client_id``,journal в SQLite и зеркало в CSV.
-По умолчанию ``dry_run=True`` — пишется только ``planned``; реальная отправка
-требует отдельного «замка» в окружении панели (``ALGO_CLOSE_ARMED`` /
-``ALGO_MM_ARMED``), analogues ``--arm`` у раннера.
+Закрытие и ребаланс фонда отправляют заявки сразу (ADR 27.11): активный
+робот на счёте LIVE + STOP/лимиты/идемпотентность. ``dry_run=True`` остался
+явным режимом репетиции.
 
 Логика денежного рынка повторяет OsEngine ``TmonRebalancer``: режимы
 Off / TwiceADay / OnceADay / OnlyClose, минимальный баланс, фильтр спреда,
@@ -48,6 +48,8 @@ def _context(store: Any, iid: str) -> dict[str, Any]:
     row = next((a for a in store.list_accounts() if a["id"] == acc_id), None)
     if row is None:
         raise OpError(f"счёт {acc_id} не описан в store")
+    if str(row.get("mode") or "LIVE").upper() != "LIVE" or not row.get("enabled", 1):
+        raise OpError(f"счёт {acc_id} виртуальный или выключен: реальные операции запрещены")
     key_ref = inst.get("key_ref") or row.get("key_ref") or "{env:FINAM_SECRET}"
     broker = FinamBroker(secret=resolve_secret(key_ref), account=acc_id)
     runtime = store.get_runtime(iid) or {}
@@ -72,7 +74,7 @@ def _gateway(ctx: dict[str, Any], limits=None) -> OrderGateway:
         limits=limits or battle_limits(ctx["capital"],
                                        max_exposure=float(acc.get("max_exposure") or 1.0),
                                        max_qty=int(acc.get("max_qty") or 100)).as_limits(),
-        journal=LIVE, lock=ROOT / "results" / "live.lock",
+        journal=LIVE,
     )
 
 
@@ -153,7 +155,8 @@ def _send_close(ctx: dict[str, Any], symbol: str, qty: int,
 
 
 def close_instance(store: Any, iid: str, *, dry_run: bool = True,
-                   symbol: str | None = None) -> dict[str, Any]:
+                   symbol: str | None = None,
+               bypass_stop: bool = False) -> dict[str, Any]:
     """Закрыть позицию инструмента, открытую этим инстансом."""
     ctx = _context(store, iid)
     ctx["store"] = store
@@ -166,7 +169,34 @@ def close_instance(store: Any, iid: str, *, dry_run: bool = True,
     if qty == 0:
         return {"ok": True, "closed": 0, "reason": "открытой позиции нет",
                 "symbol": target}
-    return _send_close(ctx, target, qty, dry_run=dry_run, note="все позиции")
+    return _send_close(ctx, target, qty, dry_run=dry_run, note="все позиции",
+                       bypass_stop=bypass_stop)
+
+
+def close_all(store: Any) -> dict[str, Any]:
+    """Закрыть позиции всех активных роботов на реальных счетах.
+
+    Фонд пропускается: его паи — парковка кэша, а не рисковая позиция.
+    STOP_REAL не мешает закрытию — это уменьшение риска, а не новый вход.
+    """
+    live_ids = {str(a["id"]) for a in store.list_accounts()
+                if str(a.get("mode") or "LIVE").upper() == "LIVE"
+                and a.get("enabled", 1)}
+    result: dict[str, Any] = {"closed": 0, "items": [], "skipped": []}
+    for inst in store.list_instances(mode="live", status="active"):
+        if inst.get("spec_id") == "money_market":
+            continue
+        if inst.get("account") not in live_ids:
+            result["skipped"].append({"id": inst["id"], "reason": "не реальный счёт"})
+            continue
+        try:
+            row = close_instance(store, inst["id"], dry_run=False, bypass_stop=True)
+        except Exception as exc:  # noqa: BLE001 — закрываем остальных, даже если один сбой
+            row = {"ok": False, "reason": f"{type(exc).__name__}: {exc}"[:200]}
+        result["items"].append({"id": inst["id"], **row})
+        if row.get("qty"):
+            result["closed"] += 1
+    return result
 
 
 def mm_rebalance(store: Any, iid: str, *, dry_run: bool = True,

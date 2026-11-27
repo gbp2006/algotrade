@@ -44,21 +44,31 @@ class TestRobotTrade(unittest.TestCase):
 
     def test_live_start_enables_timer_with_store(self):
         from unittest import mock
-        from algo import arm_state, live_control
+        from algo import live_control
 
         with tempfile.TemporaryDirectory() as tmp:
             store = RobotStore(Path(tmp) / "robots.db")
             store.init_db()
+            store.create_account({"id": "2102993", "mode": "LIVE"})
             store.create_instance({"id": "fund-1", "spec_id": "money_market",
                                    "mode": "live", "account": "2102993"})
             with mock.patch.object(live_control, "enable", return_value={"ok": True}) as enable, \
-                 mock.patch.object(live_control, "disable", return_value={"ok": True}) as disable, \
-                 mock.patch.object(arm_state, "ARM_STATE", Path(tmp) / "arm.json"):
+                 mock.patch.object(live_control, "disable", return_value={"ok": True}) as disable:
                 result = robot_trade.start(store, "fund-1")
                 robot_trade.stop(store, "fund-1")
             enable.assert_called_once_with(store)
             disable.assert_called_once_with(store)
-            self.assertTrue(result["armed_mm"])
+            self.assertNotIn("armed_mm", result)
+
+    def test_live_start_refuses_virtual_account(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = RobotStore(Path(tmp) / "robots.db")
+            store.init_db()
+            store.create_account({"id": "paper-1", "mode": "TEST"})
+            store.create_instance({"id": "r-virtual", "spec_id": "prostushka",
+                                   "mode": "live", "account": "paper-1"})
+            with self.assertRaisesRegex(ValueError, "реальный счёт LIVE"):
+                robot_trade.start(store, "r-virtual")
 
 
 if __name__ == "__main__":

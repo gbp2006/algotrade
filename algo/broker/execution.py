@@ -1,19 +1,15 @@
-"""Безопасный слой исполнения заявок (G3). НЕ подключён к живым роботам.
+"""Безопасный слой исполнения заявок (G3), подключённый к живым роботам.
 
-Задача: чтобы включение `FINAM_ALLOW_TRADING=1` не означало «робот сразу
-торгует». Каждая заявка проходит проверки, пишется в `results/live.csv`,
-отправляется только через явный шлюз и не отправляется повторно при сбое.
-
-До реального включения остаётся сверить схему `place_limit` с документацией
-Finam (поле clientOrderId) и провести 10 дней репетиции на API с флагом 0.
+Заявка уходит только от активного робота на включённом счёте LIVE по включённому
+заданию `inst:*` (ADR 27.11). Каждая заявка проходит STOP, лок, проверки лимитов
+и цены, пишется в `results/live.csv` и не отправляется повторно при сбое.
+`dry_run=True` — явная репетиция без отправки, а не дополнительный замок.
 """
 
 from __future__ import annotations
 
 import csv
 import hashlib
-import os
-import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -23,49 +19,10 @@ from .. import trade_journal as tj
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 JOURNAL = ROOT / "results" / "live.csv"
-LOCK = ROOT / "results" / "live.lock"
 
 FIELDS = ["ts", "client_id", "client_order_id", "order_id", "config", "symbol",
           "side", "qty", "price", "multiplier", "status", "reason", "response",
           "account", "pricing", "order_type"]
-
-LOCK_MAX_AGE_SEC = 300  # аренда лока: после падения процесса снимается автоматически
-
-
-def _lock_lease_stale(path: Path, max_age: float = LOCK_MAX_AGE_SEC) -> bool:
-    """Лок упавшего процесса не должен блокировать заявки до ручного удаления."""
-    if not path.exists():
-        return False
-    try:
-        text = path.read_text(encoding="utf-8").strip()
-        pid_raw, sep, _ = text.partition(":")
-        if sep:
-            try:
-                os.kill(int(pid_raw), 0)  # жив ли владелец
-                return False
-            except PermissionError:
-                return False  # процесс есть, просто нет права посылать сигнал
-            except (ValueError, ProcessLookupError, OSError):
-                return True
-        # legacy-формат (только client_id) — ориентируемся на возраст файла
-        return time.time() - path.stat().st_mtime > max_age
-    except OSError:
-        return False
-
-
-def _acquire_lock(path: Path) -> int | None:
-    """O_EXCL + однократный сброс stale-лока. None — занят живым процессом."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    for attempt in (0, 1):
-        try:
-            return os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError:
-            if attempt == 0 and _lock_lease_stale(path):
-                path.unlink(missing_ok=True)
-                continue
-            return None
-    return None
-
 
 class ExecutionError(RuntimeError):
     pass
@@ -118,10 +75,11 @@ class OrderGateway:
     def __init__(self, broker: Any, limits: Limits | None = None,
                  journal: Path | None = None, lock: Path | None = None,
                  journal_db: Path | None = None):
+        # `lock` принимается для совместимости старых вызовов и игнорируется:
+        # локи убраны (ADR 27.11), дубли ловит UNIQUE client_order_id в БД.
         self.broker = broker
         self.limits = limits or Limits()
         self.journal = journal or JOURNAL
-        self.lock = lock or LOCK
         # БД — источник правды; CSV — зеркало. В тестах БД рядом с временным журналом.
         self.journal_db = Path(journal_db) if journal_db else (
             tj.TRADES_DB if self.journal == JOURNAL else self.journal.with_suffix(".db"))
@@ -194,70 +152,58 @@ class OrderGateway:
                dry_run: bool = False, stop: Path | None = None) -> Result:
         """`dry_run=True` проверяет всё, кроме отправки, и пишет статус `planned`.
 
-        Нужен для репетиции G3: при выключенном флаге обычный `submit` сразу
-        возвращает `blocked` и не проверяет лимиты/цену — репетировать нечего.
+        Разрешение на заявку определяется маршрутизацией счёта (только LIVE),
+        активным роботом и включённым заданием; отдельного env-флага больше нет
+        (ADR 27.11). `dry_run` остаётся явным режимом репетиции, а не воротом.
 
         `stop` — путь к боевому STOP-флагу; проверяется перед КАЖДОЙ заявкой,
         а не только в начале прогона (флаг может появиться mid-session).
         """
         cid = client_order_id(order.client_id)
-        if os.environ.get("FINAM_ALLOW_TRADING") != "1" and not dry_run:
-            return self._write(order, Result("blocked", "FINAM_ALLOW_TRADING != 1",
-                                             client_order_id=cid))
         if stop is not None and stop.exists():
             return self._write(order, Result("blocked", f"STOP: {stop.name}",
                                              client_order_id=cid))
 
-        fd = _acquire_lock(self.lock)
-        if fd is None:
-            return self._write(order, Result("rejected", "уже выполняется другая заявка",
-                                             client_order_id=cid))
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(f"{os.getpid()}:{order.client_id}")
-
         try:
-            try:
-                duplicate = tj.exists(cid, self.journal_db)
-            except Exception:  # noqa: BLE001 — при недоступной БД не теряем страховку CSV
-                duplicate = any(r["client_id"] == order.client_id for r in self._rows())
-            if duplicate:
-                return self._write(order, Result("duplicate", "client_id уже в журнале",
-                                                 client_order_id=cid))
-            reason = self._validate(order)
-            if reason:
-                return self._write(order, Result("rejected", reason,
-                                                 client_order_id=cid))
-            if dry_run:
-                return self._write(order, Result(
-                    "planned", "dry-run: проверено, заявка не отправлена",
-                    client_order_id=cid))
-            try:
-                acc = account or order.account
-                if order.order_type == "market":
-                    # client_order_id — общее поле PlaceOrder, применимо и к market
-                    response = self.broker.place_market(
-                        order.symbol, order.side, order.qty, acc, cid)
-                else:
-                    response = self.broker.place_limit(
-                        order.symbol, order.side, order.qty, order.price, acc, cid)
-            except Exception as exc:  # noqa: BLE001 — ответ мог потеряться после отправки
-                found = None
-                finder = getattr(self.broker, "find_order", None)
-                if finder is not None:
-                    try:
-                        found = finder(cid, account)
-                    except Exception:  # noqa: BLE001 — сверка не должна маскировать ошибку
-                        found = None
-                if found is not None:
-                    return self._write(order, Result(
-                        "uncertain", "ответ потерян, заявка найдена на сервере",
-                        found, cid, order_id_from(found)))
-                return self._write(order, Result(
-                    "error", f"{type(exc).__name__}: {exc}"[:200], client_order_id=cid))
+            duplicate = tj.exists(cid, self.journal_db)
+        except Exception:  # noqa: BLE001 — при недоступной БД не теряем страховку CSV
+            duplicate = any(r["client_id"] == order.client_id for r in self._rows())
+        if duplicate:
+            return self._write(order, Result("duplicate", "client_id уже в журнале",
+                                             client_order_id=cid))
+        reason = self._validate(order)
+        if reason:
+            return self._write(order, Result("rejected", reason,
+                                             client_order_id=cid))
+        if dry_run:
             return self._write(order, Result(
-                "sent", "", response, cid, order_id_from(response)))
-        finally:
-            self.lock.unlink(missing_ok=True)
+                "planned", "dry-run: проверено, заявка не отправлена",
+                client_order_id=cid))
+        try:
+            acc = account or order.account
+            if order.order_type == "market":
+                # client_order_id — общее поле PlaceOrder, применимо и к market
+                response = self.broker.place_market(
+                    order.symbol, order.side, order.qty, acc, cid)
+            else:
+                response = self.broker.place_limit(
+                    order.symbol, order.side, order.qty, order.price, acc, cid)
+        except Exception as exc:  # noqa: BLE001 — ответ мог потеряться после отправки
+            found = None
+            finder = getattr(self.broker, "find_order", None)
+            if finder is not None:
+                try:
+                    found = finder(cid, account)
+                except Exception:  # noqa: BLE001 — сверка не должна маскировать ошибку
+                    found = None
+            if found is not None:
+                return self._write(order, Result(
+                    "uncertain", "ответ потерян, заявка найдена на сервере",
+                    found, cid, order_id_from(found)))
+            return self._write(order, Result(
+                "error", f"{type(exc).__name__}: {exc}"[:200], client_order_id=cid))
+        return self._write(order, Result(
+            "sent", "", response, cid, order_id_from(response)))
 
 
 def _scalar(value: Any) -> float:

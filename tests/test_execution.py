@@ -48,12 +48,11 @@ class TestGateway(unittest.TestCase):
         self.broker = FakeBroker()
         self.gw = ex.OrderGateway(self.broker, journal=self.journal, lock=self.lock)
 
-    def test_blocked_without_flag(self):
+    def test_no_env_flag_gate(self):
         with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "0"}):
-            res = self.gw.submit(order())
-        self.assertEqual(res.status, "blocked")
-        self.assertEqual(self.broker.calls, [])
-        self.assertEqual(len(self.gw._rows()), 1)
+            res = self.gw.submit(order(), account="2102993")
+        self.assertTrue(res.sent)
+        self.assertEqual(len(self.broker.calls), 1)
 
     def test_sent_with_flag(self):
         with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):
@@ -122,13 +121,12 @@ class TestGateway(unittest.TestCase):
         self.assertTrue(res.sent, res.reason)
         self.assertEqual(self.broker.calls[0][2], 8)
 
-    def test_lock_blocks_second_launcher(self):
+    def test_lock_file_is_ignored(self):
         self.lock.write_text("другой процесс", encoding="utf-8")
         with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):
-            res = self.gw.submit(order())
-        self.assertEqual(res.status, "rejected")
-        self.assertIn("другая заявка", res.reason)
-        self.assertEqual(self.broker.calls, [])
+            res = self.gw.submit(order(), account="2102993")
+        self.assertTrue(res.sent)
+        self.assertEqual(len(self.broker.calls), 1)
 
     def test_gateway_keeps_full_response_beside_short_csv_field(self):
         class VerboseBroker(FakeBroker):
@@ -155,34 +153,20 @@ class TestGateway(unittest.TestCase):
         self.assertEqual(len(self.broker.calls), 1)
         self.assertEqual([r["status"] for r in self.gw._rows()], ["sent", "blocked"])
 
-    def test_stale_lock_from_dead_process_is_cleared(self):
-        self.lock.write_text("99999999:old-order", encoding="utf-8")
+    def test_duplicate_client_id_blocks_second_order(self):
         with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):
-            res = self.gw.submit(order())
-        self.assertTrue(res.sent)
-        self.assertFalse(self.lock.exists())
+            first = self.gw.submit(order(), account="2102993")
+            second = self.gw.submit(order(), account="2102993")
+        self.assertTrue(first.sent)
+        self.assertEqual(second.status, "duplicate")
+        self.assertEqual(len(self.broker.calls), 1)
 
-    def test_legacy_lock_expires_by_age(self):
-        self.lock.write_text("old-order", encoding="utf-8")
-        old = __import__("time").time() - ex.LOCK_MAX_AGE_SEC - 10
-        os.utime(self.lock, (old, old))
-        with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):
-            res = self.gw.submit(order())
-        self.assertTrue(res.sent)
-
-    def test_live_pid_lock_still_blocks(self):
-        self.lock.write_text(f"{os.getpid()}:current-order", encoding="utf-8")
-        with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):
-            res = self.gw.submit(order())
-        self.assertEqual(res.status, "rejected")
-
-    def test_transport_error_journaled_and_lock_released(self):
+    def test_transport_error_journaled(self):
         gw = ex.OrderGateway(FakeBroker(fail=True), journal=self.journal, lock=self.lock)
         with mock.patch.dict(os.environ, {"FINAM_ALLOW_TRADING": "1"}):
             res = gw.submit(order())
         self.assertEqual(res.status, "error")
         self.assertIn("API 500", res.reason)
-        self.assertFalse(self.lock.exists())
         self.assertEqual(gw._rows()[0]["status"], "error")
 
 

@@ -45,18 +45,25 @@ def audit(limit: int = 50) -> list[dict]:
     return rows[-max(1, min(limit, 200)):][::-1]
 
 
-def _env_flag() -> bool:
-    env = ROOT / ".env"
-    if not env.exists():
-        return False
-    for line in env.read_text(encoding="utf-8").splitlines():
-        if line.startswith("FINAM_ALLOW_TRADING="):
-            return line.split("=", 1)[1].strip() == "1"
-    return False
-
-
 def _live_ids(store: RobotStore) -> list[str]:
     return [str(i["id"]) for i in store.list_instances(mode="live", status="active")]
+
+
+def live_account_ids(store: RobotStore) -> set[str]:
+    """Включённые реальные счета, которые одни могут дать заявку."""
+    return {str(a["id"]) for a in store.list_accounts()
+            if str(a.get("mode") or "LIVE").upper() == "LIVE"
+            and a.get("enabled", 1)}
+
+
+def check_live_accounts(store: RobotStore) -> None:
+    """Все активные боевые роботы обязаны быть на включённом счёте LIVE."""
+    ids = live_account_ids(store)
+    for inst in store.list_instances(mode="live", status="active"):
+        if str(inst.get("account") or "") not in ids:
+            raise LiveControlError(
+                f"робот {inst['id']}: нужен включённый реальный счёт LIVE, "
+                f"сейчас {inst.get('account')!r}")
 
 
 def _jobs(store: RobotStore) -> list[dict]:
@@ -76,7 +83,6 @@ def status(store: RobotStore | None = None) -> dict:
         "enabled": bool(enabled),
         "next_run": times[0] if times else None,
         "stop_real": STOP_REAL.exists(),
-        "env_flag": "1" if _env_flag() else "0",
         "mode": "robots",
         "scheduled": len(jobs),
         "live_robots": len(_live_ids(st)),
@@ -87,6 +93,7 @@ def enable(store: RobotStore) -> dict:
     live = _live_ids(store)
     if not live:
         raise LiveControlError("нет активных живых роботов — включать нечего")
+    check_live_accounts(store)
     if not store.list_accounts():
         raise LiveControlError("нет счетов — включать нечего")
     if STOP_REAL.exists():

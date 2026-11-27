@@ -24,11 +24,14 @@ case "${1:-help}" in
   migrate-pg) "$PY" scripts/97_migrate_to_postgres.py ;;
   assign-paper-accounts) "$PY" scripts/98_assign_paper_accounts.py ;;
   start-project) bash scripts/start_project.sh ;;
-  check-ui) node webui/check-all.mjs "${2:-http://192.168.0.230:8080/}" ;;
-  live-dry) shift; "$PY" scripts/34_live_execute.py "$@" ;;
-  live) shift; "$PY" scripts/34_live_execute.py --arm "$@" ;;
-  rollover-dry) shift; "$PY" scripts/35_rollover_live.py "$@" ;;
-  rollover) shift; "$PY" scripts/35_rollover_live.py --arm "$@" ;;
+  check-ui) node webui/check-all.mjs "${2:-http://192.168.0.230/}" ;;
+  # --arm и FINAM_ALLOW_TRADING убраны (ADR 27.11): команда задания live-run
+  # отправляет заявки, если робот активен, счёт LIVE и задание включено.
+  live-run) shift; "$PY" scripts/34_live_execute.py "$@" ;;
+  live) shift; "$PY" scripts/34_live_execute.py "$@" ;;
+  live-dry) shift; "$PY" scripts/34_live_execute.py --dry-run "$@" ;;
+  rollover) shift; "$PY" scripts/35_rollover_live.py "$@" ;;
+  rollover-dry) shift; "$PY" scripts/35_rollover_live.py --dry-run "$@" ;;
   report) "$PY" scripts/32_paper_report.py ;;
   store) shift; "$PY" scripts/00_store.py "$@" ;;
   sweep)  "$PY" scripts/15_sweep_full.py ;;
@@ -81,10 +84,11 @@ usage: ./run.sh <команда>
   assign-paper-accounts  развести бумажных роботов по отдельным TEST-счетам
   start-project  полный старт на WSL: PostgreSQL, миграция, панель, проверка
   check-ui   headless-проверка GUI: 7 разделов, вкладки, 0 ошибок JS
-  live-dry боевой контур в репетиции: заявки НЕ уходят (по умолчанию)
-  live     боевой контур с --arm; требует FINAM_ALLOW_TRADING=1 и live_settings.json
-  rollover-dry  перекладка квартальных позиций без отправки (по умолчанию)
-  rollover      перекладка с --arm; только после ворот и ручного решения
+  live-run боевой контур по заданию активного LIVE-робота (заявки уходят)
+  live     то же, что live-run (старое имя)
+  live-dry явная репетиция боя: проверяет всё, но заявки НЕ уходят
+  rollover      перекладка квартальных позиций (заявки уходят)
+  rollover-dry  репетиция перекладки без отправки
   store    хранилище баров: init|import-txt|import-finam|export|import-csv|stats
   sweep    полная сетка параметров Простушки
   all      прогоны Простушки на Si + Универсалки

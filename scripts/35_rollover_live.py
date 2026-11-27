@@ -1,11 +1,11 @@
-"""Перекладка квартальных позиций (подготовлено, НЕ включено).
+"""Перекладка квартальных позиций через OrderGateway.
 
-Проверяет реальные позиции счетов из live_settings/store и, если ликвидность
-ушла в следующий контракт (или до экспирации мало дней), выставляет две ноги с
-общим roll_id через OrderGateway. По умолчанию dry-run — заявки не уходят.
+По умолчанию формы уходят на биржу; `--dry-run` — явная репетиция. `--arm`
+принят для совместимости и ничего не меняет (ADR 27.11). STOP_REAL, лок и
+лимиты действуют так же, как в ежедневном боевом раннере.
 
-Запуск: ./run.sh rollover-dry [--day YYYY-MM-DD] [--force-before 7]
-        ./run.sh rollover [--arm]   # только после ворот и ручного решения
+Запуск: ./run.sh rollover [--day YYYY-MM-DD]
+        ./run.sh rollover-dry [--day YYYY-MM-DD]
 """
 
 from __future__ import annotations
@@ -41,9 +41,6 @@ from algo.rollover_integration import volumes_for  # noqa: E402
 
 LIVE = ROOT / "results" / "live.csv"
 STOP = ROOT / "results" / "STOP"
-LOCK = ROOT / "results" / "rollover.lock"
-# Отдельный лок заявок: ролл не должен делить live.lock с боевым раннером
-ORDER_LOCK = ROOT / "results" / "rollover_orders.lock"
 SUMMARY = ROOT / "results" / "rollover_run.json"
 
 
@@ -56,19 +53,15 @@ def instrument_for(symbol: str, contracts_by_inst: dict):
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="перекладка квартальных контрактов")
-    ap.add_argument("--arm", action="store_true", help="разрешить отправку")
+    ap.add_argument("--arm", action="store_true",
+                    help="устаревший флаг, принят для совместимости")
+    ap.add_argument("--dry-run", action="store_true", help="репетиция без отправки")
     ap.add_argument("--day", default=date.today().isoformat())
     ap.add_argument("--force-before", type=int, default=7,
                     help="переложиться за N календарных дней до экспирации")
     args = ap.parse_args(argv)
 
-    LOCK.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        fd = os.open(LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-    except FileExistsError:
-        print("перекладка уже выполняется (rollover.lock)")
-        return 0
-    os.write(fd, str(os.getpid()).encode())
+    # Локи убраны (ADR 27.11): дубли отсекает UNIQUE client_order_id в журнале.
     try:
         if STOP.exists() or STOP_REAL.exists():
             print("STOP установлен: перекладка пропущена")
@@ -117,7 +110,7 @@ def main(argv: list[str] | None = None) -> int:
                 broker,
                 limits=battle_limits(equity, max_exposure=acc.max_exposure,
                                      max_qty=acc.max_qty).as_limits(),
-                journal=LIVE, lock=ORDER_LOCK)
+                journal=LIVE)
 
             for sym, qty in actual.items():
                 if qty == 0 or is_perpetual(sym):
@@ -155,20 +148,19 @@ def main(argv: list[str] | None = None) -> int:
                         multiplier=inst.mult, min_step=inst.tick,
                         order_type=order_type, account=acc_id, pricing="roll")
                     res = gateway.submit(order, account=acc_id,
-                                         stop=STOP_REAL, dry_run=not args.arm)
+                                         stop=STOP_REAL, dry_run=args.dry_run)
                     results[res.status] = results.get(res.status, 0) + 1
 
         SUMMARY.parent.mkdir(parents=True, exist_ok=True)
         SUMMARY.write_text(json.dumps({
-            "date": str(day), "armed": bool(args.arm),
+            "date": str(day), "armed": not args.dry_run, "dry_run": args.dry_run,
             "results": results, "notes": notes[:30],
         }, ensure_ascii=False, indent=1), encoding="utf-8")
         print(f"rollover {day}: {sum(results.values())} ног, статусы {results}, "
-              f"arm={args.arm}")
+              f"{'dry-run' if args.dry_run else 'реальные заявки'}")
         return 0
     finally:
-        os.close(fd)
-        LOCK.unlink(missing_ok=True)
+        pass  # локов больше нет; повторные заявки отсекает UNIQUE client_order_id
 
 
 if __name__ == "__main__":

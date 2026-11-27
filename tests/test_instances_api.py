@@ -47,6 +47,7 @@ class TestApiViews(unittest.TestCase):
         self.assertEqual(again["status"], "active")
 
     def test_start_live_without_pricing_uses_param_default(self):
+        self.store.create_account({"id": "2102993", "mode": "LIVE"})
         api.create_view(self.store, {
             "id": "fund-api", "spec_id": "money_market", "mode": "live",
             "account": "2102993", "params": {},

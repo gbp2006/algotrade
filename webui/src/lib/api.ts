@@ -49,11 +49,14 @@ export const api = {
   instanceAction: (id: string, action: string) =>
     post<Record<string, unknown>>(`/api/instances/${encodeURIComponent(id)}/${action}`, {}),
   tradeControl: (id: string, start: boolean) =>
-    post<Record<string, unknown>>(`/api/instances/${encodeURIComponent(id)}/trade`, { start }),
+    post<{ status: string; scheduled: number; timer?: { error?: string } | null }>(
+      `/api/instances/${encodeURIComponent(id)}/trade`, { start }),
   updateInstance: (id: string, payload: Record<string, unknown>) =>
     patchRequest<Robot>(`/api/instances/${encodeURIComponent(id)}`, payload),
   instanceHistory: (id: string) =>
     get<InstanceEvent[]>(`/api/instances/${encodeURIComponent(id)}/history`),
+  instanceDecisions: (id: string) => get<{ items: Record<string, unknown>[] }>(
+    `/api/instances/${encodeURIComponent(id)}/decisions`),
   removeInstance: (id: string) =>
     del<{ deleted: boolean }>(`/api/instances/${encodeURIComponent(id)}`),
   robots: (mode = '') => get<Robot[]>(
@@ -88,17 +91,17 @@ export const api = {
   }[] }>(`/api/trading/audit?limit=${limit}`),
   tradingStatus: () => get<{
     timer_installed: boolean; enabled: boolean; next_run: string | null;
-    stop_real: boolean; env_flag: string;
+    stop_real: boolean; mode: string;
   }>('/api/trading/status'),
   tradingToggle: (enabled: boolean) => post<{
     timer_installed: boolean; enabled: boolean; next_run: string | null;
-    stop_real: boolean; env_flag: string;
+    stop_real: boolean; mode: string;
   }>('/api/trading/toggle', { enabled }),
 
   // Боевой контур: ручной прогон, состояние, заявки, STOP.
-  liveRun: (arm: boolean, day?: string) => post<{
+  liveRun: (dryRun: boolean, day?: string) => post<{
     ok: boolean; stdout: string; summary: Record<string, unknown>;
-  }>('/api/live-run', { arm, day }),
+  }>('/api/live-run', { dry_run: dryRun, day }),
   liveState: () => get<Record<string, unknown>>('/api/live-state'),
   liveOrders: () => get<Record<string, unknown>[] | { items: Record<string, unknown>[] }>('/api/live-orders'),
   liveControl: () => get<Record<string, unknown>>('/api/live-control'),
@@ -107,9 +110,11 @@ export const api = {
   stopReal: (action: 'set' | 'clear') =>
     post<{ stop_real: boolean }>('/api/stop-real', { action }),
   stopPaper: () => post<{ stop: boolean }>('/api/stop', {}),
-  armState: () => get<Record<string, boolean>>('/api/arm-state'),
-  armSet: (kind: 'mm' | 'close', enabled: boolean) =>
-    post<Record<string, boolean>>('/api/arm-state', { kind, enabled }),
+  closeAll: () => post<{
+    closed: number;
+    items: Record<string, unknown>[];
+    skipped: Record<string, unknown>[];
+  }>('/api/positions/close-all', {}),
 
   // Фонд денежного рынка.
   mmRebalance: (id: string, regime?: string) => post<Record<string, unknown>>(

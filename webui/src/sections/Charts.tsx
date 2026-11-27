@@ -114,9 +114,12 @@ export function Charts() {
     if (!candles.data) return [];
     const times = new Set(candles.data.map((bar) => barTime(bar[0])));
     const result: SeriesMarker<UTCTimestamp>[] = [];
-    const dayTime = (raw: string): UTCTimestamp | null => {
-      const day = raw.slice(0, 10).split('-').reverse().join('.');
-      const bar = candles.data?.find((item) => item[0].startsWith(day));
+    // Метки свечей — "ДД.ММ ЧЧ:ММ", а заявки/потоки приходят ISO "ГГГГ-ММ-ДД".
+    const firstBarTime = (raw: string): UTCTimestamp | null => {
+      const parts = String(raw).slice(0, 10).split('-');
+      if (parts.length !== 3) return null;
+      const prefix = `${parts[2]}.${parts[1]}`;
+      const bar = candles.data?.find((item) => item[0].startsWith(prefix));
       return bar ? barTime(bar[0]) : null;
     };
     if (layers.trades) {
@@ -136,7 +139,7 @@ export function Charts() {
     }
     if (layers.orders) {
       for (const order of orderRows) {
-        const time = dayTime(String(order.ts ?? ''));
+        const time = firstBarTime(String(order.ts ?? ''));
         if (time !== null) result.push({
           time, position: 'belowBar', shape: 'circle',
           color: '#8b7cf6', text: String(order.status ?? 'заявка'),
@@ -145,7 +148,7 @@ export function Charts() {
     }
     if (layers.flows) {
       for (const flow of flows.data?.items ?? []) {
-        const time = dayTime(String(flow.created_at ?? ''));
+        const time = firstBarTime(String(flow.created_at ?? ''));
         if (time !== null) result.push({
           time, position: 'aboveBar', shape: 'circle',
           color: '#43b7e0', text: String(flow.type ?? 'поток'),

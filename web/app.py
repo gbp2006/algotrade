@@ -73,6 +73,7 @@ from algo.instruments import DEFAULT, INSTRUMENTS, margin, symbol as inst_symbol
 from algo.portfolio import (CAPITAL, account_card, drawdown_stats,  # noqa: E402
                             exposure_of, ledger)
 from algo import metrics_store  # noqa: E402
+from algo import store as market_store  # noqa: E402
 from algo.account_poller import finam_report, sync_accounts  # noqa: E402
 from algo.cash_flow_store import CashFlowStore  # noqa: E402
 from web.instances_api import (get_store, invalidate_analytics,  # noqa: E402
@@ -297,12 +298,18 @@ def candles(tf: str = "M5", days: int = 2, config_id: str | None = None) -> list
     inst = instrument_of(cfg or ALL_CONFIGS[0])
 
     def fetch():
-        b = FinamBroker()
-        sym = inst_symbol(inst)
         now = datetime.now(timezone.utc)
-        start = (now - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ")
-        end = now.strftime("%Y-%m-%dT%H:%M:%SZ")
-        df = b.bars(sym, TF_MAP.get(tf, "TIME_FRAME_M5"), start, end)
+        sym = inst_symbol(inst)
+        db_tf = {"M1": "M1", "M5": "M5", "M15": "M15", "M30": "M30",
+                 "H1": "H1", "D": "D1"}.get(tf, "M5")
+        # Сначала сохранённая история из market.db (её пишет боевой раннер),
+        # брокер — только fallback, если в баре ещё ничего нет.
+        df = market_store.read(sym, db_tf, now - timedelta(days=days), now)
+        if df.empty:
+            b = FinamBroker()
+            start = (now - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ")
+            end = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+            df = b.bars(sym, TF_MAP.get(tf, "TIME_FRAME_M5"), start, end)
         fmt = "%d.%m %H:%M" if tf != "D" else "%d.%m"
         return [[d.strftime(fmt), float(o), float(h), float(l), float(c)]
                 for d, o, h, l, c in zip(df.index, df["open"], df["high"],

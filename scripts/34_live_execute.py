@@ -1,11 +1,14 @@
-"""Боевой раннер (подготовлен, НЕ включён). Отправляет заявки только при --arm
-И FINAM_ALLOW_TRADING=1. По умолчанию всё пишется в журнал как `planned`.
+"""Боевой раннер: заявки уходят по активному заданию робота на счёте LIVE.
 
-Правила и формат настроек — docs/live-design.md. Запуск:
-    ./run.sh live-dry            # репетиция, ни одной заявки
-    ./run.sh live --arm          # только после ворот и ручного решения
+Отдельных замков `--arm` и `FINAM_ALLOW_TRADING` больше нет (ADR 27.11):
+управление — СТАРТ/СТОП робота и кнопка «Закрыть всё» в панели. Остаются
+STOP_REAL, лок от двойной отправки, лимиты, экспирация и идемпотентность.
+`--dry-run` — явная репетиция без отправки, `--arm` принят для совместимости
+со старыми командами заданий и ничего не меняет.
 
-Робот попадает в контур, только если явно перечислен в live_settings.json.
+Запуск:
+    ./run.sh live-run --day 2026-11-27   # реальные заявки
+    ./run.sh live-dry --day 2026-11-27   # только planned
 """
 
 from __future__ import annotations
@@ -41,13 +44,13 @@ from algo.configs import CONFIGS  # noqa: E402
 from algo.instance_configs import live_settings_from_store  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS  # noqa: E402
 from algo.live_config import SettingsError, load_settings  # noqa: E402
+from algo.live_signal import collect as collect_signals  # noqa: E402
 from algo.robot_configs import ROBOT_CONFIGS  # noqa: E402
 from algo.robot_store import RobotStore  # noqa: E402
 
 PAPER = ROOT / "results" / "paper.csv"
 LIVE = ROOT / "results" / "live.csv"
 STOP = ROOT / "results" / "STOP"
-RUN_LOCK = ROOT / "results" / "live_run.lock"
 SUMMARY = ROOT / "results" / "live_run.json"
 BY_ID = {c.id: c for c in CONFIGS + ROBOT_CONFIGS}
 MSK = timezone(timedelta(hours=3))
@@ -165,16 +168,6 @@ def sync_live_runtime(store, updates: list[dict]) -> list[str]:
     return notes
 
 
-def acquire_run_lock() -> int | None:
-    RUN_LOCK.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        fd = os.open(RUN_LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-    except FileExistsError:
-        return None
-    os.write(fd, str(os.getpid()).encode())
-    return fd
-
-
 def tick_for(symbol: str) -> float:
     for inst in INSTRUMENTS.values():
         if inst.symbol == symbol:
@@ -190,17 +183,16 @@ def mult_for(symbol: str) -> float:
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="боевой контур (dry-run по умолчанию)")
+    ap = argparse.ArgumentParser(description="боевой контур (заявки уходят по заданию LIVE-робота)")
     ap.add_argument("--arm", action="store_true",
-                    help="разрешить отправку (вместе с FINAM_ALLOW_TRADING=1)")
+                    help="устаревший флаг, принят для совместимости и ничего не меняет")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="явная репетиция: проверить всё, но не отправлять")
     ap.add_argument("--day", default=date.today().isoformat(),
                     help="дата решений из paper.csv (по умолчанию сегодня)")
     args = ap.parse_args(argv)
 
-    fd = acquire_run_lock()
-    if fd is None:
-        print("боевой контур уже выполняется (live_run.lock)")
-        return 0
+    # Локов больше нет (ADR 27.11): повторный прогон ловит client_id в журнале.
     try:
         if STOP.exists() or STOP_REAL.exists():
             print("STOP установлен: заявки не отправляются")
@@ -220,17 +212,28 @@ def main(argv: list[str] | None = None) -> int:
         # Экспирация проверяется на дату Actual исполнения, а не на дату
         # бумажного решения: догоняющий --day=вчера не должен уйти в экспирацию.
         run_day = datetime.now(MSK).date()
-        plans = plan_targets(read_paper(day), settings, day)
-        if not plans:
-            print(f"{day}: решений для боевых роботов нет")
-            return 0
-
         counts: dict[str, int] = {}
         notes: list[str] = []
         fills: list[dict] = []
         paper_signals: dict[str, dict] = {}
         decisions: dict[tuple[str, str], str] = {}
         runtime_updates: list[dict] = []
+
+        #_signal: бой сам считает сигнал по свежим барам и пишет его в свой журнал;
+        # paper.csv больше не участвует в отправке заявок (ADR 27.11).
+        try:
+            price_broker = FinamBroker.service()
+        except Exception as exc:  # noqa: BLE001 — без данных заявок не будет
+            print(f"нет сервисного ключа для баров — {exc}")
+            return 2
+        plans, signal_notes, recorded = collect_signals(
+            RobotStore(), settings, day, price_broker)
+        notes.extend(signal_notes)
+        if recorded:
+            notes.append(f"персональный журнал: решений {len(recorded)}")
+        if not plans:
+            print(f"{day}: решений для боевых роботов нет")
+            return 0
 
         for (acc_id, key_ref), symbols in plans.items():
             acc = settings.accounts[acc_id]
@@ -276,7 +279,7 @@ def main(argv: list[str] | None = None) -> int:
                     equity, max_exposure=acc.max_exposure,
                     max_qty=acc.max_qty,
                 ).as_limits(),
-                journal=LIVE, lock=ROOT / "results" / "live.lock",
+                journal=LIVE,
             )
 
             for sym, plan in symbols.items():
@@ -325,7 +328,7 @@ def main(argv: list[str] | None = None) -> int:
                     assert_stop_clear(STOP_REAL)
                     result = gateway.submit(order, account=acc_id,
                                             stop=STOP_REAL,
-                                            dry_run=not args.arm)
+                                            dry_run=args.dry_run)
                     status, reason = result.status, result.reason
                     if result.sent and result.client_order_id:
                         paper_signals[result.client_order_id] = {
@@ -398,18 +401,18 @@ def main(argv: list[str] | None = None) -> int:
         notes.extend(sync_live_runtime(RobotStore(), runtime_updates))
         SUMMARY.parent.mkdir(parents=True, exist_ok=True)
         SUMMARY.write_text(json.dumps({
-            "date": str(day), "armed": bool(args.arm), "counts": counts,
+            "date": str(day), "armed": not args.dry_run, "dry_run": args.dry_run,
+            "counts": counts,
             "robots": sorted(settings.robots),
             "accounts": sorted({acc for acc, _ in plans}),
             "fills": fills,
             "notes": notes[:40],
         }, ensure_ascii=False, indent=1), encoding="utf-8")
         print(f"live {day}: {sum(counts.values())} решений, статусы {counts}, "
-              f"arm={args.arm}")
+              f"{'dry-run' if args.dry_run else 'реальные заявки'}")
         return 0
     finally:
-        os.close(fd)
-        RUN_LOCK.unlink(missing_ok=True)
+        pass  # локов больше нет; повторные заявки отсекает UNIQUE client_order_id
 
 
 if __name__ == "__main__":

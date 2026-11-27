@@ -145,7 +145,7 @@ class TestHTTPApi(unittest.TestCase):
     def test_trading_status_endpoint(self):
         status, data = request(web_app.app, "GET", "/api/trading/status")
         self.assertEqual(status, 200)
-        for key in ("enabled", "stop_real", "next_run", "env_flag"):
+        for key in ("enabled", "stop_real", "next_run", "mode"):
             self.assertIn(key, data)
 
     def test_reconciliation_endpoint(self):
@@ -167,7 +167,7 @@ class TestHTTPApi(unittest.TestCase):
     def test_live_state(self):
         status, data = request(web_app.app, "GET", "/api/live-state")
         self.assertEqual(status, 200)
-        for key in ("paper_days", "shadow_days", "stop_real", "allow_trading",
+        for key in ("paper_days", "shadow_days", "stop_real", "routing",
                     "live_trading_enabled"):
             self.assertIn(key, data)
 
