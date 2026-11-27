@@ -107,16 +107,15 @@ export function Accounts() {
   const createAcc = useMutation({
     mutationFn: async () => {
       const id = newId.trim();
-      const created = await api.createAccount({
+      const payload: Record<string, unknown> = {
         id, label: newLabel || id, mode: newMode,
-        capital: newMode === 'TEST' ? newCapital : 0,
-      });
-      if (newSecret.trim()) {
-        const ref = `acc:${created.id}`;
-        await api.saveKey(ref, newSecret.trim());
-        await api.updateAccount(created.id, { key_ref: ref });
-      }
-      return created;
+      };
+      // У реального счёта капитал знает только брокер — поле не показываем.
+      if (newMode === 'TEST') payload.capital = newCapital;
+      // Ключ передаём сразу в createAccount: сервер пишет его в auth.json до
+      // создания счёта, поэтому неудачная запись не оставляет половинчатый счёт.
+      if (newSecret.trim()) payload.key_ref = newSecret.trim();
+      return api.createAccount(payload);
     },
     onSuccess: () => {
       invalidateAccounts();
@@ -216,9 +215,10 @@ export function Accounts() {
       <Tabs tabs={tabs} value={tab} onChange={setTab}>
         <TabPanel value="list">
           <Card title="Добавить счёт">
-            <div className="grid gap-3 md:grid-cols-5">
+            <div className={`grid gap-3 ${newMode === 'TEST' ? 'md:grid-cols-5' : 'md:grid-cols-4'}`}>
               <label className="text-xs">ID счёта
-                <input className="input mt-1" value={newId} onChange={(e) => setNewId(e.target.value)} placeholder="paper-2" />
+                <input className="input mt-1" value={newId} onChange={(e) => setNewId(e.target.value)}
+                  placeholder={newMode === 'LIVE' ? 'ID счёта у брокера, например 2102993' : 'paper-2'} />
               </label>
               <label className="text-xs">Название
                 <input className="input mt-1" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} />
@@ -228,10 +228,10 @@ export function Accounts() {
                   <option value="TEST">TEST</option><option value="LIVE">LIVE</option>
                 </select>
               </label>
-              <label className="text-xs">Капитал (TEST)
+              {newMode === 'TEST' && <label className="text-xs">Капитал (TEST)
                 <input className="input mt-1" type="number" value={newCapital}
                   onChange={(e) => setNewCapital(Number(e.target.value))} />
-              </label>
+              </label>}
               <label className="text-xs">API-ключ (опц.)
                 <input className="input mt-1" type="password" value={newSecret}
                   onChange={(e) => setNewSecret(e.target.value)} placeholder="tapi_sk_..." />
@@ -242,7 +242,10 @@ export function Accounts() {
                 onClick={() => createAcc.mutate()}>Добавить счёт</button>
               {createAcc.error && <ErrorBox error={createAcc.error} />}
             </div>
-            <p className="mt-2 text-[11px] text-muted">Ключ сохраняется в auth.json на сервере; в списке видно только имя ссылки. Каждый робот привязывается к одному счёту в мастере робота.</p>
+            <p className="mt-2 text-[11px] text-muted">
+              Для LIVE укажите реальный ID брокерского счёта — капитал берётся у брокера.
+              Ключ сохраняется в auth.json на сервере; в списке видно только имя ссылки.
+            </p>
           </Card>
           <Card title="Все счета" className="mt-4">
             {updateAcc.error && <div className="mb-2"><ErrorBox error={updateAcc.error} /></div>}

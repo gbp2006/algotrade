@@ -384,7 +384,8 @@ def list_keys():
 
 def _write_key(ref: str, secret: str) -> str:
     ref = str(ref or "").strip()
-    if not ref or not re.fullmatch(r"[\w\-:. ]{1,64}", ref, re.UNICODE):
+    # Имя счёта может содержать скобки и кириллицу (например, «acc:Дневной канал (cb-day)»).
+    if not ref or not re.fullmatch(r"[\w\-:. ()]{1,64}", ref, re.UNICODE):
         raise ValueError("неверное имя ключа")
     if not secret:
         raise ValueError("ключ не задан")

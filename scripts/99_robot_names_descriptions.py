@@ -160,6 +160,27 @@ def main() -> int:
         changed += 1
         print(f"{iid}: {name}")
     print(f"обновлено {changed} из {len(NAMES)}")
+
+    # Тестовые счета называем по роботу, который на них торгует.
+    accounts_changed = 0
+    for iid, (name, _) in NAMES.items():
+        row = store.get_instance(iid)
+        if row is None or row.get("mode") != "paper":
+            continue
+        acc_id = str(row.get("account") or "")
+        if not acc_id.startswith("paper-"):
+            continue
+        acc = store.get_account(acc_id)
+        if acc is None:
+            continue
+        label = f"Счёт для «{name}»"
+        if acc.get("label") == label:
+            continue
+        with store._conn() as c:
+            c.execute("UPDATE accounts SET label=? WHERE id=?", (label, acc_id))
+        accounts_changed += 1
+        print(f"счёт {acc_id}: {label}")
+    print(f"счетов переименовано {accounts_changed}")
     return 0
 
 

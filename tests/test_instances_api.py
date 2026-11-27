@@ -39,6 +39,30 @@ class TestApiViews(unittest.TestCase):
         self.assertEqual(row["strategy_name"], "Простушка")
         self.assertTrue(row["about"].startswith("Простушка"))
 
+    def test_create_account_writes_key_before_account(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "auth.json"
+            with mock.patch.object(api, "_auth_path", return_value=path):
+                created = api.create_account({
+                    "id": "счёт (live)", "mode": "LIVE",
+                    "key_ref": "tapi_sk_тестовый",
+                }, self.store)
+            acc = self.store.get_account(created["id"])
+            self.assertEqual(acc["key_ref"], "acc:счёт (live)")
+            data = __import__("json").loads(path.read_text(encoding="utf-8"))
+            self.assertIn("acc:счёт (live)", data["finam"])
+
+    def test_key_ref_allows_robot_name_with_brackets(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "auth.json"
+            with mock.patch.object(api, "_auth_path", return_value=path):
+                api._write_key("acc:Дневной канал (cb-day)", "tapi_sk_тест")
+                ref = api._write_key("acc:Простушка база", "tapi_sk_тест2")
+            data = __import__("json").loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(ref, "acc:Простушка база")
+            self.assertIn("acc:Дневной канал (cb-day)", data["finam"])
+            self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+
     def test_description_is_returned_not_overwritten_by_name(self):
         api.create_view(self.store, {
             "id": "desc-1", "spec_id": "prostushka", "mode": "paper",
