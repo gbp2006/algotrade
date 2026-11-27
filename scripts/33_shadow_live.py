@@ -1,11 +1,9 @@
 """Теневой прогон G3: плановые заявки по решениям бумажного контура.
 
 Работает после `paper-live`, берёт уже принятые решения из `results/paper.csv`
-и прогоняет их через `OrderGateway(dry_run=True)`. Заявки НЕ отправляются даже
-при включённом `FINAM_ALLOW_TRADING`. Результат — отдельные `results/shadow.csv`
-(статус `planned`/`rejected`) и `results/shadow.lock`; боевой контур использует
-`live.csv`/`live.lock` и не должен делить с тенью ни журнал, ни лок. Сводка —
-`results/shadow.json`.
+и прогоняет их через `OrderGateway(dry_run=True)` — заявки НЕ отправляются.
+Результат — отдельный `results/shadow.csv` (статус `planned`/`rejected`); боевой
+контур пишет в `live.csv`. Локи убраны (ADR 27.11). Сводка — `results/shadow.json`.
 
 Запуск: ./run.sh shadow
 """

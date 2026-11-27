@@ -93,7 +93,8 @@ class RobotStore:
                   account TEXT, pricing TEXT, capital REAL, exposure REAL,
                   max_qty INTEGER, trade_on_expiry INTEGER NOT NULL DEFAULT 0,
                   version INTEGER NOT NULL DEFAULT 1, note TEXT DEFAULT '',
-                  key_ref TEXT DEFAULT '', source_config TEXT DEFAULT '',
+                  description TEXT DEFAULT '', key_ref TEXT DEFAULT '',
+                  source_config TEXT DEFAULT '',
                   created_at TEXT, updated_at TEXT);
                 CREATE TABLE IF NOT EXISTS param_versions (
                   id INTEGER PRIMARY KEY AUTOINCREMENT, instance_id TEXT NOT NULL,
@@ -155,6 +156,8 @@ class RobotStore:
                 c.execute("ALTER TABLE instances ADD COLUMN key_ref TEXT DEFAULT ''")
             if "source_config" not in icols:
                 c.execute("ALTER TABLE instances ADD COLUMN source_config TEXT DEFAULT ''")
+            if "description" not in icols:
+                c.execute("ALTER TABLE instances ADD COLUMN description TEXT DEFAULT ''")
             # ATR — опция с явным согласием; у старых роботов снимаем включённый
             # risk_vol один раз (ADR 27.11). user_version защищает от повтора.
             if c.execute("PRAGMA user_version").fetchone()[0] < 2:
@@ -330,12 +333,13 @@ class RobotStore:
             mode, status, data.get("account"), data.get("pricing"),
             data.get("capital"), data.get("exposure"), data.get("max_qty"),
             int(bool(data.get("trade_on_expiry", False))), 1,
-            data.get("note", ""), str(data.get("key_ref") or ""),
+            data.get("note", ""), str(data.get("description") or ""),
+            str(data.get("key_ref") or ""),
             str(data.get("source_config") or ""), now, now,
         )
         cols = ("id, spec_id, instrument, params_json, mode, status, account, "
                 "pricing, capital, exposure, max_qty, trade_on_expiry, version, "
-                "note, key_ref, source_config, created_at, updated_at")
+                "note, description, key_ref, source_config, created_at, updated_at")
         with self._conn() as c:
             c.execute("INSERT INTO instances (" + cols + ") VALUES (" +
                       ",".join("?" * len(row)) + ")", row)
@@ -371,6 +375,7 @@ class RobotStore:
             "max_qty": data.get("max_qty", old["max_qty"]),
             "trade_on_expiry": int(data.get("trade_on_expiry", old["trade_on_expiry"])),
             "note": data.get("note", old["note"]),
+            "description": str(data.get("description", old.get("description") or "") or ""),
             "key_ref": str(data.get("key_ref", old.get("key_ref") or "") or ""),
             "source_config": str(data.get("source_config",
                                          old.get("source_config") or "") or ""),
@@ -383,8 +388,8 @@ class RobotStore:
         with self._conn() as c:
             c.execute(
                 "UPDATE instances SET instrument=?,params_json=?,mode=?,account=?,pricing=?,"
-                "capital=?,exposure=?,max_qty=?,trade_on_expiry=?,note=?,key_ref=?,"
-                "source_config=?,status=?,"
+                "capital=?,exposure=?,max_qty=?,trade_on_expiry=?,note=?,description=?,"
+                "key_ref=?,source_config=?,status=?,"
                 "version=?,updated_at=? WHERE id=? AND version=?",
                 (*fields.values(), status, version, now, iid, expected_version),
             )

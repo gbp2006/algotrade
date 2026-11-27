@@ -26,7 +26,7 @@ class TestLiveControl(unittest.TestCase):
             })
             store.upsert_job({
                 "id": "inst:live-1:schedule", "owner": "live-1",
-                "command": "FINAM_ALLOW_TRADING=1 ./run.sh live --day {date}",
+                "command": "./run.sh live-run --day {date}",
                 "times": ["13:50"], "enabled": False,
             })
         return store
@@ -57,6 +57,23 @@ class TestLiveControl(unittest.TestCase):
             })
             with self.assertRaises(lc.LiveControlError):
                 lc.enable(store)
+
+    def test_enable_refuses_virtual_account(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = self._store(tmp, with_live=False)
+            store.create_account({"id": "paper-v", "mode": "TEST"})
+            store.create_instance({
+                "id": "v-1", "spec_id": "prostushka", "mode": "live",
+                "status": "draft", "account": "paper-v", "pricing": "marketable",
+            })
+            with store._conn() as c:
+                c.execute("UPDATE instances SET status='active' WHERE id='v-1'")
+            store.upsert_job({"id": "inst:v-1:schedule", "owner": "v-1",
+                              "command": "./run.sh live-run", "times": ["13:50"],
+                              "enabled": False})
+            with mock.patch.object(lc, "AUDIT_LOG", Path(tmp) / "audit.jsonl"):
+                with self.assertRaisesRegex(lc.LiveControlError, "реальный счёт LIVE"):
+                    lc.enable(store)
 
     def test_stop_real_blocks_enable(self):
         with tempfile.TemporaryDirectory() as tmp:

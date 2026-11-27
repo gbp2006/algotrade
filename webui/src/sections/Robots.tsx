@@ -16,6 +16,7 @@ import {
 
 const schema = z.object({
   name: z.string().min(1, 'Укажите имя робота'),
+  description: z.string(),
   spec_id: z.string().min(1, 'Выберите алгоритм'),
   instrument: z.string().min(1, 'Укажите инструмент'),
   mode: z.enum(['paper', 'live']),
@@ -249,7 +250,7 @@ export function Robots() {
   const form = useForm<RobotForm>({
     resolver: zodResolver(schema),
     defaultValues: {
-      name: '', spec_id: 'prostushka', instrument: 'CNY', mode: 'paper',
+      name: '', description: '', spec_id: 'prostushka', instrument: 'CNY', mode: 'paper',
       account: '', exposure: 2, sizing_mode: 'PERCENT', sizing_value: 200,
       reaction: 'IMMEDIATE', smoothing_pct: 5, on_insufficient: 'PAUSE',
       min_lots: 1, max_lots: 100, sl_pct: 0, tp_pct: 0, trailing_pct: 0,
@@ -269,6 +270,7 @@ export function Robots() {
     const robot = await api.robot(id);
     form.reset({
       name: robot.note || robot.id,
+      description: robot.description ?? '',
       spec_id: robot.spec_id,
       instrument: robot.instrument,
       mode: robot.mode === 'live' ? 'live' : 'paper',
@@ -382,8 +384,11 @@ export function Robots() {
 
   const columns: ColumnDef<RobotRow, unknown>[] = [
     { header: 'Робот', cell: ({ row }) => <div><b>{row.original.note || row.original.id}</b>
-      <div className="text-[10px] text-muted">
-        {row.original.strategy_name || row.original.strategy}
+      <div className="text-[10px] text-muted" title={row.original.description || ''}>
+        {row.original.description
+          ? (row.original.description.length > 90
+            ? `${row.original.description.slice(0, 90)}…` : row.original.description)
+          : (row.original.strategy_name || row.original.strategy)}
         {row.original.mode === 'live' && row.original.source_config
           && ` · сигнал: ${row.original.source_config}`}
       </div></div> },
@@ -456,6 +461,7 @@ export function Robots() {
       mode: values.mode,
       account: values.account || undefined,
       note: values.name,
+      description: values.description,
       exposure: values.exposure,
       params: values.params,
     };
@@ -657,6 +663,11 @@ export function Robots() {
               <label className="text-xs">Имя робота
                 <input className="input mt-1" {...form.register('name')} />
                 {form.formState.errors.name && <span className="text-loss">{form.formState.errors.name.message}</span>}
+              </label>
+              <label className="text-xs md:col-span-2">Описание идеи
+                <textarea className="input mt-1 min-h-[72px]" rows={3}
+                  placeholder="Коротко: на какой идее работает робот и зачем он в портфеле"
+                  {...form.register('description')} />
               </label>
               <label className="text-xs">Алгоритм
                 <select className="input mt-1" {...form.register('spec_id')}>

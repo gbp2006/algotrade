@@ -179,7 +179,7 @@ def fresh_equity(account_id: str, broker: object) -> float | None:
 
     ``None`` при недоступном API или неположительном equity — вызывающий
     обязан отказаться от входа по существующим правилам STOP. Нарушать
-    `FINAM_ALLOW_TRADING` или модель исполнения здесь нельзя.
+    модель исполнения и маршрутизацию счетов здесь нельзя.
     """
     try:
         data = broker.account(account_id)  # type: ignore[attr-defined]

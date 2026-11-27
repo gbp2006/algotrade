@@ -117,6 +117,7 @@ export interface Robot {
   strategy: string;
   strategy_name?: string;
   note: string;
+  description?: string;
   instrument: string;
   mode: 'paper' | 'live';
   status: string;

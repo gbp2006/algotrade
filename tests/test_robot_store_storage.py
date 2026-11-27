@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from algo.robot_store import RobotStore  # noqa: E402
+from algo.robot_store import RobotStore, StoreError  # noqa: E402
 
 
 class TestRobotStoreStorage(unittest.TestCase):
@@ -59,6 +59,42 @@ class TestRobotStoreStorage(unittest.TestCase):
             self.assertIn("key_ref", acols)
             self.assertIn("trading_code", acols)
             self.assertEqual(tuple(kept), ("old", "active"))
+
+    def test_description_is_editable_without_status_change(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = RobotStore(Path(tmp) / "robots.db")
+            store.init_db()
+            store.create_instance({
+                "id": "d-1", "spec_id": "prostushka", "mode": "paper",
+                "status": "draft", "note": "Коротко",
+                "description": "Подробная идея робота",
+            })
+            row = store.get_instance("d-1")
+            self.assertEqual(row["note"], "Коротко")
+            self.assertEqual(row["description"], "Подробная идея робота")
+            updated = store.update_instance(
+                "d-1", {"description": "Новая идея"}, row["version"])
+            self.assertEqual(updated["description"], "Новая идея")
+            self.assertEqual(updated["status"], "draft")
+
+    def test_live_robot_requires_enabled_live_account(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = RobotStore(Path(tmp) / "robots.db")
+            store.init_db()
+            store.create_account({"id": "paper-v", "mode": "TEST"})
+            with self.assertRaisesRegex(StoreError, "виртуальный или выключен"):
+                store.create_instance({
+                    "id": "v-1", "spec_id": "prostushka", "mode": "live",
+                    "status": "active", "account": "paper-v",
+                    "pricing": "marketable",
+                })
+            store.create_account({"id": "real-1", "mode": "LIVE"})
+            store.create_instance({
+                "id": "r-1", "spec_id": "prostushka", "mode": "live",
+                "status": "active", "account": "real-1", "pricing": "marketable",
+            })
+            with self.assertRaisesRegex(StoreError, "активных боевых роботов"):
+                store.update_account("real-1", {"mode": "TEST"})
 
     def test_init_is_idempotent(self):
         with tempfile.TemporaryDirectory() as tmp:

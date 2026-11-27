@@ -31,6 +31,11 @@ class TestDefaults(unittest.TestCase):
         self.assertFalse(default["enabled"])
         self.assertIn("--config p-base", default["command"])
 
+    def test_live_default_command_exists_in_run_sh(self):
+        default = rs.default_schedule({**PAPER, "mode": "live"})
+        self.assertEqual(default["command"], "./run.sh live-run")
+        self.assertIn("live-run)", (ROOT / "run.sh").read_text(encoding="utf-8"))
+
     def test_fund_buy_and_sell_times(self):
         default = rs.default_schedule(FUND)
         self.assertEqual(default["times"], ["23:00", "10:05"])

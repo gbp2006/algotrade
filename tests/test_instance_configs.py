@@ -100,6 +100,19 @@ class TestInstanceConfigs(unittest.TestCase):
         self.assertEqual(s.robots["live-1"].exposure, 2.0)
         self.assertEqual(s.accounts["A1"].id, "A1")
 
+    def test_virtual_account_never_enters_live_whitelist(self):
+        self.db.create_account({"id": "paper-x", "mode": "TEST"})
+        self.db.create_instance({
+            "id": "v-1", "spec_id": "prostushka", "mode": "live",
+            "status": "draft", "account": "paper-x", "pricing": "marketable",
+        })
+        # эмуляция унаследованного инстанса: раньше promote сохранял TEST-счёт
+        with self.db._conn() as c:
+            c.execute("UPDATE instances SET status='active' WHERE id='v-1'")
+        s = ic.live_settings_from_store(self.db)
+        self.assertNotIn("paper-x", s.accounts)
+        self.assertNotIn("v-1", s.robots)
+
 
 if __name__ == "__main__":
     unittest.main()
