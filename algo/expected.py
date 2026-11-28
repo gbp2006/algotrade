@@ -109,7 +109,7 @@ def expected(cfg, m5: pd.DataFrame, start: str, end: str,
         decisions += 1
         if dec.target == 0:
             contracts = 0
-        elif str(day) <= LEGACY_ATR_CUTOFF:
+        elif str(day) <= LEGACY_ATR_CUTOFF and "risk_vol" in cur.params:
             risk_cut = pd.Timestamp(f"{day} 13:55:00")
             risk_bars = m5[(m5.index.date <= day) & (m5.index <= risk_cut)]
             contracts = _legacy_atr_lots(capital + pnl, dec.price, mult,

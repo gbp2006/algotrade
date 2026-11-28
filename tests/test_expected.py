@@ -47,6 +47,9 @@ class TestExpected(unittest.TestCase):
 
     def test_legacy_atr_only_for_old_dates(self):
         cfg = next(c for c in CONFIGS if c.id == "p-base")
+        # историческая версия параметров из param_versions ещё несла этот ключ
+        cfg = cfg.__class__(**{**cfg.__dict__,
+                               "params": {**cfg.params, "risk_vol": False}})
         day = datetime(2026, 11, 26, 13, 50)
         bars = pd.DataFrame([{"dt": day, "open": 12.0, "high": 12.1,
                               "low": 11.9, "close": 12.0, "vol": 1.0}]
