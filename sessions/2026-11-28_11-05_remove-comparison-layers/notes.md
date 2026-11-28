@@ -34,7 +34,9 @@ G2 убрать полностью. Мотивация: проект ведёт 
 - ADR в `docs/decisions.md`; переписан `docs/live-gates.md` без G2; обновлены
   `MODULES.md`, `ARCHITECTURE.md`, `ONBOARDING.md`, `panel-manual.md`,
   `panel-tabs-design.md`, `battle-roadmap.md`, `live-runbook.md`, `how-to.md`,
-  `PROGRESS.md` и др.; `run.sh report` — новое описание.
+  `PROGRESS.md` и др.; `run.sh report` — новое описание. В `live-runbook.md`
+  добавлен рецепт локального разбора по `paper.csv`, `live.csv`, `shadow.csv`,
+  `trades.db`, `market.db`, `live_run.json` и версиям параметров.
 
 ### 11:25 — Проверка
 `./run.sh test` — 345 тестов в 47 наборах, зелёные.
