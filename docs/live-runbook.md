@@ -133,7 +133,48 @@
 лотности, а не исполнения. Именно это давало ложные 503 в 24–27.11 — не
 повторяйте расчёт «ожидания» внутри сервиса.
 
-## 8. Ссылки
+## 8. Восстановление из бэкапа (только по решению пользователя)
+
+Полный ежедневный снимок делает `scripts/95_backup_db.py` по таймеру
+`algotrading-backup.timer` в 03:00: `trades.db`, `robots.db`, `paper_metrics.db`
+в `backups/db/`, состав и время — в `results/backup.json`. Точка восстановления —
+только эти три файла; `market.db`/`instruments.db` пересобираются из данных,
+`.env` и секреты в бэкап не попадают. Работы вести вне торговых часов, заявки не
+отправлять; при сомнении сначала снять STOP в панели.
+
+1. Остановить пишущие процессы и таймеры:
+
+   ```bash
+   sudo systemctl stop algotrading-web.service algotrading-scheduler.service
+   sudo systemctl stop algotrading-daily.timer algotrading-morning.timer \
+     algotrading-friday.timer algotrading-shadow.timer \
+     algotrading-channel.timer algotrading-update-live.timer \
+     algotrading-backup.timer
+   ```
+
+2. Сделать свежий снимок текущего состояния (`./run.sh backup`) — он уйдёт в
+   `backups/db/` и не перезапишет выбранную точку.
+3. Проверить выбранный снимок **на временном пути**, не трогая рабочие БД:
+
+   ```bash
+   SNAP=20261128_030012  # имя из backups/db/ или results/backup.json
+   cp ~/algotrading/backups/db/trades_$SNAP.db /tmp/restore-trades.db
+   sqlite3 /tmp/restore-trades.db 'PRAGMA integrity_check;'
+   ```
+
+   Ожидаемо `ok`; сверьте `SELECT COUNT(*), MIN(ts), MAX(ts) FROM orders;` с
+   текущей БД и `results/live.csv`. Для `robots.db` и `paper_metrics.db` — та же
+   проверка со своими именами файлов.
+4. Подставить проверенные файлы в `infra/db/` с правами 0600
+   (`cp … && chmod 600 …`), затем вернуть сервисы и таймеры:
+   `sudo systemctl start algotrading-web.service algotrading-scheduler.service`
+   и те же таймеры, что останавливались на шаге 1.
+5. Проверить `/api/health`, `GET /api/journal?limit=10`, `results/live_run.json`;
+   позиции и заявки брокера — только чтением. Факт восстановления и расхождения
+   записать в журнал сессии. Если активен PostgreSQL, его восстановление делается
+   отдельным дампом — эти снимки покрывают только SQLite.
+
+## 9. Ссылки
 
 `docs/live-gates.md`, `archive/docs/live-execution.md`, `docs/strategies/robots.md`,
 `algo/broker/execution.py`, `algo/broker/live_guard.py`, `algo/broker/finam.py`.

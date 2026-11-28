@@ -23,13 +23,16 @@
 ## Доступ и бэкап
 
 * `GET /api/journal?limit=100&account=2102993` — последние записи из БД;
-* `POST /api/journal/backup` — консистентная копия `infra/db/trades_<дата>.db`;
+* `POST /api/journal/backup` — точечная копия только `trades.db`; полный снимок
+  трёх БД делает `./run.sh backup` / таймер `algotrading-backup.timer` (03:00);
 * старые строки `results/live.csv` переносятся в БД автоматически при первом
   запуске раннера (`migrate_csv()`, идемпотентно).
 
 ## Политика на годы
 
-1. Раз в день (в daily-сервисе или вручную) вызывать `POST /api/journal/backup`.
+1. Раз в день автоматически: `algotrading-backup.timer` в 03:00 запускает
+   `scripts/95_backup_db.py` три БД; вручную полный снимок — `./run.sh backup`
+   (`POST /api/journal/backup` копирует только `trades.db`).
 2. Хранить последние 30 ежедневных копий + одну в месяц; копии — вне `results/`.
 3. Не удалять `infra/db/trades.db` при деплое: `deploy_wsl.sh` работает по
    whitelist и `*.db` не трогает.
