@@ -34,7 +34,6 @@ from algo.robot_store import ConflictError, RobotStore, StoreError
 
 ROOT = Path(__file__).resolve().parent.parent
 LIVE = ROOT / "results" / "live.csv"
-SHADOW_JOURNAL = ROOT / "results" / "shadow.csv"
 PAPER = ROOT / "results" / "paper.csv"
 HEALTH = ROOT / "results" / "health.json"
 SHADOW = ROOT / "results" / "shadow.json"
@@ -754,16 +753,6 @@ def live_state_view() -> dict:
         with PAPER.open(encoding="utf-8") as f:
             days = {r.get("date", "") for r in csv.DictReader(f) if "config" in r}
     days.discard("")
-    shadow_days: set[str] = set()
-    # Тень с 24.11 пишет в shadow.csv; старые planned-строки жили в live.csv —
-    # читаем оба журнала, чтобы число дней репетиции не теряло историю.
-    for journal in (LIVE, SHADOW_JOURNAL):
-        if not journal.exists():
-            continue
-        with journal.open(encoding="utf-8") as f:
-            shadow_days |= {str(r.get("ts", ""))[:10]
-                            for r in csv.DictReader(f)
-                            if r.get("status") == "planned" and r.get("ts")}
     return {
         "routing": "только счета LIVE; виртуальные не торгуют",
         "live_trading_enabled": bool((live_control.status() or {}).get("enabled")),
@@ -771,7 +760,6 @@ def live_state_view() -> dict:
         "stop_real": STOP_REAL.exists(),
         "stop_real_note": stop_real_note(STOP_REAL),
         "paper_days": len(days),
-        "shadow_days": len(shadow_days),
         "health": _json_file(HEALTH),
         "shadow": _json_file(SHADOW),
         "rollover": _json_file(ROLLOVER),

@@ -61,7 +61,6 @@ class TestHTTPApi(unittest.TestCase):
         self.patches = [
             mock.patch.object(api, "_default_store", self.store),
             mock.patch.object(api, "LIVE", d / "live.csv"),
-            mock.patch.object(api, "SHADOW_JOURNAL", d / "shadow.csv"),
             mock.patch.object(api, "SHADOW", d / "shadow.json"),
             mock.patch.object(api, "HEALTH", d / "health.json"),
             mock.patch.object(api, "STOP", d / "STOP"),
@@ -151,7 +150,7 @@ class TestHTTPApi(unittest.TestCase):
     def test_live_state(self):
         status, data = request(web_app.app, "GET", "/api/live-state")
         self.assertEqual(status, 200)
-        for key in ("paper_days", "shadow_days", "stop_real", "stop_real_note",
+        for key in ("paper_days", "stop_real", "stop_real_note",
                     "routing", "live_trading_enabled"):
             self.assertIn(key, data)
 

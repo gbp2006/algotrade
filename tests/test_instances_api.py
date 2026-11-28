@@ -346,7 +346,6 @@ class TestApiViews(unittest.TestCase):
             with mock.patch.multiple(
                     api, LIVE=live, PAPER=root / "paper.csv",
                     HEALTH=root / "health.json", SHADOW=root / "shadow.json",
-                    SHADOW_JOURNAL=root / "shadow.csv",
                     ROLLOVER=root / "rollover.json", STOP=root / "STOP",
                     STOP_REAL=stop_real):
                 orders = api.live_orders_view()
@@ -354,7 +353,6 @@ class TestApiViews(unittest.TestCase):
                 self.assertEqual(orders[0]["config"], "p-base")
                 state = api.live_state_view()
                 self.assertFalse(state["stop_real"])
-                self.assertEqual(state["shadow_days"], 0)  # в тесте только sent
                 api.stop_real_view("set")
                 self.assertTrue(api.live_state_view()["stop_real"])
                 stop_real.write_text("расхождение позиций: CNY 2 против 1\n", encoding="utf-8")
