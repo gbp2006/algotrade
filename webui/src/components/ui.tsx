@@ -4,7 +4,8 @@ import {
   flexRender, getCoreRowModel, getSortedRowModel, useReactTable,
   type ColumnDef, type SortingState, type VisibilityState,
 } from '@tanstack/react-table';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { rowMatches } from '../lib/tableFilter';
 
 export function Card({ title, children, action, className = '' }: {
   title?: string; children: ReactNode; action?: ReactNode; className?: string;
@@ -86,10 +87,13 @@ export function DataTable<T>({ data, columns, empty = 'Данных пока н�
     localStorage.setItem(`dt:${storageKey}:cols`, JSON.stringify(visibility));
   }, [sorting, visibility, storageKey]);
 
-  const rows = searchable && query.trim()
-    ? data.filter((row) => Object.values(row as Record<string, unknown>)
-      .join(' ').toLowerCase().includes(query.trim().toLowerCase()))
-    : data;
+  // Ссылка на отфильтрованный массив обязана быть стабильной между
+  // перерисовками: react-table на новую ссылку `data` ставит в очередь
+  // resetPageIndex → setState → перерисовка → снова новая ссылка. Это
+  // бесконечный цикл, который вешал вкладку (поиск по строкам в «Счетах»).
+  const rows = useMemo(() => (searchable && query.trim()
+    ? data.filter((row) => rowMatches(row, query))
+    : data), [data, query, searchable]);
   const table = useReactTable({
     data: rows, columns,
     state: { sorting, columnVisibility: visibility },
@@ -97,6 +101,9 @@ export function DataTable<T>({ data, columns, empty = 'Данных пока н�
     onColumnVisibilityChange: setVisibility,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    // Пагинации в таблице нет: авто-сброс индекса страницы только дёргает
+    // состояние на каждую новую ссылку data — источник того же цикла.
+    autoResetPageIndex: false,
   });
   if (!data.length) return <div className="empty">{empty}</div>;
   return (

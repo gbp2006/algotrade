@@ -170,6 +170,34 @@ else {
   if (body.key_ref !== `acc:${accId}`) problems.push('ключ: PATCH не привязал acc:<id> к счёту');
 }
 
+// Регрессия поиска по строкам таблицы: react-table уходил в бесконечный
+// setState-цикл на нестабильной ссылке отфильтрованных строк, вкладка
+// умирала («страница подвешена»). Здесь проверяем, что ввод в поле поиска
+// не вешает страницу и таблица фильтруется.
+const searchQuery = await page.evaluate(() => {
+  const cell = document.querySelector('tbody tr td');
+  return (cell?.textContent ?? '').trim().slice(0, 3);
+});
+if (!searchQuery) problems.push('поиск по строкам: в таблице счетов нет строк');
+else {
+  try {
+    await page.evaluate((text) => {
+      const input = document.querySelector('input[placeholder="Поиск по строкам таблицы"]');
+      if (!input) throw new Error('нет поля поиска по строкам');
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+      setter.call(input, text);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }, searchQuery);
+    const filtered = await Promise.race([
+      page.evaluate(() => document.querySelectorAll('tbody tr').length),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('страница не отвечает 5 c')), 5000)),
+    ]);
+    if (!filtered) problems.push('поиск по строкам: все строки отфильтровались');
+  } catch (error) {
+    problems.push(`поиск по строкам: ${error.message}`);
+  }
+}
+
 // Прямая ссылка должна открывать раздел, а не последний сохранённый в localStorage.
 const deep = await browser.newPage();
 watch(deep);
