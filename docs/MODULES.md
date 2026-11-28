@@ -39,11 +39,9 @@
 | `cash_flow_store.py` | Новые таблицы в `robots.db` | поток → `cash_flows`+`cash_flow_lot_impacts`+`instance_events`; `equity_snapshots`; идемпотентность по `key` | `robot_store._conn()` | `test_cash_flow_store.py` |
 | `account_poller.py` | Опрос счетов | брокер → снимки equity; подтверждение потока из `/v1/accounts/{id}/transactions`; `fresh_equity()`, `size_for_trade()` | `cash_flow_store`, `pg_store`,Finam | `test_account_poller.py` |
 | `pg_store.py` | PostgreSQL/TimescaleDB | DSN из `auth.json` → схема/запись/чтение снимков и потоков; без DSN — no-op | psycopg2 | `test_pg_store.py` |
-| `broker/base.py`, `registry.py` | `IBrokerAdapter` и реестр | `finam`, `tinvest`; секреты не попадают в типы | — | `test_service_foundation.py`, `test_broker_adapters.py` |
+| `broker/base.py`, `registry.py` | `IBrokerAdapter` и реестр | только `finam`; секреты не попадают в типы | — | `test_service_foundation.py`, `test_broker_adapters.py` |
 | `broker/finam.py`, `finam_adapter.py` | Рабочий адаптер REST | JWT, лимиты, котировки, счета, заявки | requests | `test_broker.py` |
-| `broker/tinvest_adapter.py` | Адаптер Т‑Инвестиций | без токена/gRPC инертен: `NotConfiguredError`; sandbox=LIVE метка TEST | `secrets` | `test_broker_adapters.py` |
 | `broker/secrets.py` | Секреты по имени | `auth.json` или `{env:...}` → строка; значения не логируются | — | `test_secrets.py` |
-| `broker/instrument_map.py` | Маппинг тикеров | ticker → FIGI/UID/Board/Finam symbol | — | `test_broker_adapters.py` |
 | `broker/execution.py`, `live_guard.py`, `position_ops.py` | Шлюз заявок | `OrderRequest` → `OrderResult`, LOCAL lock, STOP, battle limits (номинал по итоговой позиции `Order.result_qty`, ADR 25.11), reconcile; `duplicate` только если заявка могла уйти брокеру (dry-run/rejected/blocked/error разрешают повтор); `close_all(store, account_id)` закрывает позиции одного счёта по данным брокера (не по активным роботам), минуя STOP и лимиты входа; паи фонда пропускаются | `trade_journal` | `test_execution.py`, `test_live_guard.py`, `test_position_ops.py`, `test_mm_limits.py` |
 
 ## 3. Web и интерфейс

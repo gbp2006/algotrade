@@ -40,7 +40,7 @@ def main() -> int:
 
     with pg.conn() as connection:
         with connection.cursor() as cursor:  # type: ignore[attr-defined]
-            for code, name in (("finam", "Финам"), ("tinvest", "Т-Инвестиции"),
+            for code, name in (("finam", "Финам"),
                                ("virtual", "Виртуальный")):
                 cursor.execute("INSERT INTO brokers (id, code, display_name) "
                                "VALUES (%s,%s,%s) ON CONFLICT (id) DO NOTHING",

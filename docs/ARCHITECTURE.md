@@ -126,8 +126,8 @@ update-live и channel каждые 10 минут. Они запускают с�
   `/api/portfolio/*`; старые ответы `/api/accounts/analytics` и страницы
   сохраняются. Ручное применение денег разрешено только виртуальным роботам,
   для LIVE — только запись обнаруженного брокером потока.
-- Адаптеры: `finam` рабочий, `tinvest` зарегистрирован, но без токена и gRPC
-  инертен (`NotConfiguredError`); маппинг тикеров — `algo/broker/instrument_map.py`.
+- Адаптер: только `finam` (REST). Заглушка Т‑Инвестиций и маппинг FIGI/UID удалены
+  28.11: без токена и gRPC они ничего не делали (ADR 28.11).
 - Целевая DDL PostgreSQL/TimescaleDB — `infra/db/schema_timescale.sql` (не применяется
   к текущей SQLite-панели). Офлайн-кэш фронта — Dexie/IndexedDB в
   `webui/src/lib/offline.ts`; темы, плотность и вкладки — `localStorage`.
