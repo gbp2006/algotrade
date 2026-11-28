@@ -1,8 +1,10 @@
 """Мост между store и раннерами: активные инстансы → объекты Config.
 
 Перенос делает старые статические конфиги инстансами с теми же id и параметрами —
-бумажный тест не меняется, но роботами можно управлять из панели. Fallback на
-статику оставлен только на случай отсутствия БД/ещё не сделанного seed.
+бумажный тест не меняется, но роботами можно управлять из панели. При отсутствии
+БД или пустом контуре `active_configs()` возвращает пустой список: торговать по
+встроенным конфигам нельзя (ADR 28.11). Статика остаётся только как seed и как
+история параметров до первой версии в `configs_at()`.
 """
 
 from __future__ import annotations
@@ -103,14 +105,16 @@ def _to_config(inst: dict) -> Config:
 
 def active_configs(mode: str = "paper",
                    store: RobotStore | None = None) -> list[Config]:
-    """Активные инстансы контура. Fallback — статический реестр."""
+    """Активные инстансы контура из store; пустая/недоступная БД — пустой список.
+
+    Раньше при отсутствии инстансов early runtime молча брал встроенные
+    конфиги 2025 года. Теперь нет роботов — нет и решений (ADR 28.11).
+    """
     st = store or RobotStore()
     try:
         rows = st.list_instances(mode=mode)
-    except Exception:  # noqa: BLE001 — нет БД → работаем как раньше
-        return list(STATIC) if mode == "paper" else []
-    if not rows:
-        return list(STATIC) if mode == "paper" else []
+    except Exception:  # noqa: BLE001 — нет БД → контур без роботов
+        return []
     return [_to_config(r) for r in rows if r["status"] == "active"]
 
 

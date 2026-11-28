@@ -40,9 +40,9 @@ class TestInstanceConfigs(unittest.TestCase):
         self.assertNotIn("p-base", ids)
         self.assertIn("u-base", ids)
 
-    def test_fallback_when_no_store(self):
+    def test_no_static_fallback_when_no_store(self):
         empty = RobotStore(Path(self.tmp.name) / "missing.db")
-        self.assertEqual(ic.active_configs("paper", empty), ic.STATIC)
+        self.assertEqual(ic.active_configs("paper", empty), [])
         self.assertEqual(ic.active_configs("live", empty), [])
 
     def test_migrate_runtime(self):

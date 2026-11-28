@@ -16,7 +16,7 @@
 | `author.py`, `mvp.py`, `live.py`, `channel_live.py` | Дневная логика решений | цены/канал → написание `paper.csv` | `configs`, `portfolio` | `test_paper_live.py`, `test_live_execution.py` |
 | `portfolio.py` | **Единственный расчёт лотности** | `equity, price, mult, exposure` → `int`; 0 при битых данных; `ledger()`, `account_card()`, `drawdown_stats()` | stdlib | `test_portfolio_metrics.py`, ADR 24.11 |
 
-| `instance_configs.py` | Активные конфиги и версии параметров по времени решения | store → `active_configs`, `configs_at`, `live_settings_from_store`; TZ МСК | `robot_store` | `test_instance_configs.py`, `test_time_normalization.py` |
+| `instance_configs.py` | Активные конфиги и версии параметров по времени решения | store → `active_configs`, `configs_at`, `live_settings_from_store`; пустая/недоступная БД → пустой список, а не статические конфиги (ADR 28.11); TZ МСК | `robot_store` | `test_instance_configs.py`, `test_time_normalization.py` |
 | `robot_store.py` | SQLite `robots.db`: счета, инстансы, версии, события, рантайм, `robot_decisions` (персональный журнал сигналов), планировщик; WAL + индексы | CRUD → строки БД; владелец схемы | sqlite3 | `test_robot_store_storage.py`, `test_store.py` |
 
 | `algo/live_signal.py` | Сигнал боя по свежим барам без `paper.csv`: параметры робота → решение; бары пишутся в `market.db`, решения — в `robot_decisions` | `RobotStore` + `LiveSettings` + брокер → планы `(счёт, символ)`; `M5`/`D1` для графика | `algo.live`, `algo.channel_live`, `algo.store`, `robot_library` | `test_live_signal.py` |

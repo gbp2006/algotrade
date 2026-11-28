@@ -53,7 +53,6 @@ class TestShadow(unittest.TestCase):
             mock.patch.object(shadow, "STOP", self.stop),
             mock.patch.object(shadow, "SHADOW_LOCK", self.lock),
             mock.patch.object(shadow, "FinamBroker", lambda: self.broker),
-            mock.patch.object(shadow, "CONFIGS", [BY_ID["p-base"]]),
             mock.patch.object(shadow, "_configs", lambda: [BY_ID["p-base"]]),
         ]
         for p in self.patches:

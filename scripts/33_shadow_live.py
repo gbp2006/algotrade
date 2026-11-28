@@ -32,7 +32,6 @@ from algo.broker.execution import (  # noqa: E402
 )
 from algo.broker.finam import FinamBroker  # noqa: E402
 from algo.broker.live_guard import decision_client_id  # noqa: E402
-from algo.configs import CONFIGS  # noqa: E402
 from algo.instance_configs import active_configs  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS  # noqa: E402
 
@@ -45,14 +44,11 @@ MSK = timezone(timedelta(hours=3))
 
 
 def _configs() -> list:
-    """Тень видит те же инстансы, что и бумага; при пустом store — статический список."""
+    """Тень видит те же инстансы, что и бумага; при пустом store — ничего."""
     try:
-        found = active_configs("paper")
-        if found:
-            return found
+        return active_configs("paper")
     except Exception:  # noqa: BLE001 — store может быть ещё не проинициализирован
-        pass
-    return list(CONFIGS)
+        return []
 
 
 def read_paper() -> list[dict]:
