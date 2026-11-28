@@ -140,6 +140,7 @@ update-live и channel каждые 10 минут. Они запускают с�
   по `/ui` (ассеты — `/ui/assets`); старые страницы остаются на своих адресах.
   В `scripts/deploy_wsl.sh` добавлены `webui/dist/*` и `webui/dist/assets/*`.
 
-Детали: `docs/service-design.md`, `docs/robot-registry-design.md`,
-`docs/live-design.md`, `docs/live-execution.md`, `docs/rollover-design.md`,
-`docs/panel-tabs-design.md`.
+Детали: `docs/robot-registry-design.md`; исторические проекты 23–27.11 —
+`archive/docs/service-design.md`, `archive/docs/live-design.md`,
+`archive/docs/live-execution.md`, `archive/docs/rollover-design.md`,
+`archive/docs/panel-tabs-design.md`.

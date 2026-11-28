@@ -4,7 +4,7 @@
 только `live_settings.example.json`. Если файла нет, раннер не отправляет
 ничего: белый список роботов пуст.
 
-Структура описана в `docs/live-design.md`.
+Исторический проект структуры — `archive/docs/live-design.md`; актуальная модель — `docs/decisions.md`.
 """
 
 from __future__ import annotations

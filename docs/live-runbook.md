@@ -135,5 +135,5 @@
 
 ## 8. Ссылки
 
-`docs/live-gates.md`, `docs/live-execution.md`, `docs/strategies/robots.md`,
+`docs/live-gates.md`, `archive/docs/live-execution.md`, `docs/strategies/robots.md`,
 `algo/broker/execution.py`, `algo/broker/live_guard.py`, `algo/broker/finam.py`.
