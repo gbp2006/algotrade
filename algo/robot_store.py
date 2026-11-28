@@ -161,21 +161,6 @@ class RobotStore:
                 c.execute("ALTER TABLE instances ADD COLUMN source_config TEXT DEFAULT ''")
             if "description" not in icols:
                 c.execute("ALTER TABLE instances ADD COLUMN description TEXT DEFAULT ''")
-            # ATR — опция с явным согласием; у старых роботов снимаем включённый
-            # risk_vol один раз (ADR 27.11). user_version защищает от повтора.
-            if c.execute("PRAGMA user_version").fetchone()[0] < 2:
-                for row in c.execute("SELECT id, params_json FROM instances").fetchall():
-                    try:
-                        params = json.loads(row["params_json"] or "{}")
-                    except (TypeError, json.JSONDecodeError):
-                        continue
-                    if params.get("risk_vol"):
-                        params["risk_vol"] = False
-                        c.execute(
-                            "UPDATE instances SET params_json=?, version=version+1 "
-                            "WHERE id=?", (_dumps(params), row["id"]))
-                c.execute("PRAGMA user_version=2")
-
     # ---------- чтение ----------
     def list_instances(self, mode: str | None = None,
                        status: str | None = None) -> list[dict]:

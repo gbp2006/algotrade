@@ -31,7 +31,7 @@ class TestDonchianLive(unittest.TestCase):
         self.df, self.days = series()
         self.cfg = Config("d20-test", "donchian",
                           dict(entry=20, exit=10, entry_time="13:55",
-                               allow_short=True, risk_vol=True),
+                               allow_short=True),
                           "test", "test", instrument="CNY")
 
     def test_decision_matches_backtest(self):

@@ -27,14 +27,14 @@ try:
 except Exception:
     pass
 
-from algo import risk, store  # noqa: E402
+from algo import store  # noqa: E402
 from algo.channel_live import channel_decision  # noqa: E402
 from algo.broker.finam import FinamBroker  # noqa: E402
 from algo.configs import CONFIGS, Config  # noqa: E402 (CONFIGS оставлен для тестовых подмен)
 from algo.robot_configs import ROBOT_CONFIGS  # noqa: E402 (для тестовых подмен)
 from algo.instruments import DEFAULT, INSTRUMENTS, margin, symbol  # noqa: E402
 from algo.live import decision, decision_configs, morning_exit_price  # noqa: E402
-from algo.portfolio import CAPITAL, ledger  # noqa: E402
+from algo.portfolio import CAPITAL, exposure_of, ledger, size_contracts  # noqa: E402
 from algo.instance_configs import active_configs, migrate_runtime_from_paper  # noqa: E402
 from algo import instruments as inst_mod  # noqa: E402
 from algo import rollover_integration  # noqa: E402
@@ -250,12 +250,11 @@ def main() -> int:
                 continue
             pos = position_of(rows, cfg.id)
             equity = equity_of(rows, cfg)
-            contracts, risk_note = risk.contracts_for_config(
-                cfg, equity, dec.price, inst.mult, m5, rows, day, capital_of(cfg))
+            contracts = size_contracts(equity, dec.price, inst.mult, exposure_of(cfg))
             target = dec.target * contracts
             if args.dry_run:
                 print(f"{cfg.id:9} {symbols[cfg.id]:13} {dec.ts:%H:%M} канал {dec.target:+d} "
-                      f"-> {target:+d} контр. [{risk_note}]  [dry-run]")
+                      f"-> {target:+d} контр.  [dry-run]")
                 continue
             append({"date": str(day), "time": dec.ts.strftime("%H:%M"),
                     "config": cfg.id, "instrument": inst.code,
@@ -264,11 +263,10 @@ def main() -> int:
                     "target": target, "contracts": contracts,
                     "equity_before": f"{equity:.0f}", "action": "канал",
                     "position_after": target,
-                    "note": f"{dec.detail}; лот {contracts}, equity {equity:.0f}"
-                            + (f"; {risk_note}" if risk_note else "")}, rows)
+                    "note": f"{dec.detail}; лот {contracts}, equity {equity:.0f}"}, rows)
             written += 1
             print(f"{cfg.id:9} {symbols[cfg.id]:13} {dec.ts:%H:%M} канал {dec.target:+d} "
-                  f"-> {target:+d} контр. [{risk_note}]")
+                  f"-> {target:+d} контр.")
         print(f"{day}: канал записано {written}")
         return 0
 
@@ -358,18 +356,13 @@ def main() -> int:
 
         pos = position_of(rows, cfg.id)
         equity = equity_of(rows, cfg)
-        if dec.target != 0:
-            contracts, risk_note = risk.contracts_for_config(
-                cfg, equity, dec.price, inst.mult, m5, rows, day, capital_of(cfg))
-        else:
-            contracts, risk_note = 0, ""
+        contracts = (size_contracts(equity, dec.price, inst.mult, exposure_of(cfg))
+                     if dec.target != 0 else 0)
         target = dec.target * contracts
         action = "держать" if target == pos else (
             "закрыть" if target == 0 else ("купить" if target > 0 else "продать"))
         msg = (f"{cfg.id:9} {sym:13} {dec.ts:%H:%M} сигнал {dec.target:+d} -> "
                f"{target:+d} контр. (лот {contracts}, equity {equity:.0f}) {action}")
-        if risk_note:
-            msg += f" [{risk_note}]"
         if args.dry_run:
             print(msg + "  [dry-run]")
             continue
@@ -379,8 +372,7 @@ def main() -> int:
                 "signal": dec.target, "target": target, "contracts": contracts,
                 "equity_before": f"{equity:.0f}", "action": "решение",
                 "position_after": target,
-                "note": f"{dec.detail}; лот {contracts}, equity {equity:.0f}"
-                        + (f"; {risk_note}" if risk_note else "")}, rows)
+                "note": f"{dec.detail}; лот {contracts}, equity {equity:.0f}"}, rows)
         written += 1
         print(msg)
 

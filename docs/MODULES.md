@@ -11,14 +11,14 @@
 |---|---|---|---|---|
 | `engine.py` | Бэктест-движок | OHLCV + конфиг → сделки/équity; модель close→open | `data.py`, config | `test_engine.py` |
 | `data.py` | Чтение баров | txt/cache → DataFrame; копирование данных запрещено | pandas | `test_store.py` |
-| `configs.py`, `robot_configs.py`, `risk_configs.py` | Статические реестры конфигураций | код → параметры стратегий; новые risk-конфиги не активны | — | `test_risk.py` |
-| `strategies/*.py` | Сигналы | бар → `ENTER_LONG/SHORT/EXIT/HOLD`; **только сигналы**, не знают про деньги | `risk.py` (опц.) | `test_engine.py`, `test_donchian_live.py` |
+| `configs.py`, `robot_configs.py` | Статические реестры конфигураций | код → параметры стратегий | — | `test_engine.py`, `test_robot_store_storage.py` |
+| `strategies/*.py` | Сигналы | бар → `ENTER_LONG/SHORT/EXIT/HOLD`; **только сигналы**, не знают про деньги | — | `test_engine.py`, `test_donchian_live.py` |
 | `author.py`, `mvp.py`, `live.py`, `channel_live.py` | Дневная логика решений | цены/канал → написание `paper.csv`, ожидание | `configs`, `portfolio` | `test_paper_live.py`, `test_live_execution.py` |
-| `portfolio.py` | **Единственный расчёт лотности** | `equity, price, mult, exposure` → `int`; 0 при битых данных; `ledger()`, `account_card()`, `drawdown_stats()` | stdlib | `test_risk.py`, ADR 24.11 |
-| `risk.py` | ATR-лестница | ATR(14)/медиана 252 → экспозиция; **в контур не подключено**; дневной лимит убытка удалён (ADR 27.11) | pandas, `portfolio` | `test_risk.py` |
+| `portfolio.py` | **Единственный расчёт лотности** | `equity, price, mult, exposure` → `int`; 0 при битых данных; `ledger()`, `account_card()`, `drawdown_stats()` | stdlib | `test_portfolio_metrics.py`, ADR 24.11 |
+
 | `expected.py`, `instance_configs.py` | Ожидание P&L с версиями параметров по времени решения | `paper.csv` + store → expected; TZ МСК | `robot_store` | `test_report.py`, `test_time_normalization.py` |
-| `robot_store.py` | SQLite `robots.db`: счета, инстансы, версии, события, рантайм, `robot_decisions` (персональный журнал сигналов), планировщик; WAL + индексы | CRUD → строки БД; владелец схемы; миграция `user_version=2` снимает `risk_vol` у старых роботов | sqlite3 | `test_robot_store_storage.py`, `test_store.py` |
-| `algo/atr.py` | Переиспользуемый ATR-модуль резки экспозиции, по умолчанию выключен | бары + `risk_vol` → `atr`/`vol_ratio`/`exposure_for`/`size`; работает в любом роботе | `algo.portfolio` | `test_atr.py` |
+| `robot_store.py` | SQLite `robots.db`: счета, инстансы, версии, события, рантайм, `robot_decisions` (персональный журнал сигналов), планировщик; WAL + индексы | CRUD → строки БД; владелец схемы | sqlite3 | `test_robot_store_storage.py`, `test_store.py` |
+
 | `algo/live_signal.py` | Сигнал боя по свежим барам без `paper.csv`: параметры робота → решение; бары пишутся в `market.db`, решения — в `robot_decisions` | `RobotStore` + `LiveSettings` + брокер → планы `(счёт, символ)`; `M5`/`D1` для графика | `algo.live`, `algo.channel_live`, `algo.store`, `robot_library` | `test_live_signal.py` |
 | `trade_journal.py` | SQLite `trades.db`, journal заявок и исполнений | заявки → статусы/журнал/CSV; `executed_qty()` = MAX; `exists_active()` = дубль только для `sent/filled/partial/uncertain`; повтор по неактивному статусу обновляет строку и пишет событие | sqlite3 | `test_trade_journal.py`, `test_execution.py` |
 | `metrics_store.py`, `results.py` | История метрик и журнал прогонов | метрики → `paper_metrics.db`, `results/runs.csv` | sqlite3 | `test_metrics_store.py` |
