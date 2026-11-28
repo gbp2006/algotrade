@@ -18,6 +18,9 @@ _spec = importlib.util.spec_from_file_location("watchdog", ROOT / "scripts" / "4
 wd = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(wd)
 
+IDS = ["p-base", "p-fast", "p-h1", "p-friday", "u-base", "u-wide",
+       "u-morning", "p-rts", "p-gold"]
+
 
 class TestWatchdog(unittest.TestCase):
     def setUp(self):
@@ -32,7 +35,7 @@ class TestWatchdog(unittest.TestCase):
         day = day or str(date.today())
         header = "date,time,config,instrument,symbol,strategy,price,signal,target,contracts,equity_before,action,position_after,note\n"
         lines = [header]
-        for cfg in wd.DECISION_CONFIGS:
+        for cfg in IDS:
             lines.append(f"{day},13:50,{cfg},CNY,CNYRUBF@RTSX,prostushka,12.29,0,0,0,200000,решение,0,тест\n")
         self.paper.write_text("".join(lines), encoding="utf-8")
 
@@ -45,7 +48,7 @@ class TestWatchdog(unittest.TestCase):
             mock.patch.object(wd, "BACKUP_STATE", self.dir / "results" / "backup.json"),
             mock.patch.object(wd, "data_freshness", lambda: data_date),
             mock.patch.object(wd, "decision_configs",
-                              lambda rows: list(wd.DECISION_CONFIGS)),
+                              lambda rows: list(IDS)),
         ]
 
     def test_decision_configs_follow_active_instances(self):
@@ -55,7 +58,7 @@ class TestWatchdog(unittest.TestCase):
             self.assertEqual(wd.decision_configs(rows), ["p-new"])
         with mock.patch("algo.instance_configs.active_configs",
                         side_effect=RuntimeError("нет store")):
-            self.assertEqual(wd.decision_configs(rows), wd.DECISION_CONFIGS)
+            self.assertEqual(wd.decision_configs(rows), [])
 
     def test_new_config_not_expected_on_old_days(self):
         today, old = date.today(), date.today() - timedelta(days=1)
@@ -63,13 +66,13 @@ class TestWatchdog(unittest.TestCase):
                   "contracts,equity_before,action,position_after,note\n")
         lines = [header]
         for d in (old, today):
-            for cfg in wd.DECISION_CONFIGS:
+            for cfg in IDS:
                 lines.append(f"{d},13:50,{cfg},CNY,CNYRUBF@RTSX,prostushka,12.29,0,0,0,200000,решение,0,тест\n")
         lines.append(f"{today},13:50,p-new,CNY,CNYRUBF@RTSX,prostushka,12.29,0,0,0,200000,решение,0,новый\n")
         self.paper.write_text("".join(lines), encoding="utf-8")
         patches = self._patches()[:-1] + [
             mock.patch.object(wd, "decision_configs",
-                              lambda rows: list(wd.DECISION_CONFIGS) + ["p-new"])]
+                              lambda rows: list(IDS) + ["p-new"])]
         for p in patches:
             p.start()
         try:

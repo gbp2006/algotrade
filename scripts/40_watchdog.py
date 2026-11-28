@@ -24,22 +24,19 @@ STOP_REAL = ROOT / "results" / "STOP_REAL"
 BACKUP_STATE = ROOT / "results" / "backup.json"
 BACKUP_MAX_AGE_HOURS = 36  # ежедневный бэкап в 03:00 + запас на один пропуск
 
-# Резервный список на случай недоступного store. Основной список берётся из
-# активных бумажных инстансов — иначе переименованный робот даёт ложный «нет решений».
-DECISION_CONFIGS = ["p-base", "p-fast", "p-h1", "p-friday", "u-base", "u-wide", "u-morning", "p-rts", "p-gold"]
-
-
 def decision_configs(rows: list[dict]) -> list[str]:
-    """Конфиги, с которых ждём решения: активные и уже дававшие записи в журнале."""
+    """Конфиги, с которых ждём решения: активные инстансы с записями в журнале.
+
+    Захардкоженного резервного списка нет: при недоступном store проверка
+    решений не делается, а не гадает по устаревшим id (ADR 28.11).
+    """
     try:
         from algo.instance_configs import active_configs
         active = {c.id for c in active_configs("paper")}
-    except Exception:  # noqa: BLE001 — store может быть недоступен
-        active = set()
-    if not active:
-        return list(DECISION_CONFIGS)
+    except Exception:  # noqa: BLE001 — store недоступен: список решений пуст
+        return []
     seen = {r.get("config") for r in rows}
-    return sorted(active & (seen | set(DECISION_CONFIGS)))
+    return sorted(active & seen)
 
 
 def backup_age_hours(now: datetime | None = None) -> float | None:

@@ -1,7 +1,8 @@
 # Архив документов
 
 Исторические проекты 23–27.11.2026: `battle-roadmap`, `live-design`,
-`live-execution`, `service-design`, `rollover-design`, `panel-tabs-design`.
+`live-execution`, `service-design`, `rollover-design`, `panel-tabs-design`,
+`robot-registry-design`.
 Они отражали состояние на момент написания, но противоречат текущим ADR:
 G2 упразднён, `--arm` и `FINAM_ALLOW_TRADING` удалены, постоянная торговля
 включается кнопкой в панели.
