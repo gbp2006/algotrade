@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { api, keys } from '../lib/api';
 import { money, time } from '../lib/format';
+import { fundActionText, instrumentActionText, instrumentStatsText } from '../lib/resultText';
 import { robotEquity } from '../lib/robotEquity';
 import type { CashFlowPreview, Robot, RuntimeState } from '../lib/types';
 import { useUi } from '../store/ui';
@@ -170,7 +171,9 @@ export function Robots() {
   const mm = useMutation({
     mutationFn: ({ id, action }: { id: string; action: 'rebalance' | 'close' }) =>
       action === 'rebalance' ? api.mmRebalance(id) : api.mmClose(id),
-    onSuccess: (data) => { setNotice(JSON.stringify(data)); refreshAll(); },
+    onSuccess: (data, variables) => {
+      setNotice(fundActionText(variables.action, data)); refreshAll();
+    },
     onError: (error) => setNotice(`Ошибка фонда: ${error.message}`),
   });
   const liveRun = useMutation({
@@ -206,8 +209,8 @@ export function Robots() {
       if (action === 'liquid') return api.instrumentRefreshLiquid();
       return api.instrumentRefresh();
     },
-    onSuccess: (data) => {
-      setNotice(JSON.stringify(data).slice(0, 240));
+    onSuccess: (data, variables) => {
+      setNotice(instrumentActionText(variables.action, data));
       void queryClient.invalidateQueries({ queryKey: ['instrument-favorites'] });
       void queryClient.invalidateQueries({ queryKey: ['instrument-stats'] });
     },
@@ -574,7 +577,7 @@ export function Robots() {
             </div>
           }>
             <div className="mb-2 text-[11px] text-muted">
-              {JSON.stringify(instStats.data ?? {})}
+              {instrumentStatsText(instStats.data)}
             </div>
             <DataTable
               data={instSearch.trim() ? found.data ?? [] : []}

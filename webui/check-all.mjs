@@ -198,6 +198,25 @@ else {
   }
 }
 
+// Сводка справочника инструментов должна быть фразой, а не сырым JSON.
+const catalog = await browser.newPage();
+watch(catalog);
+await catalog.goto(`${base}/robots`, { waitUntil: 'networkidle2', timeout: 30000 });
+await new Promise((r) => setTimeout(r, 1200));
+await catalog.evaluate(() => {
+  [...document.querySelectorAll('button[role="tab"]')]
+    .find((item) => item.textContent?.includes('Инструменты'))?.click();
+});
+await new Promise((r) => setTimeout(r, 900));
+const stats = await catalog.evaluate(() => {
+  const node = [...document.querySelectorAll('div')]
+    .find((item) => item.textContent?.startsWith('Инструментов в каталоге:'));
+  return node?.textContent?.trim() ?? '';
+});
+if (!stats) problems.push('инструменты: нет человекочитаемой сводки справочника');
+if (stats.startsWith('{')) problems.push('инструменты: сводка показывает сырой JSON');
+await catalog.close();
+
 // Прямая ссылка должна открывать раздел, а не последний сохранённый в localStorage.
 const deep = await browser.newPage();
 watch(deep);
