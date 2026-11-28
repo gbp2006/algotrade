@@ -100,6 +100,55 @@ class TestAccountIsolation(unittest.TestCase):
         self.assertEqual(FakeGateway.seen, ["A2"])  # первый счёт пропущен
         self.assertTrue(any("ключ счёта недоступен" in n for n in data["notes"]))
 
+    def test_stop_midrun_writes_summary_and_aborts(self):
+        """STOP, выставленный между заявками, не должен оставлять старый live_run.json."""
+        settings = lc.parse_settings({
+            "defaults": {"pricing": "signal"},
+            "accounts": {"A2": {}},
+            "robots": {"r2": {"account": "A2"}},
+        })
+        plan = {"target": 1, "price": 12.29, "robots": ["r2"],
+                "pricings": {"signal"}, "expiry": True,
+                "exposures": [2.0], "when": "13:50"}
+        plans = {("A2", ""): {"CNYRUBF@RTSX": dict(plan)}}
+        FakeGateway.seen = []
+        stopped = SimpleNamespace(exists=lambda: False)
+
+        def stop_mid_run(stop=None):
+            raise ex.ExecutionError("боевой STOP установлен")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            summary = Path(tmp) / "live_run.json"
+            patches = (
+                mock.patch.object(mod, "STOP", stopped),
+                mock.patch.object(mod, "STOP_REAL", stopped),
+                mock.patch.object(mod, "assert_stop_clear", side_effect=stop_mid_run),
+                mock.patch.object(mod, "live_settings_from_store", return_value=settings),
+                mock.patch.object(mod, "collect_signals", return_value=(plans, [], [])),
+                mock.patch.object(mod, "FinamBroker", BrokerFactory),
+                mock.patch.object(mod, "account_equity", return_value=200_000.0),
+                mock.patch.object(mod, "journal_positions", return_value=({}, 0)),
+                mock.patch.object(mod, "reconcile_guard", return_value=[]),
+                mock.patch.object(mod, "broker_positions", return_value={}),
+                mock.patch.object(mod, "expiry_ok", return_value=True),
+                mock.patch.object(mod.tj, "refresh_executions",
+                                  return_value={"updated": 0, "checked": 0, "details": {}}),
+                mock.patch.object(mod, "sync_live_runtime", return_value=[]),
+                mock.patch.object(mod, "RobotStore",
+                                  return_value=SimpleNamespace()),
+                mock.patch.object(mod, "OrderGateway", FakeGateway),
+                mock.patch.object(mod, "SUMMARY", summary),
+            )
+            with ExitStack() as stack:
+                for patcher in patches:
+                    stack.enter_context(patcher)
+                rc = mod.main([])
+            data = json.loads(summary.read_text(encoding="utf-8"))
+
+        self.assertEqual(rc, 2)
+        self.assertEqual(FakeGateway.seen, [])  # заявка не ушла
+        self.assertTrue(any("STOP_REAL посреди прогона" in n for n in data["notes"]))
+
 
 if __name__ == "__main__":
     unittest.main()

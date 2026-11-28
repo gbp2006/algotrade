@@ -31,7 +31,9 @@ try:
 except Exception:
     pass
 
-from algo.broker.execution import Order, OrderGateway, positions_from_response  # noqa: E402
+from algo.broker.execution import (  # noqa: E402
+    ExecutionError, Order, OrderGateway, positions_from_response,
+)
 from algo.broker.finam import FinamBroker  # noqa: E402
 from algo.broker.secrets import resolve_secret  # noqa: E402
 from algo.broker.live_guard import (  # noqa: E402
@@ -181,6 +183,19 @@ def mult_for(symbol: str) -> float:
     return DEFAULT.mult
 
 
+def write_summary(day, args, counts, settings, plans, notes, fills) -> None:
+    """Сводка прогона пишется и при досрочном STOP — панель не должна видеть старый JSON."""
+    SUMMARY.parent.mkdir(parents=True, exist_ok=True)
+    SUMMARY.write_text(json.dumps({
+        "date": str(day), "armed": not args.dry_run, "dry_run": args.dry_run,
+        "counts": counts,
+        "robots": sorted(settings.robots),
+        "accounts": sorted({acc for acc, _ in plans}),
+        "fills": fills,
+        "notes": notes[:40],
+    }, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="боевой контур (заявки уходят по заданию LIVE-робота)")
     ap.add_argument("--arm", action="store_true",
@@ -217,6 +232,7 @@ def main(argv: list[str] | None = None) -> int:
         paper_signals: dict[str, dict] = {}
         decisions: dict[tuple[str, str], str] = {}
         runtime_updates: list[dict] = []
+        aborted = False  # STOP посреди прогона: сводка всё равно пишется
 
         #_signal: бой сам считает сигнал по свежим барам и пишет его в свой журнал;
         # paper.csv больше не участвует в отправке заявок (ADR 27.11).
@@ -264,14 +280,19 @@ def main(argv: list[str] | None = None) -> int:
             if uncertain:
                 note = f"{acc_id}: {uncertain} неопределённых заявок — ручная сверка"
                 STOP_REAL.write_text(note + "\n", encoding="utf-8")
+                notes.append(note)
                 print(note)
-                return 2
+                aborted = True
+                break
             try:
                 issues = reconcile_guard(
                     broker, model, account=acc_id, stop=STOP_REAL, enforce=True)
             except Exception as exc:  # noqa: BLE001 — расхождение = STOP, не торгуем
-                print(f"{acc_id}: сверка не прошла — {exc}")
-                return 2
+                note = f"{acc_id}: сверка не прошла — {exc}"
+                notes.append(note)
+                print(note)
+                aborted = True
+                break
             if issues:
                 notes.append(f"{acc_id}: сверка: {'; '.join(issues)}")
 
@@ -331,7 +352,15 @@ def main(argv: list[str] | None = None) -> int:
                                 )
 
                 if order is not None and not status:
-                    assert_stop_clear(STOP_REAL)
+                    try:
+                        assert_stop_clear(STOP_REAL)
+                    except ExecutionError as exc:
+                        note = (f"{acc_id}/{sym}: STOP_REAL посреди прогона — "
+                                f"заявка не отправлена: {exc}")
+                        notes.append(note)
+                        print(note)
+                        aborted = True
+                        break
                     result = gateway.submit(order, account=acc_id,
                                             stop=STOP_REAL,
                                             dry_run=args.dry_run)
@@ -354,6 +383,8 @@ def main(argv: list[str] | None = None) -> int:
                     decisions[(acc_id, sym)] += f": {reason}"
                 if reason or note:
                     notes.append(f"{acc_id}/{sym}: {reason or note}")
+            if aborted:
+                break
 
             # Заявка может исполниться за секунды: дописать filled/partial в журнал.
             # Делаем после reconcile — иначе модель position из sent-заявок
@@ -405,18 +436,11 @@ def main(argv: list[str] | None = None) -> int:
                     })
 
         notes.extend(sync_live_runtime(RobotStore(), runtime_updates))
-        SUMMARY.parent.mkdir(parents=True, exist_ok=True)
-        SUMMARY.write_text(json.dumps({
-            "date": str(day), "armed": not args.dry_run, "dry_run": args.dry_run,
-            "counts": counts,
-            "robots": sorted(settings.robots),
-            "accounts": sorted({acc for acc, _ in plans}),
-            "fills": fills,
-            "notes": notes[:40],
-        }, ensure_ascii=False, indent=1), encoding="utf-8")
+        write_summary(day, args, counts, settings, plans, notes, fills)
         print(f"live {day}: {sum(counts.values())} решений, статусы {counts}, "
-              f"{'dry-run' if args.dry_run else 'реальные заявки'}")
-        return 0
+              f"{'dry-run' if args.dry_run else 'реальные заявки'}"
+              f"{'; STOP — сводка записана' if aborted else ''}")
+        return 2 if aborted else 0
     finally:
         pass  # лок прогона держит панель; дубли заявок отсекает журнал по статусу
 
