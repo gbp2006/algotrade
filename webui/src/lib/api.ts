@@ -102,9 +102,6 @@ export const api = {
   }>('/api/live-run', { dry_run: dryRun, day }),
   liveState: () => get<Record<string, unknown>>('/api/live-state'),
   liveOrders: () => get<Record<string, unknown>[] | { items: Record<string, unknown>[] }>('/api/live-orders'),
-  liveControl: () => get<Record<string, unknown>>('/api/live-control'),
-  liveControlSet: (enabled: boolean) =>
-    post<Record<string, unknown>>(`/api/live-control/${enabled ? 'enable' : 'disable'}`, {}),
   stopReal: (action: 'set' | 'clear') =>
     post<{ stop_real: boolean }>('/api/stop-real', { action }),
   stopPaper: () => post<{ stop: boolean }>('/api/stop', {}),

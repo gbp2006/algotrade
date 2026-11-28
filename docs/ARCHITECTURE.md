@@ -130,8 +130,6 @@ update-live и channel каждые 10 минут. Они запускают с�
   для LIVE — только запись обнаруженного брокером потока.
 - Адаптеры: `finam` рабочий, `tinvest` зарегистрирован, но без токена и gRPC
   инертен (`NotConfiguredError`); маппинг тикеров — `algo/broker/instrument_map.py`.
-- Модули `algo/robot_modules.py` (сайзинг и выходы) пока не подключены к раннеру:
-  это чистые функции для будущего конвейера, модель сигналов не меняется.
 - Целевая DDL PostgreSQL/TimescaleDB — `infra/db/schema_timescale.sql` (не применяется
   к текущей SQLite-панели). Офлайн-кэш фронта — Dexie/IndexedDB в
   `webui/src/lib/offline.ts`; темы, плотность и вкладки — `localStorage`.

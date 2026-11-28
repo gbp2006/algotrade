@@ -198,8 +198,8 @@ export function Robots() {
         : await api.stopPaper(),
     onSuccess: () => refreshAll(),
   });
-  const liveControl = useMutation({
-    mutationFn: (enabled: boolean) => api.liveControlSet(enabled),
+  const tradingToggle = useMutation({
+    mutationFn: (enabled: boolean) => api.tradingToggle(enabled),
     onSuccess: () => refreshAll(),
   });
   const instrument = useMutation({
@@ -518,8 +518,8 @@ export function Robots() {
                 следующий прогон: {String(tradingState.data?.next_run ?? '—')}
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
-                <button className="btn" onClick={() => liveControl.mutate(true)}>Включить таймер 14:00</button>
-                <button className="btn" onClick={() => liveControl.mutate(false)}>Выключить таймер</button>
+                <button className="btn" onClick={() => tradingToggle.mutate(true)}>Включить постоянную торговлю</button>
+                <button className="btn" onClick={() => tradingToggle.mutate(false)}>Выключить постоянную торговлю</button>
               </div>
             </Card>
             <Card title="STOP и флаги">
