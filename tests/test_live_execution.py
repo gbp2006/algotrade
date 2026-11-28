@@ -109,10 +109,8 @@ class TestSettings(unittest.TestCase):
         })
         self.assertEqual(settings.robots["live-1"].pricing.value, "marketable")
 
-    def test_missing_file_is_safe(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            s = lc.load_settings(Path(tmp) / "none.json")
-        self.assertTrue(s.empty)
+    def test_empty_settings_is_safe(self):
+        self.assertTrue(lc.parse_settings({}).empty)
 
     def test_bad_pricing(self):
         bad = dict(self.DATA, robots={"p-base": {"account": "A1", "pricing": "x"}})

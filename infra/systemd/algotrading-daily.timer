@@ -1,0 +1,7 @@
+[Unit]
+Description=Будни 13:55 МСК: решения по всем конфигурациям
+[Timer]
+OnCalendar=Mon..Fri 13:55 Europe/Moscow
+Persistent=true
+[Install]
+WantedBy=timers.target

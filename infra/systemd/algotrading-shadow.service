@@ -1,0 +1,10 @@
+[Unit]
+Description=Теневой прогон G3: плановые заявки без отправки
+
+[Service]
+Type=oneshot
+User=zt
+WorkingDirectory=/home/zt/algotrading
+ExecStart=/home/zt/algotrading/.venv/bin/python /home/zt/algotrading/scripts/33_shadow_live.py
+StandardOutput=append:/home/zt/algotrading/results/shadow.log
+StandardError=append:/home/zt/algotrading/results/shadow.log

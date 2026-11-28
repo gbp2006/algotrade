@@ -1,17 +1,15 @@
 """Настройки боевого контура: счета, роботы, режимы цены, лимиты.
 
-Файл `live_settings.json` живёт на WSL и в git не попадает. В репозитории —
-только `live_settings.example.json`. Если файла нет, раннер не отправляет
-ничего: белый список роботов пуст.
+Единственный источник — активные live-инстансы `RobotStore`
+(`instance_configs.live_settings_from_store`). Файлового fallback больше нет:
+пустой store = ноль заявок. DTO и валидация остаются здесь.
 
 Исторический проект структуры — `archive/docs/live-design.md`; актуальная модель — `docs/decisions.md`.
 """
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any
 
 from .broker.execution import ExecutionError
@@ -23,10 +21,6 @@ def _pricing(value, name):
         return parse_pricing(value, name)
     except ExecutionError as exc:
         raise SettingsError(str(exc)) from exc
-
-ROOT = Path(__file__).resolve().parent.parent
-SETTINGS_PATH = ROOT / "live_settings.json"
-
 
 class SettingsError(ValueError):
     pass
@@ -141,14 +135,3 @@ def parse_settings(data: dict[str, Any]) -> LiveSettings:
             exposure=float(raw.get("exposure", 0) or 0),
         )
     return LiveSettings(accounts=accounts, robots=robots, max_quote_age_sec=age)
-
-
-def load_settings(path: Path = SETTINGS_PATH) -> LiveSettings:
-    """Отсутствующий файл = пустой белый список = ноль заявок."""
-    if not path.exists():
-        return LiveSettings()
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise SettingsError(f"не удалось прочитать {path}: {exc}") from exc
-    return parse_settings(data)

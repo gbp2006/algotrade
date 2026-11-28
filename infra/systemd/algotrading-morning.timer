@@ -1,0 +1,7 @@
+[Unit]
+Description=Будни 10:25 МСК: утренний выход для u-morning
+[Timer]
+OnCalendar=Mon..Fri 10:25 Europe/Moscow
+Persistent=true
+[Install]
+WantedBy=timers.target

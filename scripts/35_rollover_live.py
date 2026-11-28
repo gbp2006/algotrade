@@ -36,7 +36,7 @@ from algo.broker.live_guard import (  # noqa: E402
 from algo.instance_configs import live_settings_from_store  # noqa: E402
 from algo.instruments import INSTRUMENTS, active_contracts  # noqa: E402
 from algo.journal_positions import journal_positions  # noqa: E402
-from algo.live_config import SettingsError, load_settings  # noqa: E402
+from algo.live_config import SettingsError  # noqa: E402
 from algo.rollover import is_perpetual, plan_roll, roll_decision  # noqa: E402
 from algo.rollover_integration import volumes_for  # noqa: E402
 
@@ -69,8 +69,6 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         try:
             settings = live_settings_from_store()
-            if settings.empty:
-                settings = load_settings()
         except SettingsError as exc:
             print(f"настройки: {exc}")
             return 2

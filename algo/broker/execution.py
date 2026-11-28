@@ -39,7 +39,7 @@ class Order:
     multiplier: float = 1.0
     min_step: float = 0.0   # шаг цены инструмента; 0 = проверка кратности выключена
     order_type: str = "limit"  # limit / market
-    account: str = ""       # реальный счёт из live_settings.json
+    account: str = ""       # реальный счёт из настроек активного робота в store
     pricing: str = ""       # signal / marketable / market
     # Подписанная позиция по символу после исполнения заявки. Лимит номинала
     # проверяется по ней, а не по qty: разворот −2 → +2 требует 4 контракта,

@@ -1,0 +1,10 @@
+[Unit]
+Description=Бумажная торговля по конфигурациям + добор архива
+[Service]
+Environment=ALGO_VOL_ROLLOVER=1
+Type=oneshot
+User=zt
+WorkingDirectory=/home/zt/algotrading
+ExecStart=/bin/bash -lc './run.sh paper-live; ./run.sh update; ./run.sh report'
+StandardOutput=append:/home/zt/algotrading/results/daily.log
+StandardError=append:/home/zt/algotrading/results/daily.log

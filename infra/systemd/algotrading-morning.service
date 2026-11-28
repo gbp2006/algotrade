@@ -1,0 +1,10 @@
+[Unit]
+Description=Бумажная торговля: утренний выход в 10:20
+[Service]
+Environment=ALGO_VOL_ROLLOVER=1
+Type=oneshot
+User=zt
+WorkingDirectory=/home/zt/algotrading
+ExecStart=/bin/bash -lc './run.sh paper-live'
+StandardOutput=append:/home/zt/algotrading/results/daily.log
+StandardError=append:/home/zt/algotrading/results/daily.log

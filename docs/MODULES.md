@@ -81,7 +81,7 @@
 | Часть | Роль | Входы → выходы, сайд-эффекты | Зависимости | Тесты |
 |---|---|---|---|---|
 | `infra/db/schema_timescale.sql` | Целевая DDL PG: NUMERIC-поля, append-only, уникальные ключи, гипертаблицы при наличии расширения | SQL → таблицы; к рабочей SQLite не применяется | PostgreSQL | `test_timescale_schema.py` |
-| `infra/systemd/algotrading-web.service` | Юнит панели | `Requires/After=postgresql`; Restart=always | systemd | проверка на WSL |
+| `infra/systemd/algotrading-*.service|timer` | Все юниты WSL (15) + override планировщика | web/scheduler/backup/daily/morning/channel/shadow/update-live/friday → запуск панели, бумаги, тени, добора баров и бэкапа по расписанию МСК; установка в `/etc/systemd/system/` вручную, деплой копирует только источники | systemd, `run.sh`, `scripts/31/33/10b/95` | `test_watchdog.py`, проверка на WSL; описание — `infra/systemd/README.md` |
 | `scripts/start_project.sh` | Старт вместе с WSL | PG → схема/миграция → удаление старого UI → юнит → HTTP-проверка | sudo, curl | запуск на WSL |
 | `scripts/98_assign_paper_accounts.py` | Разводит бумажных роботов по отдельным TEST-счетам `paper-<id>`; идемпотентно, боевых не трогает | `./run.sh assign-paper-accounts` | `robot_store` | `test_assign_paper_accounts.py` |
 | `scripts/97_migrate_to_postgres.py` | Идемпотентная миграция SQLite→PG | `robots.db` → счета/роботы/потоки/снимки; одна строка сводки | `pg_store` | ручной прогон |

@@ -1,0 +1,8 @@
+[Unit]
+Description=Пятница 18:45 МСК: закрытие позиций перед выходными
+[Timer]
+OnCalendar=Fri 18:45 Europe/Moscow
+Unit=algotrading-daily.service
+Persistent=true
+[Install]
+WantedBy=timers.target

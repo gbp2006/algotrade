@@ -161,8 +161,8 @@ def migrate_runtime_from_paper(store: RobotStore | None = None,
 def live_settings_from_store(store: RobotStore | None = None) -> LiveSettings:
     """Настройки боя из активных live-инстансов store.
 
-    Если живых инстансов нет — вызывающий может применить свой fallback
-    (например, `live_settings.json`), эта функция его не подменяет.
+    Если живых инстансов нет — возвращаются пустые настройки: раннер не
+    отправляет заявки. Файлового fallback больше нет (ADR 28.11).
     """
     st = store or RobotStore()
     st.init_db()

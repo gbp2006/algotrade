@@ -1,0 +1,23 @@
+[Unit]
+Description=Канал каждые 10 минут в торговые часы
+
+[Timer]
+OnCalendar=Mon..Fri 09:0/10 Europe/Moscow
+OnCalendar=Mon..Fri 10:0/10 Europe/Moscow
+OnCalendar=Mon..Fri 11:0/10 Europe/Moscow
+OnCalendar=Mon..Fri 12:0/10 Europe/Moscow
+OnCalendar=Mon..Fri 13:0/10 Europe/Moscow
+OnCalendar=Mon..Fri 14:0/10 Europe/Moscow
+OnCalendar=Mon..Fri 15:0/10 Europe/Moscow
+OnCalendar=Mon..Fri 16:0/10 Europe/Moscow
+OnCalendar=Mon..Fri 17:0/10 Europe/Moscow
+OnCalendar=Mon..Fri 18:0/10 Europe/Moscow
+OnCalendar=Mon..Fri 19:0/10 Europe/Moscow
+OnCalendar=Mon..Fri 20:0/10 Europe/Moscow
+OnCalendar=Mon..Fri 21:0/10 Europe/Moscow
+OnCalendar=Mon..Fri 22:0/10 Europe/Moscow
+OnCalendar=Mon..Fri 23:0/10 Europe/Moscow
+Persistent=false
+
+[Install]
+WantedBy=timers.target

@@ -36,7 +36,7 @@ for arg in "$@"; do
 done
 
 FILES=(
-  run.sh requirements.txt AGENTS.md PROGRESS.md README.md live_settings.example.json
+  run.sh requirements.txt AGENTS.md PROGRESS.md README.md
   algo/*.py algo/broker/*.py algo/strategies/*.py
   scripts/*.py scripts/README.md scripts/deploy_wsl.sh scripts/start_project.sh
   tests/*.py
@@ -44,7 +44,7 @@ FILES=(
   webui/dist/index.html webui/dist/assets/*
   docs/*.md docs/strategies/*.md docs/sources/*.md
   infra/db/memory.py infra/db/schema.sql infra/db/schema_timescale.sql infra/systemd/*.service infra/systemd/*.timer
-  infra/systemd/*.conf infra/logrotate/*
+  infra/systemd/*.service.d/* infra/systemd/*.conf infra/logrotate/*
 )
 
 # Защита от случайного попадания секретов и состояния в выгрузку.

@@ -1,0 +1,9 @@
+[Unit]
+Description=Будни 13:57 МСК: теневой прогон G3 после paper-live
+
+[Timer]
+OnCalendar=Mon..Fri 13:57 Europe/Moscow
+Persistent=true
+
+[Install]
+WantedBy=timers.target

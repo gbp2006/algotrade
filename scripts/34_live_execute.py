@@ -46,7 +46,7 @@ from algo.journal_positions import journal_positions as shared_journal_positions
 from algo.portfolio import exposure_of, size_contracts  # noqa: E402
 from algo.instance_configs import all_configs, live_settings_from_store  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS  # noqa: E402
-from algo.live_config import SettingsError, load_settings  # noqa: E402
+from algo.live_config import SettingsError  # noqa: E402
 from algo.live_signal import collect as collect_signals  # noqa: E402
 from algo.robot_store import RobotStore  # noqa: E402
 
@@ -187,13 +187,11 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         try:
             settings = live_settings_from_store()
-            if settings.empty:
-                settings = load_settings()  # миграционный fallback на live_settings.json
         except SettingsError as exc:
             print(f"настройки не прошли проверку: {exc}")
             return 2
         if settings.empty:
-            print("live_settings.json: нет роботов в белом списке — заявок нет")
+            print("нет активных live-роботов в store — заявок нет")
             return 0
 
         day = date.fromisoformat(args.day)

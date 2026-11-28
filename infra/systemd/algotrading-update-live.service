@@ -1,0 +1,10 @@
+[Unit]
+Description=Добор M5-баров Финама на диск (живой ряд для сверки)
+
+[Service]
+Type=oneshot
+User=zt
+WorkingDirectory=/home/zt/algotrading
+ExecStart=/home/zt/algotrading/.venv/bin/python /home/zt/algotrading/scripts/10b_append_finam.py
+StandardOutput=append:/home/zt/algotrading/results/update-live.log
+StandardError=append:/home/zt/algotrading/results/update-live.log

@@ -1,0 +1,12 @@
+[Unit]
+Description=Пробой канала: внутридневная фаза бумажного робота
+After=network-online.target
+
+[Service]
+Environment=ALGO_VOL_ROLLOVER=1
+Type=oneshot
+WorkingDirectory=/home/zt/algotrading
+ExecStart=/home/zt/algotrading/.venv/bin/python scripts/31_paper_live.py --channel
+
+[Install]
+WantedBy=multi-user.target
