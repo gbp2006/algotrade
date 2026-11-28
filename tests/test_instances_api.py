@@ -357,8 +357,12 @@ class TestApiViews(unittest.TestCase):
                 self.assertEqual(state["shadow_days"], 0)  # в тесте только sent
                 api.stop_real_view("set")
                 self.assertTrue(api.live_state_view()["stop_real"])
+                stop_real.write_text("расхождение позиций: CNY 2 против 1\n", encoding="utf-8")
+                self.assertEqual(api.live_state_view()["stop_real_note"],
+                                 "расхождение позиций: CNY 2 против 1")
                 api.stop_real_view("clear")
                 self.assertFalse(api.live_state_view()["stop_real"])
+                self.assertEqual(api.live_state_view()["stop_real_note"], "")
 
 
 class TestPanelSafety(unittest.TestCase):

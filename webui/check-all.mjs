@@ -273,6 +273,14 @@ robotText = (await dialogs.evaluate(() => document.body.innerText || '')).toLowe
 if (!robotText.includes('мастер создания робота')) problems.push('робот: мастер создания не открылся');
 await dialogs.close();
 
+// Причина STOP_REAL обязана приходить в панель (пустая строка, когда флаг снят).
+try {
+  const liveState = await (await fetch(`${base}/api/live-state`)).json();
+  if (!Object.hasOwn(liveState, 'stop_real_note')) problems.push('live-state: нет причины STOP_REAL');
+} catch (error) {
+  problems.push(`live-state: ${error.message}`);
+}
+
 // Прямые ссылки всех разделов: панель сама меняет URL через pushState,
 // поэтому обновление страницы обязано открывать тот же раздел, а не 404.
 const deep = await browser.newPage();

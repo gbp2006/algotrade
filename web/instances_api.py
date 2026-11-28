@@ -737,6 +737,17 @@ def live_orders_view(limit: int = 60) -> list[dict]:
     return list(reversed(rows[-limit:]))
 
 
+def stop_real_note(path: Path = STOP_REAL) -> str:
+    """Причина STOP_REAL из файла-флага: одна короткая строка для панели."""
+    if not path.exists():
+        return ""
+    try:
+        lines = path.read_text(encoding="utf-8").strip().splitlines()
+    except OSError:
+        return ""
+    return lines[0][:240] if lines else ""
+
+
 def live_state_view() -> dict:
     days: set[str] = set()
     if PAPER.exists():
@@ -758,6 +769,7 @@ def live_state_view() -> dict:
         "live_trading_enabled": bool((live_control.status() or {}).get("enabled")),
         "stop_paper": STOP.exists(),
         "stop_real": STOP_REAL.exists(),
+        "stop_real_note": stop_real_note(STOP_REAL),
         "paper_days": len(days),
         "shadow_days": len(shadow_days),
         "health": _json_file(HEALTH),

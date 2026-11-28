@@ -151,8 +151,8 @@ class TestHTTPApi(unittest.TestCase):
     def test_live_state(self):
         status, data = request(web_app.app, "GET", "/api/live-state")
         self.assertEqual(status, 200)
-        for key in ("paper_days", "shadow_days", "stop_real", "routing",
-                    "live_trading_enabled"):
+        for key in ("paper_days", "shadow_days", "stop_real", "stop_real_note",
+                    "routing", "live_trading_enabled"):
             self.assertIn(key, data)
 
     def test_stop_real_bad_action(self):

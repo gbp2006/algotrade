@@ -528,6 +528,11 @@ export function Robots() {
                 STOP (бумага): {liveState.data?.stop_paper ? 'УСТАНОВЛЕН' : 'снят'};
                 маршрут: виртуальные счета не торгуют
               </div>
+              {Boolean(liveState.data?.stop_real_note) && (
+                <div className="mt-1 text-[11px] text-loss">
+                  Причина STOP_REAL: {String(liveState.data?.stop_real_note ?? '')}
+                </div>
+              )}
               <div className="mt-2 flex flex-wrap gap-2">
                 <button className="btn-danger" onClick={() => flag.mutate({ kind: 'real', value: 'set' })}>STOP боя</button>
                 <button className="btn" onClick={() => flag.mutate({ kind: 'real', value: 'clear' })}>Снять STOP боя</button>
