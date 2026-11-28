@@ -29,10 +29,6 @@ const schema = z.object({
   on_insufficient: z.enum(['PAUSE', 'MIN_LOT', 'SKIP']),
   min_lots: z.coerce.number().int().min(1).max(1000),
   max_lots: z.coerce.number().int().min(1).max(10000),
-  sl_pct: z.coerce.number().min(0),
-  tp_pct: z.coerce.number().min(0),
-  trailing_pct: z.coerce.number().min(0),
-  close_time: z.string(),
   params: z.record(z.union([z.string(), z.number(), z.boolean()])),
 });
 type RobotForm = z.infer<typeof schema>;
@@ -255,8 +251,7 @@ export function Robots() {
       name: '', description: '', spec_id: 'prostushka', instrument: 'CNY', mode: 'paper',
       account: '', exposure: 2, sizing_mode: 'PERCENT', sizing_value: 200,
       reaction: 'IMMEDIATE', smoothing_pct: 5, on_insufficient: 'PAUSE',
-      min_lots: 1, max_lots: 100, sl_pct: 0, tp_pct: 0, trailing_pct: 0,
-      close_time: '', params: {},
+      min_lots: 1, max_lots: 100, params: {},
     },
   });
 
@@ -281,7 +276,6 @@ export function Robots() {
       sizing_mode: 'PERCENT', sizing_value: Number(robot.exposure ?? 2) * 100,
       reaction: 'IMMEDIATE', smoothing_pct: 5, on_insufficient: 'PAUSE',
       min_lots: 1, max_lots: Number(robot.max_qty ?? 100),
-      sl_pct: 0, tp_pct: 0, trailing_pct: 0, close_time: '',
       // Новые поля spec (например, лимиты фонда) должны появиться и у старых роботов.
       params: { ...((specs.data ?? []).find((s) => s.id === robot.spec_id)?.defaults ?? {}),
                 ...(robot.params ?? {}) },
@@ -465,6 +459,7 @@ export function Robots() {
       note: values.name,
       description: values.description,
       exposure: values.exposure,
+      max_qty: values.max_lots,
       params: values.params,
     };
     if (editingId) {
@@ -737,6 +732,13 @@ export function Robots() {
                   <option value="paper">TEST</option><option value="live">LIVE</option>
                 </select>
               </label>
+              <div className="md:col-span-2 rounded-lg border border-line bg-elevated p-3 text-[11px] text-muted">
+                Калькулятор потоков капитала: поля ниже (кроме «Максимальный лот»)
+                нужны только кнопке «Рассчитать лот» и в роботе не сохраняются.
+                «Максимальный лот» сохраняется как лимит контрактов робота.
+                Stop-Loss / Take-Profit / трейлинг и закрытие по времени боевым
+                контуром не поддерживаются.
+              </div>
               <label className="text-xs">Режим сайзинга
                 <select className="input mt-1" {...form.register('sizing_mode')}>
                   <option value="PERCENT">% от баланса</option>
@@ -772,18 +774,6 @@ export function Robots() {
               </label>
               <label className="text-xs">Максимальный лот
                 <input className="input mt-1" type="number" {...form.register('max_lots')} />
-              </label>
-              <label className="text-xs">Stop-Loss, %
-                <input className="input mt-1" type="number" step="0.1" {...form.register('sl_pct')} />
-              </label>
-              <label className="text-xs">Take-Profit, %
-                <input className="input mt-1" type="number" step="0.1" {...form.register('tp_pct')} />
-              </label>
-              <label className="text-xs">Трейлинг, %
-                <input className="input mt-1" type="number" step="0.1" {...form.register('trailing_pct')} />
-              </label>
-              <label className="text-xs">Закрытие по времени (МСК)
-                <input className="input mt-1" placeholder="18:45" {...form.register('close_time')} />
               </label>
               <div className="flex items-end gap-2">
                 <button type="submit" className="btn-primary" disabled={create.isPending || edit.isPending}>
