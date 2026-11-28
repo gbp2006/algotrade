@@ -36,6 +36,11 @@ from algo.portfolio import CAPITAL, drawdown_stats  # noqa: E402
 
 PAPER = Path(__file__).resolve().parent.parent / "results" / "paper.csv"
 
+# До этой даты бумага писалась под ATR-сайзинг, который удалён (ADR 28.11).
+# Воспроизводить те лоты больше нечем, поэтому Fact/Expected сравниваем только
+# с этой даты; P&L и сделки за весь период в отчёте остаются как есть.
+COMPARE_FROM = "2026-11-28"
+
 
 def instrument_of(cfg):
     return INSTRUMENTS.get(cfg.instrument, DEFAULT)
@@ -182,15 +187,19 @@ def build_rows() -> tuple[list[dict], str, str]:
         if inst.code not in cache:
             cache[inst.code] = expected_bars(inst)
         e_pnl = None
-        if cache[inst.code] is not None:
-            # Окно ожидания — по датам самого конфигурации: новые роботы вошли
-            # в журнал позже базы, и сравнение с её 3 днями давало ложный error.
-            c_start, c_end = mine[0]["date"], mine[-1]["date"]
+        error = None
+        compare_rows = [r for r in mine if r["date"] >= COMPARE_FROM]
+        if compare_rows and cache[inst.code] is not None:
+            # Окно сравнения — по датам самого конфигурации и только новая
+            # модель сайзинга: старые строки писались под удалённый ATR.
+            c_start, c_end = compare_rows[0]["date"], compare_rows[-1]["date"]
+            _, compare_pnl, _ = ledger(compare_rows, mult)
             by_day = day_cfgs
             e_trades, e_pnl = expected(
                 cfg, cache[inst.code], c_start, c_end, mult, capital,
                 tick=inst.tick,
                 cfg_for=lambda d, cid=cfg.id: by_day.get((str(d), cid), cfg))
+            error = None if e_pnl is None else compare_pnl - e_pnl
         dd = _dd_stats(mine, mult, capital)
         n, wins, losses, gw, gl = trade_stats(mine, mult)
         last = mine[-1]
@@ -200,7 +209,7 @@ def build_rows() -> tuple[list[dict], str, str]:
         out.append({
             "config": cfg.id, "instrument": inst.code, "days": days,
             "trades": trades, "pnl": pnl, "expected": e_pnl,
-            "error": None if e_pnl is None else pnl - e_pnl,
+            "error": error,
             "max_dd": dd["max_dd"], "max_dd_days": dd["max_dd_days"],
             "capital": capital, "equity": capital + pnl, "realized": pnl,
             "dd_abs": dd["max_dd"],

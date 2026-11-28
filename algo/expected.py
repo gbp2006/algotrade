@@ -17,30 +17,6 @@ from .instruments import symbol as contract_symbol
 from .live import decision, morning_exit_price
 from .portfolio import exposure_of, size_contracts
 
-# Замороженная совместимость: до 28.11 бумага писалась с ATR-резкой, и ожидание
-# обязано повторять те строки. Только для исторических дат; новый сайзинг ATR
-# не использует (ADR 28.11).
-LEGACY_ATR_CUTOFF = "2026-11-27"
-
-
-def _legacy_atr_lots(equity: float, price: float, mult: float,
-                     base_exposure: float, bars: pd.DataFrame) -> int:
-    """Лот старого ATR-сайзинга по барам до 13:55 — только для старых дат."""
-    prev = bars["close"].shift(1)
-    tr = pd.concat([bars["high"] - bars["low"],
-                    (bars["high"] - prev).abs(),
-                    (bars["low"] - prev).abs()], axis=1).max(axis=1)
-    a = tr.rolling(14, min_periods=14).mean()
-    ratio = None
-    if len(a) >= 252:
-        base = float(a.iloc[-252:].median())
-        if base > 0:
-            ratio = float(a.iloc[-1]) / base
-    exposure = 2.0 if ratio is None else next(
-        (v for threshold, v in ((1.10, 2.0), (1.25, 1.0), (1.50, 0.5),
-                                (float("inf"), 0.3)) if ratio <= threshold), 0.3)
-    return min(size_contracts(equity, price, mult, min(base_exposure, exposure)), 200)
-
 
 def instrument_of(cfg):
     return INSTRUMENTS.get(cfg.instrument, DEFAULT)
@@ -107,16 +83,8 @@ def expected(cfg, m5: pd.DataFrame, start: str, end: str,
         if dec is None:
             continue
         decisions += 1
-        if dec.target == 0:
-            contracts = 0
-        elif str(day) <= LEGACY_ATR_CUTOFF and "risk_vol" in cur.params:
-            risk_cut = pd.Timestamp(f"{day} 13:55:00")
-            risk_bars = m5[(m5.index.date <= day) & (m5.index <= risk_cut)]
-            contracts = _legacy_atr_lots(capital + pnl, dec.price, mult,
-                                         exposure_of(cur), risk_bars)
-        else:
-            contracts = size_contracts(capital + pnl, dec.price, mult,
-                                       exposure_of(cur))
+        contracts = (size_contracts(capital + pnl, dec.price, mult,
+                                    exposure_of(cur)) if dec.target != 0 else 0)
         target = dec.target * contracts
         if target != pos:
             if pos != 0:

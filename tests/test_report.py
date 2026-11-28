@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import csv
 import importlib.util
 import sys
+import tempfile
 from dataclasses import replace
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import numpy as np
 import pandas as pd
@@ -93,6 +96,40 @@ class TestFridayExpectation(unittest.TestCase):
         with_tick = report.expected(BY_ID["p-friday"], bars, "2026-11-16", "2026-11-20",
                                     1000.0, 200_000, tick=0.001)
         self.assertLess(with_tick[1], friday[1], "проскальзывание на выходе должно учитываться")
+
+
+class TestCompareWindow(unittest.TestCase):
+    def _build(self, dates):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "paper.csv"
+            fields = ["date", "time", "config", "action", "price", "target"]
+            with path.open("w", newline="", encoding="utf-8") as f:
+                w = csv.DictWriter(f, fieldnames=fields)
+                w.writeheader()
+                for day in dates:
+                    w.writerow({"date": day, "time": "13:50", "config": "p-base",
+                                "action": "решение", "price": "12.29", "target": "1"})
+            with mock.patch.object(report, "PAPER", path), \
+                 mock.patch.object(report, "active_configs", return_value=[]), \
+                 mock.patch.object(report, "configs_at", return_value=[]), \
+                 mock.patch.object(report, "expected_bars", return_value=m5()), \
+                 mock.patch.object(report, "expected",
+                                   return_value=(1, 100.0)) as expected:
+                rows, _, _ = report.build_rows()
+        return rows, expected
+
+    def test_old_dates_are_not_compared(self):
+        rows, expected = self._build(["2026-11-19", "2026-11-20"])
+        self.assertEqual(len(rows), 1)
+        self.assertIsNone(rows[0]["error"])
+        self.assertIsNone(rows[0]["expected"])
+        expected.assert_not_called()
+
+    def test_new_dates_are_compared(self):
+        rows, expected = self._build(["2026-11-28", "2026-11-29"])
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["error"], -100.0)
+        expected.assert_called_once()
 
 
 if __name__ == "__main__":
