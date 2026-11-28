@@ -1,4 +1,4 @@
-/* Проверяет 7 разделов: menu, вкладки, безопасные контролы, правку счёта, deep-link, ошибки JS. */
+/* Проверяет 7 разделов: меню, вкладки, диалоги, безопасные контролы, правку счёта, deep-link, ошибки JS. */
 import puppeteer from 'puppeteer-core';
 
 const url = process.argv[2] || 'http://192.168.0.230/ui/';
@@ -72,6 +72,30 @@ for (let i = 0; i < 7; i += 1) {
 }
 
 const base = url.replace(/\/ui\/?$/, '').replace(/\/$/, '');
+
+// Диалоги проверяем только открытием/отменой: никаких сохранений и заявок.
+// Настоящий клик мышью нужен и здесь (Radix слушает mousedown).
+const clickButton = async (p, text, root = p) => {
+  for (const handle of await root.$$('button')) {
+    const label = (await handle.evaluate((item) => item.textContent ?? '')).trim();
+    if (label === text) { await handle.click(); return true; }
+  }
+  return false;
+};
+const checkDialog = async (p, openText, marker, closeText) => {
+  if (!await clickButton(p, openText)) {
+    problems.push(`диалоги: нет кнопки «${openText}»`);
+    return;
+  }
+  await new Promise((r) => setTimeout(r, 500));
+  const dialog = await p.$('[role="dialog"]');
+  if (!dialog) { problems.push(`диалог «${openText}» не открылся`); return; }
+  const text = (await dialog.evaluate((item) => item.innerText || '')).toLowerCase();
+  if (!text.includes(marker.toLowerCase())) problems.push(`диалог «${openText}»: нет «${marker}»`);
+  if (!await clickButton(p, closeText, dialog)) problems.push(`диалог «${openText}»: нет кнопки «${closeText}»`);
+  await new Promise((r) => setTimeout(r, 400));
+  if (await p.$('[role="dialog"]')) problems.push(`диалог «${openText}» не закрылся`);
+};
 
 // Регрессия правки счёта: старый ID уходит в URL PATCH, новый — только в new_id.
 // Запрос перехватывается и не меняет реальные данные.
@@ -218,6 +242,36 @@ const stats = await catalog.evaluate(() => {
 if (!stats) problems.push('инструменты: нет человекочитаемой сводки справочника');
 if (stats.startsWith('{')) problems.push('инструменты: сводка показывает сырой JSON');
 await catalog.close();
+
+// Подтверждение удаления счёта и инспектор JSON логов: открыть и отменить.
+const dialogs = await browser.newPage();
+watch(dialogs);
+await dialogs.goto(`${base}/accounts`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+await new Promise((r) => setTimeout(r, 1800));
+await checkDialog(dialogs, 'Удалить', 'Удалить счёт', 'Отмена');
+await dialogs.goto(`${base}/logs`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+await new Promise((r) => setTimeout(r, 2200));
+await checkDialog(dialogs, 'JSON', 'Контекст:', 'Закрыть');
+
+// Мастер и расписание робота — карточки внутри вкладки «Мастер робота».
+await dialogs.goto(`${base}/robots`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+await new Promise((r) => setTimeout(r, 1800));
+if (!await clickButton(dialogs, 'Настроить')) problems.push('робот: нет кнопки «Настроить»');
+await new Promise((r) => setTimeout(r, 1500));
+let robotText = (await dialogs.evaluate(() => document.body.innerText || '')).toLowerCase();
+if (!robotText.includes('редактирование робота') || !robotText.includes('расписание робота')) {
+  problems.push('робот: карточки редактирования и расписания не открылись');
+}
+if (!await clickButton(dialogs, 'Отмена')) problems.push('робот: нет кнопки «Отмена» в мастере');
+await new Promise((r) => setTimeout(r, 500));
+for (const handle of await dialogs.$$('button[role="tab"]')) {
+  const label = await handle.evaluate((item) => item.textContent ?? '');
+  if (label.includes('Мастер робота')) { await handle.click(); break; }
+}
+await new Promise((r) => setTimeout(r, 900));
+robotText = (await dialogs.evaluate(() => document.body.innerText || '')).toLowerCase();
+if (!robotText.includes('мастер создания робота')) problems.push('робот: мастер создания не открылся');
+await dialogs.close();
 
 // Прямые ссылки всех разделов: панель сама меняет URL через pushState,
 // поэтому обновление страницы обязано открывать тот же раздел, а не 404.
