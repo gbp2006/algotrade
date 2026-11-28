@@ -378,10 +378,17 @@ def config_stats(cfg, rows: list[dict], price: float | None = None) -> dict:
 @app.get("/robots", response_class=HTMLResponse)
 @app.get("/accounts", response_class=HTMLResponse)
 @app.get("/health", response_class=HTMLResponse)
+# Все семь разделов панели меняют URL через history.pushState; обновление
+# страницы или прямая ссылка должна открывать тот же раздел, а не 404.
+@app.get("/portfolio", response_class=HTMLResponse)
+@app.get("/charts", response_class=HTMLResponse)
+@app.get("/simulation", response_class=HTMLResponse)
+@app.get("/history", response_class=HTMLResponse)
+@app.get("/logs", response_class=HTMLResponse)
 @app.get("/ui", response_class=HTMLResponse)
 @app.get("/ui/{path:path}", response_class=HTMLResponse)
 def index(path: str = ""):
-    """Старые адреса страниц отдают новый React-интерфейс."""
+    """Адреса страниц панели отдают новый React-интерфейс."""
     return react_index()
 
 

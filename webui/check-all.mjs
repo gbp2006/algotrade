@@ -219,14 +219,22 @@ if (!stats) problems.push('инструменты: нет человекочит
 if (stats.startsWith('{')) problems.push('инструменты: сводка показывает сырой JSON');
 await catalog.close();
 
-// Прямая ссылка должна открывать раздел, а не последний сохранённый в localStorage.
+// Прямые ссылки всех разделов: панель сама меняет URL через pushState,
+// поэтому обновление страницы обязано открывать тот же раздел, а не 404.
 const deep = await browser.newPage();
 watch(deep);
-await deep.goto(`${base}/robots`, { waitUntil: 'networkidle2', timeout: 30000 });
-await new Promise((r) => setTimeout(r, 1200));
-const active = await deep.evaluate(() =>
-  document.querySelector('aside button.bg-accent')?.textContent?.trim() ?? '');
-if (!active.includes('Роботы')) problems.push(`deep-link /robots: активен «${active}»`);
+for (const [path, label] of [
+  ['/portfolio', 'Портфель и обзор'], ['/charts', 'Торговля и графики'],
+  ['/robots', 'Роботы и алгоритмы'], ['/simulation', 'Тестирование'],
+  ['/accounts', 'Счета и брокеры'], ['/history', 'Операции и сделки'],
+  ['/logs', 'Логи и диагностика'], ['/ui/logs', 'Логи и диагностика'],
+]) {
+  await deep.goto(`${base}${path}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await new Promise((r) => setTimeout(r, 900));
+  const active = await deep.evaluate(() =>
+    document.querySelector('aside button.bg-accent')?.textContent?.trim() ?? '');
+  if (!active.includes(label)) problems.push(`deep-link ${path}: активен «${active}», ждали «${label}»`);
+}
 await deep.close();
 
 console.log(JSON.stringify({ results, problems }, null, 2));

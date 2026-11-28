@@ -118,8 +118,13 @@ class TestHTTPApi(unittest.TestCase):
         self.assertIn("real", analytics)
         self.assertIn("portfolio", analytics)
 
-    def test_old_page_routes_serve_react(self):
-        for path in ("/", "/trade", "/robots", "/accounts", "/health", "/ui"):
+    def test_page_routes_serve_react(self):
+        # Прямые ссылки всех разделов: панель сама меняет URL на /portfolio,
+        # /charts и т.д. — обновление страницы не должно давать 404.
+        paths = ("/", "/trade", "/robots", "/accounts", "/health", "/ui",
+                 "/portfolio", "/charts", "/simulation", "/history", "/logs",
+                 "/ui/logs", "/ui/charts")
+        for path in paths:
             status, html = request(web_app.app, "GET", path)
             self.assertEqual(status, 200, path)
             self.assertIn('id="root"', html)

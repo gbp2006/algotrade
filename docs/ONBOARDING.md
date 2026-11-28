@@ -75,7 +75,9 @@ curl http://192.168.0.230/api/health
 VPN и SSH в проект не писать.
 
 Адреса на WSL:
-- GUI: `http://192.168.0.230/` (все старые пути отдают React);
+- GUI: `http://192.168.0.230/` (старые пути и прямые ссылки всех семи разделов
+  `/portfolio`, `/charts`, `/robots`, `/simulation`, `/accounts`, `/history`,
+  `/logs`, а также `/ui/...` отдают тот же React);
 - API: `http://192.168.0.230/api/...`;
 - локальная dev-копия фронта: `cd webui && npm run dev` → `http://localhost:5180/ui/`,
   `/api` проксируется на `VITE_API_TARGET` (по умолчанию `http://127.0.0.1`, порт 80).
