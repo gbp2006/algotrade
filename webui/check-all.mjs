@@ -43,11 +43,12 @@ for (let i = 0; i < 7; i += 1) {
   await new Promise((r) => setTimeout(r, 1800));
   const tabCount = await page.evaluate(() => document.querySelectorAll('button[role="tab"]').length);
   let seen = '';
+  // Radix Tabs реагирует на клик мышью; DOM click() не переключает панель,
+  // поэтому проверяем реальное содержимое каждой вкладки, а не одни подписи.
   for (let j = 0; j < tabCount; j += 1) {
-    await page.evaluate((index) => {
-      (document.querySelectorAll('button[role="tab"]')[index])?.click();
-    }, j);
-    await new Promise((r) => setTimeout(r, 400));
+    const tab = (await page.$$('button[role="tab"]'))[j];
+    if (tab) await tab.click();
+    await new Promise((r) => setTimeout(r, 500));
     seen += await page.evaluate(() => document.body.innerText || '');
   }
   for (const label of SAFE_CLICKS) {
@@ -203,10 +204,11 @@ const catalog = await browser.newPage();
 watch(catalog);
 await catalog.goto(`${base}/robots`, { waitUntil: 'networkidle2', timeout: 30000 });
 await new Promise((r) => setTimeout(r, 1200));
-await catalog.evaluate(() => {
-  [...document.querySelectorAll('button[role="tab"]')]
-    .find((item) => item.textContent?.includes('Инструменты'))?.click();
-});
+// Radix переключается только на настоящем клике мыши, не на DOM click().
+for (const handle of await catalog.$$('button[role="tab"]')) {
+  const label = await handle.evaluate((item) => item.textContent ?? '');
+  if (label.includes('Инструменты')) { await handle.click(); break; }
+}
 await new Promise((r) => setTimeout(r, 900));
 const stats = await catalog.evaluate(() => {
   const node = [...document.querySelectorAll('div')]
