@@ -7,12 +7,14 @@
 from __future__ import annotations
 
 import csv
+import fcntl
 import json
 import os
 import re
 import subprocess
 import sys
 import time
+from contextlib import contextmanager
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
@@ -39,6 +41,7 @@ SHADOW = ROOT / "results" / "shadow.json"
 ROLLOVER = ROOT / "results" / "rollover_run.json"
 STOP = ROOT / "results" / "STOP"
 STOP_REAL = ROOT / "results" / "STOP_REAL"
+LIVE_RUN_LOCK = ROOT / "results" / "live_run.lock"
 router = APIRouter(prefix="/api", tags=["instances"])
 _default_store = RobotStore()
 _default_store.init_db()   # идемпотентно; без этого /api/instances падал на пустой БД
@@ -630,6 +633,25 @@ def close_all_positions(payload: dict, store: RobotStore = Depends(get_store)):
     return result
 
 
+@contextmanager
+def _live_run_guard():
+    """Один ручной прогон одновременно: второй получает 409, а не дубль заявок.
+
+    Журнал и UNIQUE ловят повтор только после отправки брокеру, поэтому гонку
+    двух процессов останавливаем до старта раннера (ADR 27.11).
+    """
+    LIVE_RUN_LOCK.parent.mkdir(parents=True, exist_ok=True)
+    with LIVE_RUN_LOCK.open("a+") as fh:
+        try:
+            fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError as exc:
+            raise HTTPException(409, "боевой прогон уже идёт") from exc
+        try:
+            yield
+        finally:
+            fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+
+
 def _live_run_view(payload: dict) -> dict:
     """Ручной прогон боевого контура; `dry_run` — явная репетиция."""
     if STOP_REAL.exists():
@@ -640,26 +662,27 @@ def _live_run_view(payload: dict) -> dict:
     if dry_run:
         cmd.append("--dry-run")
     cmd += ["--day", day]
-    try:
-        proc = subprocess.run(cmd, cwd=ROOT, env=dict(os.environ), capture_output=True,
-                              text=True, timeout=180)
-    except subprocess.TimeoutExpired:
-        raise HTTPException(504, "боевой раннер не ответил за 180 с")
-    summary: dict = {}
-    path = ROOT / "results" / "live_run.json"
-    if path.exists():
+    with _live_run_guard():
         try:
-            summary = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            pass
-    log = ROOT / "results" / "live_manual.log"
-    with log.open("a", encoding="utf-8") as f:
-        f.write(f"{datetime.now().isoformat(timespec='seconds')} "
-                f"{'dry-run' if dry_run else 'live'} "
-                f"day={day} rc={proc.returncode} {proc.stdout.strip()[:160]}\n")
-    invalidate_analytics()  # прогон мог изменить позиции/equity
-    return {"ok": proc.returncode == 0, "dry_run": dry_run, "summary": summary,
-            "stdout": proc.stdout.strip()[-800:], "stderr": proc.stderr.strip()[-400:]}
+            proc = subprocess.run(cmd, cwd=ROOT, env=dict(os.environ), capture_output=True,
+                                  text=True, timeout=180)
+        except subprocess.TimeoutExpired:
+            raise HTTPException(504, "боевой раннер не ответил за 180 с")
+        summary: dict = {}
+        path = ROOT / "results" / "live_run.json"
+        if path.exists():
+            try:
+                summary = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                pass
+        log = ROOT / "results" / "live_manual.log"
+        with log.open("a", encoding="utf-8") as f:
+            f.write(f"{datetime.now().isoformat(timespec='seconds')} "
+                    f"{'dry-run' if dry_run else 'live'} "
+                    f"day={day} rc={proc.returncode} {proc.stdout.strip()[:160]}\n")
+        invalidate_analytics()  # прогон мог изменить позиции/equity
+        return {"ok": proc.returncode == 0, "dry_run": dry_run, "summary": summary,
+                "stdout": proc.stdout.strip()[-800:], "stderr": proc.stderr.strip()[-400:]}
 
 
 @router.post("/live-run")

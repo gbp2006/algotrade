@@ -2,7 +2,8 @@
 
 Отдельных замков `--arm` и `FINAM_ALLOW_TRADING` больше нет (ADR 27.11):
 управление — СТАРТ/СТОП робота и кнопка «Закрыть всё» в панели. Остаются
-STOP_REAL, лок от двойной отправки, лимиты, экспирация и идемпотентность.
+STOP_REAL, лок от двойного прогона (держит панель), лимиты, экспирация и
+идемпотентность. Ошибка ключа/equity одного счёта пропускает только его.
 `--dry-run` — явная репетиция без отправки, `--arm` принят для совместимости
 со старыми командами заданий и ничего не меняет.
 
@@ -35,7 +36,7 @@ from algo.broker.finam import FinamBroker  # noqa: E402
 from algo.broker.secrets import resolve_secret  # noqa: E402
 from algo.broker.live_guard import (  # noqa: E402
     STOP_REAL, account_equity, assert_stop_clear, battle_limits,
-    decision_client_id, expiry_allows, price_for, quote_age_sec,
+    decision_client_id, expiry_allows, parse_pricing, price_for, quote_age_sec,
     reconcile_guard,
 )
 from algo import trade_journal as tj  # noqa: E402
@@ -241,12 +242,16 @@ def main(argv: list[str] | None = None) -> int:
                 broker = FinamBroker(secret=resolve_secret(key_ref or acc.key_ref),
                                      account=acc_id)
             except Exception as exc:  # noqa: BLE001 — без ключа счёт не трогаем
-                print(f"{acc_id}: ключ счёта недоступен — {exc}")
-                return 2
+                note = f"{acc_id}: ключ счёта недоступен — {exc}"
+                notes.append(note)
+                print(note)
+                continue
             equity = account_equity(broker, acc_id)
             if equity is None or equity <= 0:
-                print(f"{acc_id}: нет equity счёта — заявок нет")
-                return 2
+                note = f"{acc_id}: нет equity счёта — заявок нет"
+                notes.append(note)
+                print(note)
+                continue
             notes.append(f"{acc_id}: equity {equity:.0f} ₽, экспозиции "
                          f"{sorted(set().union(*(p['exposures'] for p in symbols.values())))}")
             model, uncertain = journal_positions(acc_id)
@@ -306,7 +311,10 @@ def main(argv: list[str] | None = None) -> int:
                         if not expiry_ok(day, sym, delta, plan["expiry"], run_day):
                             status, reason = "skipped", "день экспирации"
                         else:
-                            pricing = next(iter(plan["pricings"]))
+                            # collect_signals кладёт строку (rs.pricing.value),
+                            # price_for() ждёт PricingMode — приводим явно.
+                            pricing = parse_pricing(
+                                str(next(iter(plan["pricings"]))), sym)
                             quote = None
                             if pricing.value != "signal":
                                 quote = broker.quote(sym)
@@ -412,7 +420,7 @@ def main(argv: list[str] | None = None) -> int:
               f"{'dry-run' if args.dry_run else 'реальные заявки'}")
         return 0
     finally:
-        pass  # локов больше нет; повторные заявки отсекает UNIQUE client_order_id
+        pass  # лок прогона держит панель; дубли заявок отсекает журнал по статусу
 
 
 if __name__ == "__main__":
