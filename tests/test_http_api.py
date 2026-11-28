@@ -155,6 +155,14 @@ class TestHTTPApi(unittest.TestCase):
                     "routing", "live_trading_enabled"):
             self.assertIn(key, data)
 
+    def test_health_exposes_stop_real(self):
+        web_app.HEALTH.write_text(json.dumps({
+            "ok": True, "checked": "2026-11-28 13:00:00", "stop_real": True,
+        }), encoding="utf-8")
+        status, data = request(web_app.app, "GET", "/api/health")
+        self.assertEqual(status, 200)
+        self.assertTrue(data["stop_real"])
+
     def test_stop_real_bad_action(self):
         status, data = request(web_app.app, "POST", "/api/stop-real", {"action": "boom"})
         self.assertEqual(status, 400)

@@ -636,6 +636,7 @@ def api_health():
         "data_date": (wd or {}).get("data_date"),
         "rows": (wd or {}).get("rows") or 0,
         "stop": bool(STOP.exists()),
+        "stop_real": bool((wd or {}).get("stop_real")),
     }, status_code=200 if ok else 503)
 
 

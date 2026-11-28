@@ -277,6 +277,8 @@ await dialogs.close();
 try {
   const liveState = await (await fetch(`${base}/api/live-state`)).json();
   if (!Object.hasOwn(liveState, 'stop_real_note')) problems.push('live-state: нет причины STOP_REAL');
+  const healthState = await (await fetch(`${base}/api/health`)).json();
+  if (!Object.hasOwn(healthState, 'stop_real')) problems.push('health: нет поля stop_real');
 } catch (error) {
   problems.push(`live-state: ${error.message}`);
 }

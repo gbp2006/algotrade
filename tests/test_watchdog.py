@@ -41,6 +41,7 @@ class TestWatchdog(unittest.TestCase):
             mock.patch.object(wd, "ROOT", self.dir),
             mock.patch.object(wd, "PAPER", self.paper),
             mock.patch.object(wd, "STOP", self.stop),
+            mock.patch.object(wd, "STOP_REAL", self.dir / "results" / "STOP_REAL"),
             mock.patch.object(wd, "BACKUP_STATE", self.dir / "results" / "backup.json"),
             mock.patch.object(wd, "data_freshness", lambda: data_date),
             mock.patch.object(wd, "decision_configs",
@@ -102,6 +103,20 @@ class TestWatchdog(unittest.TestCase):
             for p in reversed(patches):
                 p.stop()
         self.assertTrue(any("устарели" in w for w in res["warnings"]), res)
+
+    def test_stop_real_is_warning(self):
+        self._journal()
+        (self.dir / "results" / "STOP_REAL").write_text("установлен из панели\n", encoding="utf-8")
+        patches = self._patches()
+        for p in patches:
+            p.start()
+        try:
+            res = wd.check()
+        finally:
+            for p in reversed(patches):
+                p.stop()
+        self.assertTrue(res["stop_real"])
+        self.assertTrue(any("STOP_REAL" in w for w in res["warnings"]), res)
 
     def test_backup_freshness_is_warning(self):
         self._journal()

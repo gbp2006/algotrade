@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PAPER = ROOT / "results" / "paper.csv"
 HEALTH = ROOT / "results" / "health.json"
 STOP = ROOT / "results" / "STOP"
+STOP_REAL = ROOT / "results" / "STOP_REAL"
 BACKUP_STATE = ROOT / "results" / "backup.json"
 BACKUP_MAX_AGE_HOURS = 36  # ежедневный бэкап в 03:00 + запас на один пропуск
 
@@ -128,6 +129,8 @@ def check() -> dict:
 
     if STOP.exists():
         warnings.append("стоп-флаг установлен — торговля остановлена вручную")
+    if STOP_REAL.exists():
+        warnings.append("STOP_REAL установлен — новые реальные заявки запрещены")
 
     backup_age = backup_age_hours(now)
     if backup_age is None:
@@ -186,6 +189,7 @@ def check() -> dict:
         "ok": not problems,
         "problems": problems,
         "warnings": warnings,
+        "stop_real": STOP_REAL.exists(),
         "data_date": data_date,
         "rows": len(rows),
     }
