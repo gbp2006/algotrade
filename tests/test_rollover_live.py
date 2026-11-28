@@ -52,6 +52,8 @@ class TestRolloverRunnerSafety(unittest.TestCase):
                 mock.patch.object(rl, "SUMMARY", d / "rollover_run.json"),
                 mock.patch.object(rl, "STOP", d / "STOP"),
                 mock.patch.object(rl, "STOP_REAL", d / "STOP_REAL"),
+                mock.patch.object(rl, "journal_positions",
+                                  lambda account, journal=None: ({}, 0)),
                 mock.patch.object(rl, "FinamBroker", lambda: Broker()),
                 mock.patch.object(rl, "live_settings_from_store", lambda: settings),
                 mock.patch.object(rl, "account_equity", lambda broker, acc: 0),
@@ -67,6 +69,53 @@ class TestRolloverRunnerSafety(unittest.TestCase):
             self.assertTrue(any("нет equity" in n for n in data["notes"]))
             self.assertEqual(data["results"], {})
             self.assertFalse((d / "live.lock").exists())
+
+    def test_reconcile_uses_journal_model_not_broker(self):
+        import json
+        import tempfile
+        from algo import live_config as lc
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            settings = lc.parse_settings({
+                "accounts": {"A1": {}},
+                "robots": {"r1": {"account": "A1", "pricing": "marketable"}},
+            })
+
+            class Broker:
+                def account(self, acc=None):
+                    return {"positions": []}
+
+            seen = []
+
+            def guard(broker, model, **kw):
+                seen.append((dict(model), kw))
+                return ["расхождение CNY"]
+
+            patches = [
+                mock.patch.object(rl, "LIVE", d / "live.csv"),
+                mock.patch.object(rl, "SUMMARY", d / "rollover_run.json"),
+                mock.patch.object(rl, "STOP", d / "STOP"),
+                mock.patch.object(rl, "STOP_REAL", d / "STOP_REAL"),
+                mock.patch.object(rl, "journal_positions",
+                                  lambda account, journal=None: ({"CNYRUBF@RTSX": 2}, 0)),
+                mock.patch.object(rl, "reconcile_guard", side_effect=guard),
+                mock.patch.object(rl, "FinamBroker", lambda: Broker()),
+                mock.patch.object(rl, "live_settings_from_store", lambda: settings),
+                mock.patch.object(rl, "account_equity", lambda broker, acc: 0),
+            ]
+            for p in patches:
+                p.start()
+            try:
+                self.assertEqual(rl.main([]), 0)
+            finally:
+                for p in reversed(patches):
+                    p.stop()
+            data = json.loads((d / "rollover_run.json").read_text(encoding="utf-8"))
+
+        self.assertEqual(len(seen), 1)
+        self.assertEqual(seen[0][0], {"CNYRUBF@RTSX": 2})
+        self.assertFalse(seen[0][1]["enforce"])  # перекладка не выставляет STOP
+        self.assertTrue(any("расхождение CNY" in n for n in data["notes"]))
 
 
 class TestActiveContracts(unittest.TestCase):

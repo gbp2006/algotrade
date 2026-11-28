@@ -42,6 +42,7 @@ from algo.broker.live_guard import (  # noqa: E402
     reconcile_guard,
 )
 from algo import trade_journal as tj  # noqa: E402
+from algo.journal_positions import journal_positions as shared_journal_positions  # noqa: E402
 from algo.portfolio import exposure_of, size_contracts  # noqa: E402
 from algo.instance_configs import all_configs, live_settings_from_store  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS  # noqa: E402
@@ -104,35 +105,8 @@ def expiry_ok(day: date, sym: str, delta: int, trade_on_expiry: bool,
 
 
 def journal_positions(account: str) -> tuple[dict[str, int], int]:
-    """Позиции по своим отправленным заявкам + число неопределённых.
-
-    Это модель контура для сверки с брокером. `uncertain` — заявка могла уйти,
-    торговать до ручной сверки нельзя.
-    """
-    model: dict[str, int] = {}
-    uncertain = 0
-    if not LIVE.exists():
-        return model, uncertain
-    with LIVE.open(encoding="utf-8") as f:
-        for r in csv.DictReader(f):
-            if r.get("account") != account:
-                continue
-            status = r.get("status")
-            if status == "uncertain":
-                uncertain += 1
-            # after P2 sent-заявки становятся filled: они всё ещё должны входить
-            # в модель позиций, иначе следующая сверка поставит STOP_REAL.
-            if status not in ("sent", "filled", "partial") or not r.get("symbol"):
-                continue
-            qty = int(float(r.get("qty") or 0))
-            if status in ("filled", "partial"):
-                executed = tj.executed_qty(r.get("client_order_id") or "")
-                if executed:
-                    qty = executed
-            signed = qty if r.get("side") == "buy" else -qty
-            sym = r["symbol"]
-            model[sym] = model.get(sym, 0) + signed
-    return model, uncertain
+    """Модель позиций счёта по журналу раннера (общая с перекладкой)."""
+    return shared_journal_positions(account, LIVE)
 
 
 def broker_positions(broker, account: str) -> dict[str, int]:

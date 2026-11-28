@@ -47,3 +47,15 @@ undefined) — исправлено через `Boolean(...)` и `String(... ?? 
  warning в `health.json`; новый тест свежего/старого снимка в
 `tests/test_watchdog.py`; две строки в `docs/MODULES.md`, ADR и отметка в
 `PROGRESS.md`. Проверки: `./run.sh test` зелёный.
+
+### 13:20 — Найденная проблема №4 и правка
+`scripts/35_rollover_live.py:95` строил «модель» из ответа брокера и вызывал
+`reconcile_guard(..., enforce=False)`, результата сверки не читал — расхождения
+были невидимы. Вынес `journal_positions()` из `scripts/34_live_execute.py` в
+общий модуль `algo/journal_positions.py` (журнал заявок + исполнения из
+`trades.db`), сохранив в раннере тонкую обёртку с подменяемым `LIVE` для тестов.
+Перекладка теперь берёт модель из журнала, при неопределённых заявках пропускает
+счёт с причиной, а найденные расхождения пишет в `rollover_run.json`; STOP не
+выставляется как и раньше. ADR записан до правки. Тесты: новый модуль
+(`test_journal_positions.py`), проверка аргументов `reconcile_guard` в
+`test_rollover_live.py`, существующие тесты раннера зелёные; `./run.sh test` OK.

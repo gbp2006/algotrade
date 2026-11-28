@@ -35,6 +35,7 @@ from algo.broker.live_guard import (  # noqa: E402
 )
 from algo.instance_configs import live_settings_from_store  # noqa: E402
 from algo.instruments import INSTRUMENTS, active_contracts  # noqa: E402
+from algo.journal_positions import journal_positions  # noqa: E402
 from algo.live_config import SettingsError, load_settings  # noqa: E402
 from algo.rollover import is_perpetual, plan_roll, roll_decision  # noqa: E402
 from algo.rollover_integration import volumes_for  # noqa: E402
@@ -92,12 +93,20 @@ def main(argv: list[str] | None = None) -> int:
             acc = settings.accounts[acc_id]
             response = broker.account(acc_id)
             actual = positions_from_response(response.get("positions", response))
-            model = {s: q for s, q in actual.items() if q != 0}
+            # Модель — свои заявки из журнала, а не тот же ответ брокера:
+            # иначе сверка сравнивает брокера с самим собой и всегда пуста.
+            model, uncertain = journal_positions(acc_id, LIVE)
+            if uncertain:
+                notes.append(f"{acc_id}: {uncertain} неопределённых заявок — "
+                             "перекладка пропущена, нужна ручная сверка")
+                continue
             # Ролл — перекладка, а не новый бой: расхождение с брокером только
             # логируем, STOP не выставляем (режим репетиции контура).
             try:
-                reconcile_guard(broker, model, account=acc_id,
-                                stop=STOP_REAL, enforce=False)
+                issues = reconcile_guard(broker, model, account=acc_id,
+                                         stop=STOP_REAL, enforce=False)
+                if issues:
+                    notes.append(f"{acc_id}: сверка: {'; '.join(issues)}")
             except Exception as exc:  # noqa: BLE001 — информационно
                 notes.append(f"{acc_id}: сверка (информационно) "
                              f"{type(exc).__name__}: {exc}")
