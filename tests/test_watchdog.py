@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 import tempfile
 import unittest
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from unittest import mock
 
@@ -40,6 +41,7 @@ class TestWatchdog(unittest.TestCase):
             mock.patch.object(wd, "ROOT", self.dir),
             mock.patch.object(wd, "PAPER", self.paper),
             mock.patch.object(wd, "STOP", self.stop),
+            mock.patch.object(wd, "BACKUP_STATE", self.dir / "results" / "backup.json"),
             mock.patch.object(wd, "data_freshness", lambda: data_date),
             mock.patch.object(wd, "decision_configs",
                               lambda rows: list(wd.DECISION_CONFIGS)),
@@ -100,6 +102,26 @@ class TestWatchdog(unittest.TestCase):
             for p in reversed(patches):
                 p.stop()
         self.assertTrue(any("устарели" in w for w in res["warnings"]), res)
+
+    def test_backup_freshness_is_warning(self):
+        self._journal()
+        state = self.dir / "results" / "backup.json"
+        patches = self._patches()
+        for p in patches:
+            p.start()
+        try:
+            state.write_text(json.dumps({"at": datetime.now().isoformat(timespec="seconds")}),
+                             encoding="utf-8")
+            fresh = wd.check()
+            old = datetime.now() - timedelta(hours=48)
+            state.write_text(json.dumps({"at": old.isoformat(timespec="seconds")}),
+                             encoding="utf-8")
+            stale = wd.check()
+        finally:
+            for p in reversed(patches):
+                p.stop()
+        self.assertFalse(any("бэкапы: последний снимок" in w for w in fresh["warnings"]), fresh)
+        self.assertTrue(any("бэкапы: последний снимок" in w for w in stale["warnings"]), stale)
 
     def test_data_freshness_reads_live_csv(self):
         csv_text = "dt,open,high,low,close,vol\n2026-11-19 13:45:00,1,1,1,1,1\n2026-11-19 13:50:00,2,2,2,2,2\n"

@@ -38,3 +38,12 @@ STOP/STOP_REAL, сверка позиций, бэкапы, восстановл�
 Первая сборка упала на TS (`unknown` не является ReactNode и `data` может быть
 undefined) — исправлено через `Boolean(...)` и `String(... ?? '')`.
 Проверки: `./run.sh test` зелёный, `npm test` 16/16, `npm run build` OK.
+
+### 13:14 — Найденная проблема №3 и правка
+Аудит показал: `results/backup.json` только писался бэкапом, никто его не читал;
+таймера бэкапа не было в списке проверок watchdog, а модуль бэкапа отсутствовал
+в `docs/MODULES.md`. Сделано: в `scripts/40_watchdog.py` добавлены проверка
+`algotrading-backup.timer` и `backup_age_hours()` из `backup.json` (порог 36 ч),
+ warning в `health.json`; новый тест свежего/старого снимка в
+`tests/test_watchdog.py`; две строки в `docs/MODULES.md`, ADR и отметка в
+`PROGRESS.md`. Проверки: `./run.sh test` зелёный.

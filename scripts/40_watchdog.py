@@ -2,10 +2,10 @@
 
 Проверки (живой прототип: данные — котировки/API + кэш, архив нужен только для
 бэктестов, которые живут на проверяющем ПК, не здесь):
-  - таймеры и служба дашборда активны;
+  - таймеры (включая бэкап) и служба дашборда активны;
   - за последние торговые дни есть записи по всем конфигурациям-решениям;
   - нет дублей и записей из будущего;
-  - стоп-флаг.
+  - стоп-флаг, свежесть последнего бэкапа.
 """
 
 from __future__ import annotations
@@ -20,6 +20,8 @@ ROOT = Path(__file__).resolve().parent.parent
 PAPER = ROOT / "results" / "paper.csv"
 HEALTH = ROOT / "results" / "health.json"
 STOP = ROOT / "results" / "STOP"
+BACKUP_STATE = ROOT / "results" / "backup.json"
+BACKUP_MAX_AGE_HOURS = 36  # ежедневный бэкап в 03:00 + запас на один пропуск
 
 # Резервный список на случай недоступного store. Основной список берётся из
 # активных бумажных инстансов — иначе переименованный робот даёт ложный «нет решений».
@@ -37,9 +39,23 @@ def decision_configs(rows: list[dict]) -> list[str]:
         return list(DECISION_CONFIGS)
     seen = {r.get("config") for r in rows}
     return sorted(active & (seen | set(DECISION_CONFIGS)))
+
+
+def backup_age_hours(now: datetime | None = None) -> float | None:
+    """Возраст последнего бэкапа из backup.json; None — нет достоверных сведений."""
+    if not BACKUP_STATE.exists():
+        return None
+    try:
+        data = json.loads(BACKUP_STATE.read_text(encoding="utf-8"))
+        made = datetime.fromisoformat(str(data["at"])).replace(tzinfo=None)
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    return max(0.0, ((now or datetime.now()) - made).total_seconds() / 3600)
+
+
 TIMERS = ["algotrading-daily.timer", "algotrading-morning.timer",
           "algotrading-friday.timer", "algotrading-update-live.timer",
-          "algotrading-shadow.timer",
+          "algotrading-shadow.timer", "algotrading-backup.timer",
           "algotrading-web.service"]
 MAX_LOOKBACK = 5  # сколько последних торговых дней проверять
 
@@ -112,6 +128,12 @@ def check() -> dict:
 
     if STOP.exists():
         warnings.append("стоп-флаг установлен — торговля остановлена вручную")
+
+    backup_age = backup_age_hours(now)
+    if backup_age is None:
+        warnings.append("бэкапы: нет сведений о последнем снимке (results/backup.json)")
+    elif backup_age > BACKUP_MAX_AGE_HOURS:
+        warnings.append(f"бэкапы: последний снимок {backup_age:.0f} ч назад")
 
     # данные для свежести проверяем не здесь: живой контур — котировки/API + кэш,
     # архив нужен только для бэктестов, которые живут на проверяющем ПК.
