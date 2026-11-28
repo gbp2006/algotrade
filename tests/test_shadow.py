@@ -15,7 +15,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from algo.configs import BY_ID  # noqa: E402
+from tests.fixtures_configs import BY_ID  # noqa: E402
 
 _spec = importlib.util.spec_from_file_location("shadow", ROOT / "scripts" / "33_shadow_live.py")
 shadow = importlib.util.module_from_spec(_spec)

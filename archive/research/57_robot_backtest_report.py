@@ -1,6 +1,6 @@
 """Сводный бэктест трёх новых роботов: train 2023–25 → OOS 2026.
 
-Проверка, что каждый робот из `algo/robot_configs.py` действительно даёт
+Проверка, что каждый робот из `tests/fixtures_configs.py` действительно даёт
 ожидаемые цифры и что ATR-резка сайза ухудшает/улучшает результат на OOS.
 """
 
@@ -17,7 +17,7 @@ from pathlib import Path
 
 from algo import engine, results  # noqa: E402
 from algo.data import DATA_ROOT, load_cached, load_txt  # noqa: E402
-from algo.robot_configs import ROBOT_CONFIGS  # noqa: E402
+from tests.fixtures_configs import ROBOT_FIXTURES as ROBOT_CONFIGS  # noqa: E402
 from algo.strategies import prostushka, universal  # noqa: E402
 
 pd.set_option("display.width", 200)

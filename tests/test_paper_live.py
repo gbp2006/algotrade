@@ -17,7 +17,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from algo.configs import BY_ID  # noqa: E402
+from tests.fixtures_configs import BY_ID  # noqa: E402
 
 _spec = importlib.util.spec_from_file_location("paper_live", ROOT / "scripts" / "31_paper_live.py")
 pl = importlib.util.module_from_spec(_spec)
@@ -71,10 +71,7 @@ class TestPaperPhases(unittest.TestCase):
 
     def _configs(self, *ids):
         cfgs = [BY_ID[i] for i in ids]
-        p = mock.patch.object(pl, "CONFIGS", cfgs)
-        p.start()
-        self.addCleanup(p.stop)
-        # контур берёт ALL_CONFIGS, посчитанный на импорте, — подменяем и его,
+        # контур берёт ALL_CONFIGS, посчитанный на импорте, — подменяем его,
         # иначе в тест попадают все роботы и каждый ненайденный сигнал ждёт 4×30 с
         p2 = mock.patch.object(pl, "ALL_CONFIGS", cfgs)
         p2.start()

@@ -30,10 +30,10 @@ load_dotenv(ROOT / ".env")
 sys.path.insert(0, str(ROOT))
 
 from algo import engine, results  # noqa: E402
-from algo.configs import CONFIGS  # noqa: E402
+from tests.fixtures_configs import BASE_CONFIGS as CONFIGS  # noqa: E402
 from algo.data import load_cached  # noqa: E402
 from algo.portfolio import CAPITAL, EXPOSURE, size_contracts  # noqa: E402
-from algo.robot_configs import ROBOT_CONFIGS  # noqa: E402
+from tests.fixtures_configs import ROBOT_FIXTURES as ROBOT_CONFIGS  # noqa: E402
 from algo.strategies import candidates as C  # noqa: E402
 from algo.strategies import channel_break, prostushka, universal  # noqa: E402
 

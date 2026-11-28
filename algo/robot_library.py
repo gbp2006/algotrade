@@ -1,16 +1,14 @@
-"""Библиотека типов роботов (spec-ов). Неизменяемые описания из кода.
+"""Библиотека типов роботов: SPEC с дефолтами, схемой и инструментами.
 
-Инстанс со своим набором параметров создаётся из spec через `robot_store`;
-здесь же параметры проверяются до записи.
+Значения зафиксированы 28.11 в этом файле: раньше они выводились из статических
+`CONFIGS`/`ROBOT_CONFIGS`, теперь источник параметров — `RobotStore`, а SPEC —
+явный контракт типа робота для мастера и валидации.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any
-
-from .configs import CONFIGS
-from .robot_configs import ROBOT_CONFIGS
 
 
 @dataclass(frozen=True)
@@ -21,7 +19,7 @@ class RobotSpec:
     schema: dict[str, str] = field(default_factory=dict)
     instruments: tuple[str, ...] = ()
     description: str = ""
-    source: str = ""           # base / robot
+    source: str = ""           # base / robot / service
     examples: tuple[str, ...] = ()
 
 
@@ -35,72 +33,75 @@ def _type_name(value: Any) -> str:
     return "str"
 
 
-def _build() -> dict[str, RobotSpec]:
-    grouped: dict[str, list] = {}
-    for cfg in CONFIGS:
-        grouped.setdefault(cfg.strategy, []).append((cfg, "base"))
-    for cfg in ROBOT_CONFIGS:
-        grouped.setdefault(cfg.strategy, []).append((cfg, "robot"))
-
-    specs: dict[str, RobotSpec] = {}
-    for strategy, items in grouped.items():
-        first, source = items[0]
-        defaults = dict(first.params)
-        schema = {k: _type_name(v) for k, v in defaults.items()}
-        # spec описывает ВСЕ параметры стратегии, а не только первого конфига:
-        # иначе p-h1 с timeframe=60 не пройдёт валидацию при переносе в store
-        for cfg, _ in items[1:]:
-            for key, value in cfg.params.items():
-                defaults.setdefault(key, value)
-                schema[key] = _type_name(value)
-        specs[strategy] = RobotSpec(
-            id=strategy,
-            strategy=strategy,
-            defaults=defaults,
-            schema=schema,
-            instruments=tuple(sorted({cfg.instrument for cfg, _ in items})),
-            description=first.comment or first.display,
-            source=source,
-            examples=tuple(cfg.id for cfg, _ in items[:5]),
-        )
-    # Денежный рынок — сервисный робот, не производная от CONFIGS.
-    # Раннер появится отдельным ADR; spec нужен, чтобы создать инстанс из панели.
-    mm_defaults = {
-        "regime": "TwiceADay",          # Off / TwiceADay / OnceADay / OnlyClose
-        "symbol": "FMMM@MISX",
-        "min_balance": 5000.0,          # как у OsEngine TmonRebalancer
-        "allowed_spread_pct": 0.01,     # фильтр спреда, %
-        "time_buy": "23:00",
-        "time_sell": "10:05",
-        "trade_mon": True, "trade_tue": True, "trade_wed": True,
-        "trade_thu": True, "trade_fri": True,
-        "trade_sat": False, "trade_sun": False,
-        "reserve_pct": 0.2,
-        "reserve_abs": 20000.0,
-        "min_trade": 5000.0,
-        "max_units": 100000,
-        # Лимиты фонда задаёт пользователь в карточке робота (не счёта):
-        # паи считаются штуками, а не фьючерсными контрактами (ADR 26.11).
-        "max_qty": 100000,
-        "max_exposure": 1.0,
-        # Паи фонда котируются реже фьючерсов: жёсткие 60 с блокируют ребаланс
-        # вечером, когда сделок по фонду нет. Значение задаёт пользователь.
-        "max_quote_age_sec": 3600,
-        "pricing": "marketable",
-    }
-    specs["money_market"] = RobotSpec(
-        id="money_market", strategy="money_market",
-        defaults=mm_defaults,
-        schema={k: _type_name(v) for k, v in mm_defaults.items()},
-        instruments=("CASH",),
-        description="Парковка свободных средств в фонд денежного рынка (FMMM); "
-                    "пополнение кэша перед торгами, обратная покупка после",
-        source="service",
-    )
-    return specs
+def _spec(spec_id: str, defaults: dict, instruments: tuple[str, ...],
+          description: str, source: str, examples: tuple[str, ...]) -> RobotSpec:
+    return RobotSpec(
+        id=spec_id, strategy=spec_id, defaults=defaults,
+        schema={k: _type_name(v) for k, v in defaults.items()},
+        instruments=instruments, description=description,
+        source=source, examples=examples)
 
 
-SPECS = _build()
+SPECS: dict[str, RobotSpec] = {
+    "prostushka": _spec(
+        "prostushka",
+        {"ma_window": 200, "entry": "13:50", "filter_bars": 3,
+         "short_friday": False, "timeframe": 60, "close_friday": True},
+        ("CNY", "GOLD", "RTS"),
+        "как в ТЗ: MA40 M5, 13:50, фильтр 15 мин", "base",
+        ("p-base", "p-fast", "p-h1", "p-friday", "p-rts")),
+    "universal": _spec(
+        "universal",
+        {"ref": "10:05", "entry": "13:30", "long_off": 0.004,
+         "short_off": 0.002, "hold": "daily", "short_friday": False,
+         "exit": "10:20"},
+        ("CNY",),
+        "как в ТЗ: пороги 0.4/0.2%, суточное удержание", "base",
+        ("u-base", "u-wide", "u-morning", "u-1340")),
+    "channel_break": _spec(
+        "channel_break",
+        {"start": "01:00", "switch": "13:00", "mode": "day",
+         "direction": "long", "sl": 0.12, "boundary": "first_bar",
+         "tick": 0.001},
+        ("CNY", "Si"),
+        "пробой дневного канала 09:00→13:00, вход после пробоя HH, выход в 09:00; "
+        "CNY train PF 2.07 / OOS 2.17, Si 1.44 / 2.06, BR 1.32 OOS, GOLD 1.13, "
+        "RTS 1.04; контроль «просто лонг» убыточен — край есть",
+        "robot", ("cb-day", "cb-day-si")),
+    "donchian": _spec(
+        "donchian",
+        {"entry": 20, "exit": 10, "entry_time": "13:55", "allow_short": True},
+        ("CNY", "Si"),
+        "диверсификатор: Donchian HH20/LL20 → выход LL10/HH10; корр 0.16 с базой, "
+        "+6.65% в её худшие годы (36% плюса); OOS 2026 CNY PF 1.91 против 1.53 у базы; "
+        "200% номинала, DD ~17% счёта",
+        "robot", ("d20-cn", "d20-si")),
+    "money_market": _spec(
+        "money_market",
+        {"regime": "TwiceADay",          # Off / TwiceADay / OnceADay / OnlyClose
+         "symbol": "FMMM@MISX",
+         "min_balance": 5000.0,          # как у OsEngine TmonRebalancer
+         "allowed_spread_pct": 0.01,     # фильтр спреда, %
+         "time_buy": "23:00",
+         "time_sell": "10:05",
+         "trade_mon": True, "trade_tue": True, "trade_wed": True,
+         "trade_thu": True, "trade_fri": True,
+         "trade_sat": False, "trade_sun": False,
+         "reserve_pct": 0.2,
+         "reserve_abs": 20000.0,
+         "min_trade": 5000.0,
+         "max_units": 100000,
+         # Лимиты фонда задаёт пользователь в карточке робота, не счёта (ADR 26.11).
+         "max_qty": 100000,
+         "max_exposure": 1.0,
+         # Паи котируются реже фьючерсов (ADR 26.11).
+         "max_quote_age_sec": 3600,
+         "pricing": "marketable"},
+        ("CASH",),
+        "Парковка свободных средств в фонд денежного рынка (FMMM); "
+        "пополнение кэша перед торгами, обратная покупка после",
+        "service", ()),
+}
 
 
 def list_specs() -> list[RobotSpec]:

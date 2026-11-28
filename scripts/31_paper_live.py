@@ -30,8 +30,7 @@ except Exception:
 from algo import store  # noqa: E402
 from algo.channel_live import channel_decision  # noqa: E402
 from algo.broker.finam import FinamBroker  # noqa: E402
-from algo.configs import CONFIGS, Config  # noqa: E402 (CONFIGS оставлен для тестовых подмен)
-from algo.robot_configs import ROBOT_CONFIGS  # noqa: E402 (для тестовых подмен)
+from algo.configs import Config  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS, margin, symbol  # noqa: E402
 from algo.live import decision, decision_configs, morning_exit_price  # noqa: E402
 from algo.portfolio import CAPITAL, exposure_of, ledger, size_contracts  # noqa: E402

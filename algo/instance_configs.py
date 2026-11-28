@@ -1,10 +1,9 @@
 """Мост между store и раннерами: активные инстансы → объекты Config.
 
-Перенос делает старые статические конфиги инстансами с теми же id и параметрами —
-бумажный тест не меняется, но роботами можно управлять из панели. При отсутствии
-БД или пустом контуре `active_configs()` возвращает пустой список: торговать по
-встроенным конфигам нельзя (ADR 28.11). Статика остаётся только как seed и как
-история параметров до первой версии в `configs_at()`.
+Источник правды — `RobotStore`: инстансы, версии параметров и runtime. При
+отсутствии БД или пустом контуре `active_configs()` возвращает пустой список:
+торговать по встроенным конфигам нельзя (ADR 28.11). Статические реестры
+удалены; `configs_at()` берёт параметры только из `param_versions`.
 """
 
 from __future__ import annotations
@@ -15,18 +14,16 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable
 
-from .configs import CONFIGS, Config
+from .configs import Config
 from .broker.live_guard import parse_pricing
 from .instruments import DEFAULT, INSTRUMENTS
 from .live_config import AccountSettings, LiveSettings, RobotSettings
 from .portfolio import CAPITAL, ledger
-from .robot_configs import ROBOT_CONFIGS
 from .robot_library import get_spec
 from .robot_store import RobotStore
 
 ROOT = Path(__file__).resolve().parent.parent
 PAPER = ROOT / "results" / "paper.csv"
-STATIC = list(CONFIGS) + list(ROBOT_CONFIGS)
 MSK = timezone(timedelta(hours=3))
 
 
@@ -47,40 +44,6 @@ def _msk_naive(value: str) -> str:
     except ValueError:
         pass
     return s
-
-
-def seed_static_configs(store: RobotStore | None = None) -> int:
-    """Создать в store недостающие инстансы из статического реестра.
-
-    Идемпотентно: существующие инстансы (в том числе изменённые пользователем)
-    не перезаписываются. Архивные остаются архивными.
-    """
-    st = store or RobotStore()
-    st.init_db()
-    added = 0
-    for cfg in STATIC:
-        if st.get_instance(cfg.id) is not None:
-            # старые переносы получили одинаковую заглушку вместо описания
-            # конфига; пользовательские примечания не перезаписываем
-            if cfg.comment:
-                with st._conn() as c:
-                    c.execute("UPDATE instances SET note=? WHERE id=? AND note=?",
-                              (cfg.comment, cfg.id,
-                               "перенос из статического реестра"))
-            continue
-        st.create_instance({
-            "id": cfg.id,
-            "spec_id": cfg.strategy,
-            "instrument": cfg.instrument,
-            "params": dict(cfg.params),
-            "mode": "paper",
-            "status": "active",
-            "capital": cfg.capital,
-            "exposure": cfg.exposure,
-            "note": cfg.comment or "перенос из статического реестра",
-        }, actor="seed")
-        added += 1
-    return added
 
 
 def _display(inst: dict) -> str:
@@ -118,15 +81,23 @@ def active_configs(mode: str = "paper",
     return [_to_config(r) for r in rows if r["status"] == "active"]
 
 
+def all_configs(store: RobotStore | None = None) -> list[Config]:
+    """Все инстансы store в виде Config — для legacy API и отчётов."""
+    st = store or RobotStore()
+    try:
+        return [_to_config(r) for r in st.list_instances()]
+    except Exception:  # noqa: BLE001 — нет БД → нет конфигураций
+        return []
+
+
 def configs_at(day, mode: str = "paper", store: RobotStore | None = None,
                at: str = "") -> list[Config]:
     """Конфиги, действовавшие на дату `day` (опционально — до времени `at`).
 
     Параметры берутся из последней версии `param_versions`, созданной не позже
-    этой даты; до первой версии инстанса используется статический реестр —
-    именно он и работал в бумаге до переноса в store. Без этого отчёт
-    «факт/ожидание» пересчитывает весь период по сегодняшним параметрам и
-    показывает ложные расхождения после правки робота из панели.
+    этой даты; до первой версии — из текущих параметров инстанса. Без версий
+    отчёт пересчитывал бы весь период по сегодняшним параметрам и показывал
+    ложные расхождения после правки робота из панели.
     """
     st = store or RobotStore()
     try:
@@ -148,11 +119,8 @@ def configs_at(day, mode: str = "paper", store: RobotStore | None = None,
         if applicable:
             params = json.loads(applicable[-1]["params_json"])
         else:
-            static = next((c for c in STATIC if c.id == inst["id"]), None)
-            params = dict(static.params) if static else dict(inst["params"])
+            params = dict(inst["params"])
         out.append(_to_config({**inst, "params": params}))
-    if not out and mode == "paper":
-        return list(STATIC)
     return out
 
 

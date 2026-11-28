@@ -29,7 +29,7 @@ from algo import (account_poller, backtest_preview,
 from algo.broker import position_ops as pos, registry
 from algo.broker.finam import FinamBroker
 from algo.broker.secrets import resolve_secret
-from algo.instance_configs import migrate_runtime_from_paper, seed_static_configs
+from algo.instance_configs import migrate_runtime_from_paper
 from algo.robot_store import ConflictError, RobotStore, StoreError
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -45,7 +45,6 @@ LIVE_RUN_LOCK = ROOT / "results" / "live_run.lock"
 router = APIRouter(prefix="/api", tags=["instances"])
 _default_store = RobotStore()
 _default_store.init_db()   # идемпотентно; без этого /api/instances падал на пустой БД
-seed_static_configs(_default_store)  # статические конфиги становятся управляемыми инстансами
 try:
     migrate_runtime_from_paper(_default_store)  # позиции запущенных роботов из paper.csv
 except Exception:  # noqa: BLE001 — журнал остаётся главным источником, панель должна подняться

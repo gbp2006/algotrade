@@ -64,8 +64,8 @@ import sys  # noqa: E402
 
 sys.path.insert(0, str(ROOT))
 from algo.broker.finam import FinamBroker  # noqa: E402
-from algo.configs import BY_ID, CONFIGS  # noqa: E402
-from algo.robot_configs import ROBOT_BY_ID, ROBOT_CONFIGS  # noqa: E402
+from algo.configs import Config  # noqa: E402
+from algo.instance_configs import active_configs  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS, margin, symbol as inst_symbol  # noqa: E402
 from algo.portfolio import (CAPITAL, account_card, drawdown_stats,  # noqa: E402
                             exposure_of, ledger)
@@ -259,17 +259,30 @@ def quote_for(inst, day=None) -> dict:
     return _cached(f"quote:{sym}", 15, fetch, stale=True)
 
 
-ALL_CONFIGS = CONFIGS + ROBOT_CONFIGS
-ALL_BY_ID = {**BY_ID, **ROBOT_BY_ID}
+def _configs():
+    """Legacy-эндпоинты читают активные инстансы store, а не статический реестр."""
+    try:
+        return active_configs("paper")
+    except Exception:  # noqa: BLE001 — БД недоступна: конфигураций нет
+        return []
+
+
+def _by_id():
+    return {c.id: c for c in _configs()}
+
+
+def _default_cfg():
+    cfgs = _configs()
+    return cfgs[0] if cfgs else Config("default", "prostushka", instrument="CNY")
 
 
 def quote(config_id: str | None = None) -> dict:
-    cfg = ALL_BY_ID.get(config_id) if config_id else ALL_CONFIGS[0]
-    return quote_for(instrument_of(cfg or ALL_CONFIGS[0]))
+    cfg = _by_id().get(config_id) if config_id else _default_cfg()
+    return quote_for(instrument_of(cfg or _default_cfg()))
 
 
 def price_series(inst=None) -> list[list]:
-    inst = inst or instrument_of(CONFIGS[0])
+    inst = inst or instrument_of(_default_cfg())
 
     def fetch():
         b = FinamBroker()
@@ -291,8 +304,8 @@ TF_MAP = {
 
 def candles(tf: str = "M5", days: int = 2, config_id: str | None = None) -> list[list]:
     """Свечи [метка, open, high, low, close] по таймфрейму."""
-    cfg = ALL_BY_ID.get(config_id) if config_id else ALL_CONFIGS[0]
-    inst = instrument_of(cfg or ALL_CONFIGS[0])
+    cfg = _by_id().get(config_id) if config_id else _default_cfg()
+    inst = instrument_of(cfg or _default_cfg())
 
     def fetch():
         now = datetime.now(timezone.utc)
@@ -424,7 +437,7 @@ def state():
     price = q.get("last") if q and "last" in q else None
     snap = {r["config"]: r for r in metrics_store.latest()}
     strategies = []
-    for cfg in ALL_CONFIGS:
+    for cfg in _configs():
         try:
             qc = quote_for(instrument_of(cfg))
             px_c = qc.get("last")
@@ -479,7 +492,7 @@ def state():
 
 def config_detail(cfg_id: str) -> dict:
     """Сделки, эквити и сравнение с бэктестом по одной конфигурации."""
-    cfg = ALL_BY_ID.get(cfg_id)
+    cfg = _by_id().get(cfg_id)
     if cfg is None:
         raise HTTPException(status_code=404, detail="нет такой конфигурации")
     rows = [r for r in read_paper() if r["config"] == cfg_id]
@@ -575,7 +588,7 @@ def api_metrics(config: str | None = None):
 @app.get("/api/trades")
 def api_trades(config: str | None = None):
     """Сделки для mark-ов на графике (вход/выход/открытая позиция)."""
-    cfg = ALL_BY_ID.get(config) if config else ALL_CONFIGS[0]
+    cfg = _by_id().get(config) if config else _default_cfg()
     if cfg is None:
         return JSONResponse({"error": "нет конфигурации"})
     rows = [r for r in read_paper() if r["config"] == cfg.id]

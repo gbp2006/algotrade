@@ -41,19 +41,16 @@ from algo.broker.live_guard import (  # noqa: E402
 )
 from algo import trade_journal as tj  # noqa: E402
 from algo.portfolio import exposure_of, size_contracts  # noqa: E402
-from algo.configs import CONFIGS  # noqa: E402
-from algo.instance_configs import live_settings_from_store  # noqa: E402
+from algo.instance_configs import all_configs, live_settings_from_store  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS  # noqa: E402
 from algo.live_config import SettingsError, load_settings  # noqa: E402
 from algo.live_signal import collect as collect_signals  # noqa: E402
-from algo.robot_configs import ROBOT_CONFIGS  # noqa: E402
 from algo.robot_store import RobotStore  # noqa: E402
 
 PAPER = ROOT / "results" / "paper.csv"
 LIVE = ROOT / "results" / "live.csv"
 STOP = ROOT / "results" / "STOP"
 SUMMARY = ROOT / "results" / "live_run.json"
-BY_ID = {c.id: c for c in CONFIGS + ROBOT_CONFIGS}
 MSK = timezone(timedelta(hours=3))
 
 
@@ -68,10 +65,11 @@ def read_paper(day: date) -> list[dict]:
 def plan_targets(rows: list[dict], settings, day: date) -> dict:
     """Целевые позиции по счёту и символу. Одна строка на пару (счёт, символ)."""
     plans: dict[str, dict[str, dict]] = {}
+    by_id = {c.id: c for c in all_configs()}
     for cfg_id, rs in settings.robots.items():
         # живой инстанс может повторять решение бумажного конфига с другим id
         src = rs.source_config or cfg_id
-        cfg = BY_ID.get(src)
+        cfg = by_id.get(src)
         exposure = exposure_of(cfg) if cfg is not None else rs.exposure
         if not exposure:
             print(f"ВНИМАНИЕ: {src} нет в реестре и экспозиция не задана — пропущен")

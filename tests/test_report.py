@@ -13,6 +13,8 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from tests.fixtures_configs import BY_ID  # noqa: E402
+
 _spec = importlib.util.spec_from_file_location("paper_report", ROOT / "scripts" / "32_paper_report.py")
 report = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(report)
@@ -65,7 +67,7 @@ class TestJournalSummary(unittest.TestCase):
                     w.writerow({"date": day, "time": "13:50", "config": "p-base",
                                 "action": "решение", "price": price, "target": target})
             with mock.patch.object(report, "PAPER", path), \
-                 mock.patch.object(report, "active_configs", return_value=[]):
+                 mock.patch.object(report, "active_configs", return_value=[BY_ID["p-base"]]):
                 rows, start, end = report.build_rows()
         self.assertEqual((start, end), ("2026-11-28", "2026-11-29"))
         row = next(r for r in rows if r["config"] == "p-base")

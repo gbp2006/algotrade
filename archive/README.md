@@ -17,5 +17,7 @@
 ```
 
 Скрипты читают данные из `data/` через `algo.data`, пишут сводки в `reports/`
-и строки в `results/runs.csv`. Деплой-whitelist (`scripts/*.py`) архив не
-включает — на WSL эти файлы не выкладываются.
+и строки в `results/runs.csv`. Исторические конфигурации, нужные двум отчётам,
+лежат в `tests/fixtures_configs.py` (CONFIGS/ROBOT_FIXTURES) — рабочий контур их
+не использует. Деплой-whitelist (`scripts/*.py`) архив не включает — на WSL
+эти файлы не выкладываются.

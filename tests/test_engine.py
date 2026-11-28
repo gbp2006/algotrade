@@ -103,7 +103,7 @@ class TestLiveH1(unittest.TestCase):
                              "close": close, "vol": 1.0}, index=idx)
 
     def test_h1_uses_last_closed_bar(self):
-        from algo.configs import BY_ID
+        from tests.fixtures_configs import BY_ID
         from algo.live import decision
 
         m5 = self._m5()
@@ -113,7 +113,7 @@ class TestLiveH1(unittest.TestCase):
 
     def test_u_morning_enters(self):
         """hold="morning" решает в фазе решений; раньше её пропускали и она не торговала."""
-        from algo.configs import BY_ID, CONFIGS
+        from tests.fixtures_configs import BY_ID, CONFIGS
         from algo.live import decision, decision_configs
 
         self.assertIn("u-morning", [c.id for c in decision_configs(CONFIGS)])
@@ -123,7 +123,7 @@ class TestLiveH1(unittest.TestCase):
 
     def test_risk_sizing_rts_gold(self):
         """Потолок экспозиции от DD: RTS 60%, золото 70%, минимальный лот 1."""
-        from algo.configs import BY_ID
+        from tests.fixtures_configs import BY_ID
         from algo.portfolio import exposure_of, size_contracts
 
         rts, gold = BY_ID["p-rts"], BY_ID["p-gold"]
@@ -133,7 +133,7 @@ class TestLiveH1(unittest.TestCase):
         self.assertEqual(size_contracts(450_000, 3778.3, 82.2281, exposure_of(gold)), 1)
 
     def test_m5_uses_entry_bar(self):
-        from algo.configs import BY_ID
+        from tests.fixtures_configs import BY_ID
         from algo.live import decision
 
         m5 = self._m5()

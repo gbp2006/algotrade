@@ -11,7 +11,7 @@
 |---|---|---|---|---|
 | `engine.py` | Бэктест-движок | OHLCV + конфиг → сделки/équity; модель close→open | `data.py`, config | `test_engine.py` |
 | `data.py` | Чтение баров | txt/cache → DataFrame; копирование данных запрещено | pandas | `test_store.py` |
-| `configs.py`, `robot_configs.py` | Статические реестры конфигураций | код → параметры стратегий | — | `test_engine.py`, `test_robot_store_storage.py` |
+| `configs.py` | DTO `Config` (без реестра) | раннеры/тесты → тип конфигурации; источник параметров — `RobotStore`, фикстуры тестов — `tests/fixtures_configs.py` | — | `test_engine.py`, `test_robot_store_storage.py` |
 | `strategies/*.py` | Сигналы | бар → `ENTER_LONG/SHORT/EXIT/HOLD`; **только сигналы**, не знают про деньги | — | `test_engine.py`, `test_donchian_live.py` |
 | `author.py`, `mvp.py`, `live.py`, `channel_live.py` | Дневная логика решений | цены/канал → написание `paper.csv` | `configs`, `portfolio` | `test_paper_live.py`, `test_live_execution.py` |
 | `portfolio.py` | **Единственный расчёт лотности** | `equity, price, mult, exposure` → `int`; 0 при битых данных; `ledger()`, `account_card()`, `drawdown_stats()` | stdlib | `test_portfolio_metrics.py`, ADR 24.11 |
@@ -24,9 +24,9 @@
 | `metrics_store.py`, `results.py` | История метрик и журнал прогонов | метрики → `paper_metrics.db`, `results/runs.csv` | sqlite3 | `test_metrics_store.py` |
 | `scheduler.py` | Планировщик заданий роботов; режимы `off`/`robots`/`all` через `ALGO_SCHEDULER_MODE`; системные задания не создаются, старые удаляются при старте | `jobs` → запуски в `robots.db`; исполняются только `inst:*`, чужие системные задания — `SKIP-SYSTEM`/`log_only` | `robot_store` | `test_scheduler.py` |
 | `scripts/33_shadow_live.py` | Теневой прогон G3: только `planned`-журнал | `paper.csv` → `shadow.json` (counts/issues); ошибка API сверки пишется в `reconcile_error`, не в `issues` | `broker`, `portfolio` | `test_shadow.py` |
-| `scripts/32_paper_report.py` | Отчёт по бумажному журналу | `paper.csv` → строки метрик по конфигурации + снимок в `paper_metrics.db`; сравнения с ожиданием и robot_compare нет | `configs`, `robot_configs`, `metrics_store` | `test_report.py` |
+| `scripts/32_paper_report.py` | Отчёт по бумажному журналу | `paper.csv` → строки метрик по активным инстансам store + снимок в `paper_metrics.db`; сравнения с ожиданием и robot_compare нет | `instance_configs`, `metrics_store` | `test_report.py` |
 | `scripts/40_watchdog.py` | Сторож живости контура | `paper.csv`, systemd, STOP, `market.db` → `results/health.json`; проверки tracking error удалены (ADR 28.11) | systemd, `algo.store` | `test_watchdog.py` |
-| `strategy_descriptions.py`, `robot_library.py` | Единые описания/схемы стратегий | id → name/description/defaults/schema | `strategies` | `test_instance_configs.py` |
+| `strategy_descriptions.py`, `robot_library.py` | Единые описания/схемы стратегий | id → name/description/defaults/schema; SPEC зафиксированы в коде (не выводятся из реестра) | `strategies` | `test_instance_configs.py` |
 | `instruments.py`, `instruments_catalog.py`, `iss.py` | Справочник инструментов и MOEX ISS | symbol → mult/tick digits; каталог (~595k) | requests | `test_instruments_catalog.py` |
 | `rollover.py`, `rollover_integration.py` | Перекладка контрактов | roll → planned-заявки; не включены по умолчанию | `broker`, `portfolio` | `test_rollover*.py` |
 

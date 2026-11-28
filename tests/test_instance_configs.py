@@ -1,4 +1,4 @@
-"""Тесты моста store ↔ раннеры: seed, активные инстансы, миграция состояния."""
+"""Тесты моста store ↔ раннеры: активные инстансы, версии, миграция состояния."""
 
 from __future__ import annotations
 
@@ -24,15 +24,28 @@ class TestInstanceConfigs(unittest.TestCase):
         self.db = RobotStore(Path(self.tmp.name) / "robots.db")
         self.db.init_db()
 
-    def test_seed_idempotent(self):
-        first = ic.seed_static_configs(self.db)
-        second = ic.seed_static_configs(self.db)
-        self.assertGreater(first, 0)
-        self.assertEqual(second, 0)
-        self.assertEqual(len(self.db.list_instances(mode="paper")), first)
+    def _seed(self):
+        """Два бумажных инстанса вместо удалённого статического seed."""
+        for cid, spec_id, params in (
+            ("p-base", "prostushka", {"ma_window": 200, "entry": "13:50",
+                                      "filter_bars": 3, "short_friday": False}),
+            ("u-base", "universal", {"ref": "10:05", "entry": "13:30",
+                                     "long_off": 0.004, "short_off": 0.002,
+                                     "hold": "daily", "short_friday": False}),
+        ):
+            self.db.create_instance({
+                "id": cid, "spec_id": spec_id, "instrument": "CNY",
+                "params": params, "mode": "paper", "status": "active",
+            }, actor="test")
+
+    def test_instances_are_the_source_of_truth(self):
+        self._seed()
+        self.assertEqual(len(self.db.list_instances(mode="paper")), 2)
+        self.assertEqual([c.id for c in ic.active_configs("paper", self.db)],
+                         ["p-base", "u-base"])
 
     def test_active_respects_status(self):
-        ic.seed_static_configs(self.db)
+        self._seed()
         all_active = ic.active_configs("paper", self.db)
         self.assertGreater(len(all_active), 0)
         self.db.set_status("p-base", "paused")
@@ -46,7 +59,7 @@ class TestInstanceConfigs(unittest.TestCase):
         self.assertEqual(ic.active_configs("live", empty), [])
 
     def test_migrate_runtime(self):
-        ic.seed_static_configs(self.db)
+        self._seed()
         paper = Path(self.tmp.name) / "paper.csv"
         row = ("2026-11-23,13:50,p-base,CNY,CNYRUBF@RTSX,prostushka,"
                "12.300,1,32,32,200000,решение,32,тест")
@@ -59,17 +72,20 @@ class TestInstanceConfigs(unittest.TestCase):
         self.assertIn("2026-11-23", st["last_decision"])
 
     def test_configs_at_uses_param_versions(self):
-        ic.seed_static_configs(self.db)
-        before = {c.id: c for c in ic.configs_at("2026-11-22", store=self.db)}
-        self.assertNotIn("timeframe", before["p-base"].params)
-        self.db.update_instance(
-            "p-base", {"params": dict(before["p-base"].params, timeframe=60)}, 1,
-            reason="H1", actor="test")
-        self.db.set_status("p-base", "active")
+        self._seed()
+        early = {"ma_window": 200, "entry": "13:50", "filter_bars": 3,
+                 "short_friday": False}
         with self.db._conn() as c:
             c.execute("UPDATE param_versions SET created_at=?, params_json=? "
                       "WHERE instance_id='p-base' AND version=1",
-                      ("2026-11-19T13:00:00", json.dumps(before["p-base"].params)))
+                      ("2026-11-19T13:00:00", json.dumps(early)))
+        before = {c.id: c for c in ic.configs_at("2026-11-22", store=self.db)}
+        self.assertNotIn("timeframe", before["p-base"].params)
+        self.db.update_instance(
+            "p-base", {"params": dict(early, timeframe=60)}, 1,
+            reason="H1", actor="test")
+        self.db.set_status("p-base", "active")
+        with self.db._conn() as c:
             c.execute("UPDATE param_versions SET created_at=? "
                       "WHERE instance_id='p-base' AND version=2",
                       ("2026-11-23T19:30:24",))

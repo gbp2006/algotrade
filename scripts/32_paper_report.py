@@ -24,8 +24,6 @@ try:
 except ImportError:
     pass
 
-from algo.configs import CONFIGS  # noqa: E402
-from algo.robot_configs import ROBOT_CONFIGS  # noqa: E402
 from algo import metrics_store  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS  # noqa: E402
 from algo.instance_configs import active_configs  # noqa: E402
@@ -127,11 +125,10 @@ def build_rows() -> tuple[list[dict], str, str]:
 
     start, end = rows[0]["date"], rows[-1]["date"]
     out: list[dict] = []
-    cfgs = {c.id: c for c in CONFIGS + ROBOT_CONFIGS}
     try:
-        cfgs.update({c.id: c for c in active_configs("paper")})
-    except Exception:  # noqa: BLE001 — без БД остаётся статический реестр
-        pass
+        cfgs = {c.id: c for c in active_configs("paper")}
+    except Exception:  # noqa: BLE001 — без БД отчёт пустой
+        cfgs = {}
     for cfg in cfgs.values():
         mine = [r for r in rows if r["config"] == cfg.id]
         if not mine:
