@@ -1,4 +1,4 @@
-"""Теневой прогон G3: плановые заявки по решениям бумажного контура.
+"""Теневой прогон: плановые заявки по решениям бумажного контура.
 
 Работает после `paper-live`, берёт уже принятые решения из `results/paper.csv`
 и прогоняет их через `OrderGateway(dry_run=True)` — заявки НЕ отправляются.
@@ -114,7 +114,7 @@ def main(day: date | None = None) -> int:
         issues = reconcile(expected, actual)
     except Exception as exc:  # noqa: BLE001 — сверка не обязательна для репетиции
         # Недоступность API — не расхождение позиций: иначе transient 404
-        # засоряет метрику G3 и выглядит как реальная ошибка робота.
+        # засоряет метрику репетиции и выглядит как реальная ошибка робота.
         reconcile_error = str(exc)[:200]
 
     counts: dict[str, int] = {}
@@ -133,7 +133,7 @@ def main(day: date | None = None) -> int:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Теневой прогон G3")
+    parser = argparse.ArgumentParser(description="Теневой прогон")
     parser.add_argument("--day", help="YYYY-MM-DD, по умолчанию сегодня в МСК")
     args = parser.parse_args()
     raise SystemExit(main(date.fromisoformat(args.day) if args.day else None))

@@ -1,4 +1,4 @@
-"""Тесты теневого прогона G3: заявки планируются, но не отправляются."""
+"""Тесты теневого прогона: заявки планируются, но не отправляются."""
 
 from __future__ import annotations
 
@@ -83,7 +83,7 @@ class TestShadow(unittest.TestCase):
         self.assertTrue(data["issues"])
 
     def test_broker_error_is_not_a_position_discrepancy(self):
-        """Transient 404/`FinamError` — отдельная диагностика, не issue G3."""
+        """Transient 404/`FinamError` — отдельная диагностика, не расхождение."""
         today = date.today()
         self._journal(today)
         broker = FakeBroker()

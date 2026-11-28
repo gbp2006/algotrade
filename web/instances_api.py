@@ -756,7 +756,7 @@ def live_state_view() -> dict:
     days.discard("")
     shadow_days: set[str] = set()
     # Тень с 24.11 пишет в shadow.csv; старые planned-строки жили в live.csv —
-    # читаем оба журнала, чтобы счётчик G3 не терял историю при разделении.
+    # читаем оба журнала, чтобы число дней репетиции не теряло историю.
     for journal in (LIVE, SHADOW_JOURNAL):
         if not journal.exists():
             continue
