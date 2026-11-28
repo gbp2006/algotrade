@@ -45,6 +45,19 @@ class TestExpected(unittest.TestCase):
         sizing.assert_called()
         self.assertNotIn("risk_vol", cfg.params)
 
+    def test_legacy_atr_only_for_old_dates(self):
+        cfg = next(c for c in CONFIGS if c.id == "p-base")
+        day = datetime(2026, 11, 26, 13, 50)
+        bars = pd.DataFrame([{"dt": day, "open": 12.0, "high": 12.1,
+                              "low": 11.9, "close": 12.0, "vol": 1.0}]
+                            ).set_index("dt")
+        dec = lambda cfg, m5, day: SimpleNamespace(
+            target=1, price=12.0, ts=pd.Timestamp("2026-11-26 13:50"))
+        with mock.patch.object(ex, "decision", side_effect=dec), \
+             mock.patch.object(ex, "_legacy_atr_lots", return_value=3) as legacy:
+            ex.expected(cfg, bars, "2026-11-26", "2026-11-26", 1000, 200000)
+        legacy.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()
