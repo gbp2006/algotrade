@@ -11,7 +11,6 @@
 from __future__ import annotations
 
 import csv
-import importlib.util
 import json
 import subprocess
 from datetime import date, datetime, timedelta
@@ -43,8 +42,6 @@ TIMERS = ["algotrading-daily.timer", "algotrading-morning.timer",
           "algotrading-shadow.timer",
           "algotrading-web.service"]
 MAX_LOOKBACK = 5  # сколько последних торговых дней проверять
-# песочница и WSL видят котировку в разные моменты: 1–2 тика на исходе не ошибка
-TRACKING_TOLERANCE = 200  # ₽
 
 
 def systemd_active(name: str) -> bool:
@@ -99,21 +96,6 @@ def data_freshness() -> str | None:
     return None
 
 
-def tracking_errors() -> list[str]:
-    """Расхождения факта с ожиданием по той же логике, что и ./run.sh report."""
-    try:
-        path = ROOT / "scripts" / "32_paper_report.py"
-        spec = importlib.util.spec_from_file_location("paper_report_for_watchdog", path)
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-        rows, _, _ = mod.build_rows()
-        return [f"{r['config']}: факт−ожидание {r['error']:+.0f} ₽"
-                for r in rows if r["error"] is not None
-                and abs(r["error"]) > TRACKING_TOLERANCE]
-    except Exception as exc:  # noqa: BLE001 — отчёт не обязан быть доступен сторожу
-        return [f"не удалось проверить tracking error: {str(exc)[:80]}"]
-
-
 def check() -> dict:
     problems: list[str] = []
     warnings: list[str] = []
@@ -123,7 +105,6 @@ def check() -> dict:
         last_trading_day = str(trading_days_back(1)[0])
         if data_date < last_trading_day:
             warnings.append(f"данные устарели: последний бар {data_date}")
-    problems.extend(tracking_errors())
 
     for t in TIMERS:
         if not systemd_active(t):

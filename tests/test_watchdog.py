@@ -35,13 +35,12 @@ class TestWatchdog(unittest.TestCase):
             lines.append(f"{day},13:50,{cfg},CNY,CNYRUBF@RTSX,prostushka,12.29,0,0,0,200000,решение,0,тест\n")
         self.paper.write_text("".join(lines), encoding="utf-8")
 
-    def _patches(self, data_date="2026-11-20", errors=None):
+    def _patches(self, data_date="2026-11-20"):
         return [
             mock.patch.object(wd, "ROOT", self.dir),
             mock.patch.object(wd, "PAPER", self.paper),
             mock.patch.object(wd, "STOP", self.stop),
             mock.patch.object(wd, "data_freshness", lambda: data_date),
-            mock.patch.object(wd, "tracking_errors", lambda: errors or []),
             mock.patch.object(wd, "decision_configs",
                               lambda rows: list(wd.DECISION_CONFIGS)),
         ]
@@ -101,19 +100,6 @@ class TestWatchdog(unittest.TestCase):
             for p in reversed(patches):
                 p.stop()
         self.assertTrue(any("устарели" in w for w in res["warnings"]), res)
-
-    def test_tracking_error_is_problem(self):
-        self._journal()
-        patches = self._patches(errors=["p-base: факт−ожидание +1216 ₽"])
-        for p in patches:
-            p.start()
-        try:
-            res = wd.check()
-        finally:
-            for p in reversed(patches):
-                p.stop()
-        self.assertFalse(res["ok"])
-        self.assertIn("p-base", " ".join(res["problems"]))
 
     def test_data_freshness_reads_live_csv(self):
         csv_text = "dt,open,high,low,close,vol\n2026-11-19 13:45:00,1,1,1,1,1\n2026-11-19 13:50:00,2,2,2,2,2\n"

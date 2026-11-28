@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import csv
 import hashlib
-import importlib.util
 import json
 import os
 import queue
@@ -66,8 +65,6 @@ import sys  # noqa: E402
 sys.path.insert(0, str(ROOT))
 from algo.broker.finam import FinamBroker  # noqa: E402
 from algo.configs import BY_ID, CONFIGS  # noqa: E402
-from algo.expected import expected_pnl  # noqa: E402
-from algo.instance_configs import configs_at  # noqa: E402
 from algo.robot_configs import ROBOT_BY_ID, ROBOT_CONFIGS  # noqa: E402
 from algo.instruments import DEFAULT, INSTRUMENTS, margin, symbol as inst_symbol  # noqa: E402
 from algo.portfolio import (CAPITAL, account_card, drawdown_stats,  # noqa: E402
@@ -536,13 +533,6 @@ def config_detail(cfg_id: str) -> dict:
         "position": pos,
     }
 
-    expected = None
-    if rows:
-        try:
-            expected = _expected(cfg, rows[0]["date"], rows[-1]["date"])
-        except Exception as e:  # noqa: BLE001
-            expected = {"error": str(e)[:120]}
-
     return {"id": cfg.id, "title": cfg.display or cfg.id, "desc": cfg.comment,
             "params": dict(cfg.params), "instrument": inst.code,
             "instrument_label": inst.label, "digits": inst.digits,
@@ -551,26 +541,7 @@ def config_detail(cfg_id: str) -> dict:
                             "entry": round(entry, inst.digits),
                             "opened": opened[0] + " " + opened[1] if opened else "",
                             "tip": ""} if pos != 0 and opened else None),
-            "equity": equity, "expected": expected}
-
-
-def _expected(cfg, start: str, end: str):
-    """Ожидание по общей логике отчёта и панели (кэш 1 час)."""
-    def calc():
-        times: dict[str, str] = {}
-        for r in read_paper():
-            if r.get("config") == cfg.id and start <= r["date"] <= end:
-                if r["time"] > times.get(r["date"], ""):
-                    times[r["date"]] = r["time"]
-        by_day: dict[str, object] = {}
-        for key, when in times.items():
-            try:
-                by_day[key] = {c.id: c for c in configs_at(key, at=when)}
-            except Exception:  # noqa: BLE001 — без БД остаётся переданный конфиг
-                by_day[key] = {}
-        return expected_pnl(cfg, start, end, fallback_capital=CAPITAL,
-                            cfg_for=lambda d: by_day.get(str(d), {}).get(cfg.id, cfg))
-    return _cached(f"expected:{cfg.id}:{start}:{end}", 3600, calc)
+            "equity": equity}
 
 
 @app.get("/api/config/{cfg_id}")
@@ -581,18 +552,6 @@ def api_config(cfg_id: str):
         raise
     except Exception as e:  # noqa: BLE001
         return JSONResponse({"error": str(e)[:200]})
-
-
-@app.get("/api/robot-compare")
-def api_robot_compare():
-    """Ежедневная сверка четырёх новых роботов с базовыми конфигурациями."""
-    spec = importlib.util.spec_from_file_location(
-        "paper_report", ROOT / "scripts" / "32_paper_report.py")
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    rows, start, end = mod.build_rows()
-    return JSONResponse({"start": start, "end": end,
-                         "comparison": mod.robot_compare(rows)})
 
 
 @app.get("/api/metrics")

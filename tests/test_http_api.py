@@ -132,11 +132,6 @@ class TestHTTPApi(unittest.TestCase):
         for key in ("enabled", "stop_real", "next_run", "mode"):
             self.assertIn(key, data)
 
-    def test_reconciliation_endpoint(self):
-        status, data = request(web_app.app, "GET", "/api/portfolio/reconciliation")
-        self.assertEqual(status, 200)
-        self.assertIn("items", data)
-
     def test_ui_assets_are_served(self):
         status, html = request(web_app.app, "GET", "/ui/assets/index-D0eHtem1.js")
         self.assertIn(status, (200, 404))  # файл может называться иначе после сборки

@@ -32,11 +32,6 @@ export const del = <T>(path: string): Promise<T> =>
 
 export const api = {
   analytics: () => get<Analytics>('/api/portfolio/analytics'),
-  reconciliation: () => get<{ date: string; items: {
-    robot: string; symbol: string; planned_lots: number; actual_lots: number;
-    planned_price: number; actual_price: number; slippage_ticks: number;
-    slippage_rub: number; commission: number;
-  }[]; note: string }>('/api/portfolio/reconciliation'),
   equity: (accountId = '') => get<EquityResponse>(
     `/api/portfolio/equity?limit=1000${accountId ? `&account_id=${encodeURIComponent(accountId)}` : ''}`),
   flows: (accountId = '') => get<{ items: CashFlowRow[] }>(

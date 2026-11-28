@@ -69,7 +69,7 @@ instance_events(id INTEGER PK, instance_id TEXT, at TEXT, action TEXT,
 
 | Контур | Источник инстансов | Правило |
 |---|---|---|
-| Бумага `31_paper_live.py` | `status=active AND mode=paper` | во время G2 новый инстанс — только с **новым id**; существующие 9 не меняются |
+| Бумага `31_paper_live.py` | `status=active AND mode=paper` | во время бумажного теста новый инстанс — только с **новым id**; существующие 9 не меняются |
 | Тень `33_shadow_live.py` | те же paper-инстансы | без изменений |
 | Бой `34_live_execute.py` | `status=active AND mode=live` | заменяет `live_settings.json`; требует account + capital + pricing |
 

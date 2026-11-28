@@ -34,9 +34,6 @@ export function Portfolio() {
     queryFn: () => api.equity(accountId),
     refetchInterval: 60_000,
   });
-  const reconciliation = useQuery({
-    queryKey: ['reconciliation'], queryFn: api.reconciliation, refetchInterval: 60_000,
-  });
 
   const data = analytics.data;
   const metrics = data?.portfolio?.metrics;
@@ -156,22 +153,6 @@ export function Portfolio() {
                 </div>
               ))}
             </div>
-          </Card>
-          <Card title="Сверка Plan/Test vs Fact" className="mt-4">
-            {(reconciliation.data?.items ?? []).length ? (
-              <div className="grid gap-2">
-                {(reconciliation.data?.items ?? []).map((row, index) => (
-                  <div key={`${row.robot}-${index}`}
-                    className="flex flex-wrap justify-between gap-3 rounded-lg border border-line p-3 text-xs">
-                    <span>{row.robot || 'робот'} · {row.symbol || '—'}</span>
-                    <span className="num">лот {row.planned_lots} → {row.actual_lots}</span>
-                    <span className="num">цена {row.planned_price} → {row.actual_price}</span>
-                    <span className="num">проскальзывание {row.slippage_ticks} тик. / {money(row.slippage_rub)} ₽</span>
-                    <span className="num">комиссия {money(row.commission, 2)} ₽</span>
-                  </div>
-                ))}
-              </div>
-            ) : <div className="empty">{reconciliation.data?.note || 'Фактических исполнений пока нет'}</div>}
           </Card>
         </TabPanel>
       </Tabs>

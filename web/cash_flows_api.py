@@ -7,9 +7,7 @@
 
 from __future__ import annotations
 
-import json
 from typing import Callable
-from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -26,7 +24,6 @@ from web.instances_api import cached_analytics, get_store, invalidate_analytics
 router = APIRouter(prefix="/api", tags=["cash-flows"])
 Reporter = Callable[[str, str, object], list[dict]]
 _flows_cache: CashFlowStore | None = None
-LIVE_RUN = Path(__file__).resolve().parent.parent / "results" / "live_run.json"
 
 
 def get_flows(store: RobotStore = Depends(get_store)) -> CashFlowStore:
@@ -260,29 +257,6 @@ def portfolio_analytics_view(account_id: str | None, store: RobotStore,
     }}
 
 
-def reconciliation_view() -> dict:
-    """Сверка расчётной лотности/цены с факт execution из live_run.json."""
-    try:
-        data = json.loads(LIVE_RUN.read_text(encoding="utf-8")) if LIVE_RUN.exists() else {}
-    except (OSError, ValueError):
-        data = {}
-    rows: list[dict] = []
-    for fill in data.get("fills", []) or []:
-        rows.append({
-            "robot": fill.get("robot") or fill.get("config") or "",
-            "symbol": fill.get("symbol") or "",
-            "planned_lots": fill.get("planned_lots") or fill.get("planned_qty") or 0,
-            "actual_lots": fill.get("executed_qty") or fill.get("actual_lots") or 0,
-            "planned_price": fill.get("signal_price") or fill.get("planned_price") or 0,
-            "actual_price": fill.get("price") or fill.get("actual_price") or 0,
-            "slippage_ticks": fill.get("slippage_ticks") or 0,
-            "slippage_rub": fill.get("slippage_rub") or 0,
-            "commission": fill.get("commission") or 0,
-        })
-    return {"date": data.get("date") or "", "items": rows,
-            "note": "пусто — реальных исполнений пока нет" if not rows else ""}
-
-
 # ---------- маршруты ----------
 @router.post("/cash-flows/preview")
 def preview_endpoint(payload: dict, store: RobotStore = Depends(get_store)):
@@ -315,11 +289,6 @@ def history_endpoint(account_id: str | None = None, limit: int = 100,
 def equity_endpoint(account_id: str | None = None, limit: int = 500,
                     since: str = "", flows: CashFlowStore = Depends(get_flows)):
     return equity_view(account_id, limit, since, flows)
-
-
-@router.get("/portfolio/reconciliation")
-def reconciliation_endpoint():
-    return reconciliation_view()
 
 
 @router.get("/portfolio/analytics")
